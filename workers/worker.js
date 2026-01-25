@@ -244,7 +244,6 @@ function getInfoPage(service, config) {
       if (platform === 'note') {
         return `<li><em>${url}</em></li>`;
       }
-      }
       return `<li><strong>${platform}:</strong> <a href="${url}" target="_blank">${url}</a></li>`;
     })
     .join('\n');
