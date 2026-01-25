@@ -228,3 +228,51 @@ if (!response) {
   await cache.put(cacheKey, response.clone());
 }
 ```
+
+## Landing Page (Cloudflare Pages)
+
+The main website at `www.dnscloak.net` is hosted on Cloudflare Pages.
+
+### Deployment via Direct Upload
+
+1. Go to **Cloudflare Dashboard** → **Workers & Pages**
+2. Click **Create** → **Pages** → **Upload your static files**
+3. Name the project: `dnscloak-www`
+4. Drag and drop the contents of the `www/` folder:
+   - `index.html`
+   - `_redirects`
+5. Click **Deploy**
+
+### Add Custom Domain
+
+After deployment:
+1. Go to the deployed Pages project
+2. Click **Custom domains** → **Set up a custom domain**
+3. Enter: `www.dnscloak.net`
+4. Cloudflare will auto-configure DNS
+
+### Files Structure
+
+```
+www/
+  index.html      # Landing page with protocol overview
+  _redirects      # SPA routing (optional)
+```
+
+### Updating the Page
+
+For updates, either:
+- **Direct Upload**: Re-upload the `www/` folder contents
+- **GitHub Integration**: Connect to GitHub for auto-deploy on push
+
+### DNSTT Client Setup Page
+
+The DNSTT worker includes a client setup page:
+
+| URL | Description |
+|-----|-------------|
+| `dnstt.dnscloak.net/client` | Interactive setup page |
+| `dnstt.dnscloak.net/client?key=PUBKEY&domain=t.example.com` | Pre-filled setup |
+| `dnstt.dnscloak.net/setup/linux?key=...&domain=...` | Linux setup script |
+| `dnstt.dnscloak.net/setup/macos?key=...&domain=...` | macOS setup script |
+| `dnstt.dnscloak.net/setup/windows?key=...&domain=...` | Windows PowerShell script |

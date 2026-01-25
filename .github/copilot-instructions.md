@@ -193,3 +193,47 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - Subscription URLs - Auto-updating client configs
 - Web dashboard - Browser-based management
 - Telegram bot - User self-service
+
+## Current Session Context (Updated 2026-01-26)
+
+### What's Working
+- **Reality** (`services/reality/install.sh`) - Fully tested, works on GCP
+- **WS+CDN** (`services/ws/install.sh`) - Fully tested, works with Cloudflare SSL "Flexible"
+- **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
+
+### Cloudflare Setup
+- **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray)
+- **Worker features**: 
+  - `/` - Serves install script
+  - `/info` - HTML info page
+  - `/client` (dnstt only) - Client setup page with one-liner scripts
+  - `/setup/linux|macos|windows` (dnstt only) - Platform-specific setup scripts
+- **Pages**: Landing page at `www.dnscloak.net` via direct upload of `www/` folder
+- **DNS**: 
+  - `*.dnscloak.net` - Worker routes
+  - `www.dnscloak.net` - Cloudflare Pages
+  - `ws-origin.dnscloak.net` - WS origin server (Proxied, SSL Flexible)
+  - `ns1.dnscloak.net` - DNSTT nameserver (DNS only, NOT proxied)
+  - `t.dnscloak.net` - NS record pointing to ns1.dnscloak.net
+
+### Key Technical Decisions
+1. **WS+CDN uses port 80 (HTTP) on origin** - Cloudflare handles TLS at edge, SSL mode must be "Flexible"
+2. **DNSTT builds from source** - Downloads Go 1.21 from go.dev, builds dnstt-server
+3. **User database** - `/opt/dnscloak/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
+4. **Auto-cleanup** - Scripts clean `/tmp/dnscloak*` at start for fresh installs
+
+### Testing Environment
+- **Server**: GCP VM at `34.185.221.241` (europe-west3)
+- **Domain**: `dnscloak.net` on Cloudflare
+
+### Services TODO
+- [ ] `services/wg/install.sh` - WireGuard VPN
+- [ ] `services/mtp/install.sh` - Refactor existing MTProto  
+- [ ] `services/vray/install.sh` - VLESS+TCP+TLS with Let's Encrypt
+- [ ] `cli/dnscloak.sh` - Unified management CLI
+
+### Known Issues Fixed
+- `user_exists()` now supports optional protocol parameter: `user_exists "name" "ws"`
+- `user_get()` now supports optional key parameter: `user_get "name" "ws" "uuid"`
+- WS installer uses correct function names from lib files (cloud_get_public_ip, bootstrap, create_directories, etc.)
+
