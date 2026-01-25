@@ -17,12 +17,12 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `services/reality/install.sh` - VLESS+REALITY (no domain needed) ✅ TESTED
 - [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (Cloudflare) ✅ TESTED
 - [x] `services/dnstt/install.sh` - DNS tunnel (emergency backup) ✅ TESTED
-- [ ] `services/wg/install.sh` - WireGuard VPN
+- [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 
 ### Phase 3: CLI and Workers [COMPLETE]
-- [ ] `cli/dnscloak.sh` - Unified management CLI
+- [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
 - [x] `workers/` - Unified Cloudflare Worker for all services ✅ DEPLOYED
   - Routes: mtp, reality, wg, vray, ws, dnstt subdomains
   - DNSTT client setup: /client, /setup/linux, /setup/macos, /setup/windows
@@ -200,6 +200,8 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - **Reality** (`services/reality/install.sh`) - Fully tested, works on GCP
 - **WS+CDN** (`services/ws/install.sh`) - Fully tested, works with Cloudflare SSL "Flexible"
 - **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
+- **WireGuard** (`services/wg/install.sh`) - Created, ready for testing
+- **CLI** (`cli/dnscloak.sh`) - Unified management CLI created
 
 ### Cloudflare Setup
 - **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray)
@@ -221,16 +223,17 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 2. **DNSTT builds from source** - Downloads Go 1.21 from go.dev, builds dnstt-server
 3. **User database** - `/opt/dnscloak/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
 4. **Auto-cleanup** - Scripts clean `/tmp/dnscloak*` at start for fresh installs
+5. **WireGuard network** - Uses `10.66.66.0/24` subnet, server at `.1`, clients from `.2`
 
 ### Testing Environment
 - **Server**: GCP VM at `34.185.221.241` (europe-west3)
 - **Domain**: `dnscloak.net` on Cloudflare
 
 ### Services TODO
-- [ ] `services/wg/install.sh` - WireGuard VPN
+- [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
+- [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto  
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS with Let's Encrypt
-- [ ] `cli/dnscloak.sh` - Unified management CLI
 
 ### Known Issues Fixed
 - `user_exists()` now supports optional protocol parameter: `user_exists "name" "ws"`

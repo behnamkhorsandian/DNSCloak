@@ -255,19 +255,21 @@ EOF
 install_cli() {
     print_step "Installing dnscloak CLI"
     
-    # CLI will be installed by the main installer
-    # This creates a placeholder that gets replaced
+    local cli_url="${GITHUB_RAW}/cli/dnscloak.sh"
+    local lib_dir="$DNSCLOAK_DIR/lib"
     
-    if [[ ! -f "$DNSCLOAK_BIN" ]]; then
-        cat > "$DNSCLOAK_BIN" <<'EOF'
-#!/bin/bash
-echo "DNSCloak CLI - Run a service installer first"
-echo "Example: curl -sSL reality.dnscloak.net | sudo bash"
-EOF
-        chmod +x "$DNSCLOAK_BIN"
-    fi
+    # Download CLI
+    curl -sL "$cli_url" -o "$DNSCLOAK_BIN"
+    chmod +x "$DNSCLOAK_BIN"
     
-    print_success "CLI placeholder installed"
+    # Download libraries for CLI use
+    mkdir -p "$lib_dir"
+    curl -sL "${GITHUB_RAW}/lib/common.sh" -o "$lib_dir/common.sh"
+    curl -sL "${GITHUB_RAW}/lib/cloud.sh" -o "$lib_dir/cloud.sh"
+    curl -sL "${GITHUB_RAW}/lib/xray.sh" -o "$lib_dir/xray.sh"
+    chmod 600 "$lib_dir"/*.sh
+    
+    print_success "dnscloak CLI installed"
 }
 
 #-------------------------------------------------------------------------------
