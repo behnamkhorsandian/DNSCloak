@@ -163,6 +163,110 @@ get_public_ip() {
     echo "$ip"
 }
 
+# Check if IP has changed and return status
+# Returns: 0 if IP changed, 1 if same, 2 if error
+check_ip_changed() {
+    if [[ ! -f "$DATA_FILE" ]]; then
+        return 2
+    fi
+    
+    source "$DATA_FILE"
+    local current_ip=$(get_public_ip)
+    
+    if [[ -z "$current_ip" ]]; then
+        return 2
+    fi
+    
+    if [[ "$current_ip" != "$PROXY_IP" ]]; then
+        echo "$current_ip"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Update IP address in all config files
+update_ip() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}🔄 UPDATE IP ADDRESS${RESET}"
+    print_line
+    echo ""
+    
+    if ! is_installed; then
+        print_error "Proxy is not installed"
+        press_enter
+        return
+    fi
+    
+    source "$DATA_FILE"
+    
+    local old_ip="$PROXY_IP"
+    local new_ip=$(get_public_ip)
+    
+    if [[ -z "$new_ip" ]]; then
+        print_error "Could not detect current public IP"
+        press_enter
+        return
+    fi
+    
+    echo -e "  ${WHITE}Old IP:${RESET} $old_ip"
+    echo -e "  ${WHITE}New IP:${RESET} $new_ip"
+    echo ""
+    
+    if [[ "$old_ip" == "$new_ip" ]]; then
+        print_success "IP address hasn't changed"
+        press_enter
+        return
+    fi
+    
+    print_warning "IP address has changed!"
+    echo ""
+    
+    if confirm "Update proxy configuration with new IP?" "y"; then
+        echo ""
+        print_step "Updating configuration..."
+        
+        # Update proxy_data.sh
+        PROXY_IP="$new_ip"
+        save_proxy_data "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${PROXY_USERS[@]}"
+        
+        print_success "Configuration updated"
+        
+        # Restart service
+        print_step "Restarting proxy..."
+        systemctl restart "$SERVICE_NAME"
+        sleep 2
+        
+        if systemctl is-active --quiet "$SERVICE_NAME"; then
+            print_success "Proxy restarted successfully"
+        else
+            print_error "Failed to restart proxy"
+        fi
+        
+        echo ""
+        print_success "IP updated to: $new_ip"
+        echo ""
+        
+        # Remind about DNS
+        if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
+            echo -e "  ${YELLOW}⚠️  IMPORTANT: Update your DNS!${RESET}"
+            echo ""
+            echo -e "  Your domain ${WHITE}$PROXY_DOMAIN${RESET} needs to point to:"
+            echo -e "  ${GREEN}$new_ip${RESET}"
+            echo ""
+            echo -e "  Update this in your DNS provider (Cloudflare, etc.)"
+        fi
+        
+        echo ""
+        echo -e "  ${WHITE}New proxy links will use IP:${RESET} $new_ip"
+        echo -e "  ${GRAY}Use 'View Proxy Links' to see updated links${RESET}"
+    else
+        print_info "Update cancelled"
+    fi
+    
+    press_enter
+}
+
 check_port_available() {
     local port=$1
     if ss -tlnp | grep -q ":${port} "; then
@@ -1635,6 +1739,16 @@ main_menu() {
                 echo -e "  Server: ${WHITE}${PROXY_DOMAIN:-$PROXY_IP}:$PROXY_PORT${RESET}"
                 echo -e "  Mode: ${WHITE}${PROXY_MODE:-tls}${RESET}"
                 echo -e "  Users: ${WHITE}${#PROXY_USERS[@]}${RESET}"
+                
+                # Check for IP change
+                local new_ip
+                new_ip=$(check_ip_changed)
+                if [[ $? -eq 0 ]]; then
+                    echo ""
+                    echo -e "  ${RED}⚠️  IP CHANGED!${RESET}"
+                    echo -e "  ${YELLOW}Old: $PROXY_IP → New: $new_ip${RESET}"
+                    echo -e "  ${YELLOW}Use option 12 to update${RESET}"
+                fi
             fi
         else
             echo -e "  Proxy Status: ${YELLOW}● Not installed${RESET}"
@@ -1657,7 +1771,8 @@ main_menu() {
             echo -e "  ${CYAN}8)${RESET} DNS Instructions"
             echo -e "  ${CYAN}9)${RESET} Usage Instructions"
             echo -e "  ${CYAN}10)${RESET} Reinstall"
-            echo -e "  ${RED}11)${RESET} Uninstall"
+            echo -e "  ${CYAN}11)${RESET} Update IP Address"
+            echo -e "  ${RED}12)${RESET} Uninstall"
         else
             echo -e "  ${CYAN}1)${RESET} Install Proxy"
             echo -e "  ${CYAN}2)${RESET} Port & Firewall Analysis"
@@ -1688,7 +1803,8 @@ main_menu() {
                     ;;
                 9) show_usage_instructions ;;
                 10) install_proxy ;;
-                11) uninstall_proxy ;;
+                11) update_ip ;;
+                12) uninstall_proxy ;;
                 0) 
                     echo ""
                     print_info "Goodbye!"
