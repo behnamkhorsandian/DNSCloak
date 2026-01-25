@@ -21,7 +21,7 @@
 SSH into your VPS and run:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh)
+curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh | sudo bash
 ```
 
 Or clone and run:
@@ -58,7 +58,7 @@ Create a VM instance on any cloud provider. Recommended specs:
 SSH into your VPS and run:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh)
+curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh | sudo bash
 ```
 
 The script will:
