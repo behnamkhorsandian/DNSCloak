@@ -103,6 +103,43 @@ select_camouflage_target() {
 }
 
 #-------------------------------------------------------------------------------
+# Configure Connection Address (IP or Domain)
+#-------------------------------------------------------------------------------
+
+configure_connection_address() {
+    local server_ip
+    server_ip=$(server_get "ip")
+    
+    echo ""
+    print_info "Your server IP: $server_ip"
+    echo ""
+    
+    if confirm "Use a domain instead of IP in links?"; then
+        echo ""
+        echo -e "  ${YELLOW}Note: Create an A record pointing to $server_ip${RESET}"
+        echo -e "  ${YELLOW}      Keep Cloudflare proxy OFF (gray cloud)${RESET}"
+        echo ""
+        
+        get_input "Enter domain (e.g., proxy.example.com)" "" connection_domain
+        
+        if [[ -n "$connection_domain" ]]; then
+            # Validate domain format
+            if [[ "$connection_domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+                server_set "reality_address" "$connection_domain"
+                print_success "Will use domain: $connection_domain"
+            else
+                print_warning "Invalid domain format, using IP instead"
+                server_set "reality_address" "$server_ip"
+            fi
+        else
+            server_set "reality_address" "$server_ip"
+        fi
+    else
+        server_set "reality_address" "$server_ip"
+    fi
+}
+
+#-------------------------------------------------------------------------------
 # Generate Short ID
 #-------------------------------------------------------------------------------
 
@@ -139,6 +176,9 @@ install_reality() {
     
     # Select target
     select_camouflage_target
+    
+    # Configure connection address (IP or domain)
+    configure_connection_address
     
     # Generate short ID
     REALITY_SHORT_ID=$(generate_short_id)
@@ -259,8 +299,12 @@ show_user_links() {
     local uuid
     uuid=$(echo "$creds" | jq -r '.uuid')
     
-    local server_ip
-    server_ip=$(server_get "ip")
+    # Use reality_address (domain) if set, otherwise fall back to IP
+    local server_address
+    server_address=$(server_get "reality_address")
+    if [[ -z "$server_address" || "$server_address" == "null" ]]; then
+        server_address=$(server_get "ip")
+    fi
     
     local pubkey
     pubkey=$(server_get "reality_public_key")
@@ -272,7 +316,7 @@ show_user_links() {
     sid=$(server_get "reality_short_id")
     
     local link
-    link=$(xray_reality_link "$uuid" "$server_ip" "$pubkey" "$target" "$sid" "$username")
+    link=$(xray_reality_link "$uuid" "$server_address" "$pubkey" "$target" "$sid" "$username")
     
     echo ""
     echo -e "  ${BOLD}${WHITE}Reality Link for '$username'${RESET}"
@@ -290,7 +334,7 @@ show_user_links() {
     echo ""
     echo "  Manual Configuration:"
     echo "  ---------------------"
-    echo "  Address: $server_ip"
+    echo "  Address: $server_address"
     echo "  Port: 443"
     echo "  UUID: $uuid"
     echo "  Flow: xtls-rprx-vision"
@@ -368,6 +412,53 @@ uninstall_reality() {
 }
 
 #-------------------------------------------------------------------------------
+# Change Connection Address
+#-------------------------------------------------------------------------------
+
+change_connection_address() {
+    local current_address
+    current_address=$(server_get "reality_address")
+    local server_ip
+    server_ip=$(server_get "ip")
+    
+    echo ""
+    echo "  Current address in links: ${current_address:-$server_ip}"
+    echo "  Server IP: $server_ip"
+    echo ""
+    echo "  1) Use IP address ($server_ip)"
+    echo "  2) Use custom domain"
+    echo "  0) Cancel"
+    echo ""
+    
+    get_input "Select option" "0" addr_choice
+    
+    case "$addr_choice" in
+        1)
+            server_set "reality_address" "$server_ip"
+            print_success "Links will now use IP: $server_ip"
+            ;;
+        2)
+            echo ""
+            echo -e "  ${YELLOW}Note: Create an A record pointing to $server_ip${RESET}"
+            echo -e "  ${YELLOW}      Keep Cloudflare proxy OFF (gray cloud)${RESET}"
+            echo ""
+            get_input "Enter domain" "" new_domain
+            if [[ -n "$new_domain" ]]; then
+                if [[ "$new_domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+                    server_set "reality_address" "$new_domain"
+                    print_success "Links will now use domain: $new_domain"
+                else
+                    print_error "Invalid domain format"
+                fi
+            fi
+            ;;
+        0|"")
+            return 0
+            ;;
+    esac
+}
+
+#-------------------------------------------------------------------------------
 # Menu
 #-------------------------------------------------------------------------------
 
@@ -380,9 +471,10 @@ show_menu() {
         echo "  1) View users and links"
         echo "  2) Add user"
         echo "  3) Remove user"
-        echo "  4) Show service status"
-        echo "  5) Restart service"
-        echo "  6) Uninstall Reality"
+        echo "  4) Change connection address (IP/domain)"
+        echo "  5) Show service status"
+        echo "  6) Restart service"
+        echo "  7) Uninstall Reality"
         echo "  0) Exit"
         echo ""
         
@@ -416,18 +508,22 @@ show_menu() {
                 press_enter
                 ;;
             4)
+                change_connection_address
+                press_enter
+                ;;
+            5)
                 echo ""
                 echo "  Xray Status: $(service_status xray)"
                 echo ""
                 xray_status
                 press_enter
                 ;;
-            5)
+            6)
                 service_restart xray
                 print_success "Xray restarted"
                 press_enter
                 ;;
-            6)
+            7)
                 uninstall_reality
                 press_enter
                 ;;
