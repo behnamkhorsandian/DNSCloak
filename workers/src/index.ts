@@ -1,16 +1,12 @@
 /**
  * DNSCloak MTProto Proxy - Cloudflare Workers Install Script Server
  * 
- * Serves the setup.sh script at api.dnscloak.net
- * Usage: curl -sSL api.dnscloak.net | sudo bash
+ * Serves the setup.sh script at mtp.dnscloak.net
+ * Usage: curl -sSL mtp.dnscloak.net | sudo bash
  */
 
-export interface Env {
-  // Environment bindings (add if needed)
-}
-
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     
     // CORS headers
@@ -25,54 +21,17 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Serve setup script at root (for: curl -sSL api.dnscloak.net | sudo bash)
-    if (url.pathname === "/" || url.pathname === "/setup" || url.pathname === "/setup.sh" || url.pathname === "/install") {
-      // Fetch the latest setup.sh from GitHub (bypasses caching)
-      const timestamp = Date.now();
-      const githubUrl = `https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh?t=${timestamp}`;
-      
-      try {
-        const response = await fetch(githubUrl, {
-          headers: {
-            "User-Agent": "DNSCloak-Worker/1.0",
-            "Cache-Control": "no-cache",
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`GitHub returned ${response.status}`);
-        }
-        
-        const script = await response.text();
-        
-        return new Response(script, {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "text/plain; charset=utf-8",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-          },
-        });
-      } catch (error) {
-        // Fallback: redirect to GitHub raw
-        return Response.redirect(
-          "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh",
-          302
-        );
-      }
-    }
-
     // Health check
     if (url.pathname === "/health") {
       return Response.json({
         status: "ok",
-        service: "dnscloak-mtproto",
+        service: "dnscloak-mtp",
         timestamp: Date.now(),
       }, { headers: corsHeaders });
     }
 
     // Version endpoint
     if (url.pathname === "/version") {
-      // Fetch version from setup.sh
       try {
         const response = await fetch(
           "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh"
@@ -90,9 +49,38 @@ export default {
       }
     }
 
-    // Info page (for browsers)
-    if (url.pathname === "/info" || request.headers.get("Accept")?.includes("text/html")) {
-      const html = `<!DOCTYPE html>
+    // Info page (for browsers visiting directly)
+    if (url.pathname === "/info") {
+      return new Response(getInfoPage(), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
+
+    // Default: serve setup script (for curl | bash)
+    // Works for: /, /setup, /setup.sh, /install, /install.sh
+    const response = await fetch(
+      "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh"
+    );
+    
+    if (!response.ok) {
+      return new Response("Error fetching setup script", { status: 502 });
+    }
+    
+    return new Response(await response.text(), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    });
+  },
+};
+
+function getInfoPage(): string {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <title>DNSCloak - MTProto Proxy</title>
@@ -100,7 +88,7 @@ export default {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       color: #eee;
       min-height: 100vh;
@@ -109,20 +97,9 @@ export default {
       justify-content: center;
       align-items: center;
     }
-    .container {
-      max-width: 600px;
-      padding: 40px;
-      text-align: center;
-    }
-    h1 {
-      color: #2eb787;
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
-    .tagline {
-      color: #888;
-      margin-bottom: 30px;
-    }
+    .container { max-width: 600px; padding: 40px; text-align: center; }
+    h1 { color: #2eb787; font-size: 2.5em; margin-bottom: 10px; }
+    .tagline { color: #888; margin-bottom: 30px; }
     .code {
       background: #0d1117;
       border: 1px solid #2eb787;
@@ -135,53 +112,30 @@ export default {
       user-select: all;
       cursor: pointer;
     }
-    .code:hover {
-      border-color: #4fd1a5;
-    }
-    .features {
-      text-align: left;
-      margin: 30px 0;
-    }
-    .features li {
-      margin: 10px 0;
-      color: #aaa;
-    }
-    .features li::marker {
-      color: #2eb787;
-    }
-    a {
-      color: #2eb787;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    .footer {
-      margin-top: 40px;
-      color: #666;
-      font-size: 0.9em;
-    }
+    .code:hover { border-color: #4fd1a5; }
+    .features { text-align: left; margin: 30px 0; }
+    .features li { margin: 10px 0; color: #aaa; }
+    .features li::marker { color: #2eb787; }
+    a { color: #2eb787; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer { margin-top: 40px; color: #666; font-size: 0.9em; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🛡️ DNSCloak</h1>
     <p class="tagline">MTProto Proxy with Fake-TLS Support</p>
-    
     <p>SSH into your VPS and run:</p>
     <div class="code" onclick="navigator.clipboard.writeText('curl -sSL mtp.dnscloak.net | sudo bash')">
       curl -sSL mtp.dnscloak.net | sudo bash
     </div>
     <p style="color: #666; font-size: 0.9em;">Click to copy</p>
-    
     <ul class="features">
       <li><strong>Fake-TLS (ee)</strong> - Traffic looks like HTTPS</li>
       <li><strong>Secure Mode (dd)</strong> - Random padding obfuscation</li>
       <li><strong>Port Analysis</strong> - Check open ports & firewall</li>
       <li><strong>Multi-User</strong> - Create multiple proxy users</li>
-      <li><strong>Auto-Start</strong> - Systemd service included</li>
     </ul>
-    
     <p class="footer">
       <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a> • 
       <a href="https://dnscloak.net">Website</a>
@@ -189,16 +143,4 @@ export default {
   </div>
 </body>
 </html>`;
-      
-      return new Response(html, {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "text/html; charset=utf-8",
-        },
-      });
-    }
-
-    // Default: serve setup script
-    return Response.redirect(url.origin + "/", 302);
-  },
-};
+}
