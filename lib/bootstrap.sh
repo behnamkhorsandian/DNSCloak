@@ -1,0 +1,326 @@
+#!/bin/bash
+#===============================================================================
+# DNSCloak - Bootstrap Script
+# First-time VM setup: updates, prerequisites, Xray installation
+# https://github.com/behnamkhorsandian/DNSCloak
+#===============================================================================
+
+set -e
+
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source libraries
+source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/cloud.sh"
+
+#-------------------------------------------------------------------------------
+# Bootstrap Flag
+#-------------------------------------------------------------------------------
+
+BOOTSTRAP_FLAG="$DNSCLOAK_DIR/.bootstrapped"
+
+is_bootstrapped() {
+    [[ -f "$BOOTSTRAP_FLAG" ]]
+}
+
+mark_bootstrapped() {
+    touch "$BOOTSTRAP_FLAG"
+}
+
+#-------------------------------------------------------------------------------
+# System Update
+#-------------------------------------------------------------------------------
+
+system_update() {
+    print_step "Updating system packages"
+    
+    export DEBIAN_FRONTEND=noninteractive
+    
+    apt-get update -qq
+    apt-get upgrade -y -qq
+    
+    print_success "System updated"
+}
+
+#-------------------------------------------------------------------------------
+# Install Prerequisites
+#-------------------------------------------------------------------------------
+
+install_prerequisites() {
+    print_step "Installing prerequisites"
+    
+    local packages=(
+        curl
+        wget
+        jq
+        qrencode
+        openssl
+        xxd
+        ca-certificates
+        gnupg
+        lsb-release
+        unzip
+    )
+    
+    apt-get install -y -qq "${packages[@]}"
+    
+    print_success "Prerequisites installed"
+}
+
+#-------------------------------------------------------------------------------
+# Network Optimization
+#-------------------------------------------------------------------------------
+
+configure_sysctl() {
+    print_step "Configuring network optimizations"
+    
+    cat > /etc/sysctl.d/99-dnscloak.conf <<EOF
+# DNSCloak network optimizations
+
+# TCP keepalive
+net.ipv4.tcp_keepalive_time = 60
+net.ipv4.tcp_keepalive_intvl = 10
+net.ipv4.tcp_keepalive_probes = 6
+
+# TCP performance
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.ipv4.tcp_fastopen = 3
+
+# Connection tracking
+net.netfilter.nf_conntrack_max = 131072
+
+# IP forwarding (for WireGuard)
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
+
+# Buffer sizes
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+EOF
+
+    sysctl -p /etc/sysctl.d/99-dnscloak.conf 2>/dev/null || true
+    
+    print_success "Network optimized"
+}
+
+#-------------------------------------------------------------------------------
+# Directory Structure
+#-------------------------------------------------------------------------------
+
+create_directories() {
+    print_step "Creating directory structure"
+    
+    mkdir -p "$DNSCLOAK_DIR"/{xray,mtp,wg,dnstt,certs}
+    chmod 700 "$DNSCLOAK_DIR"
+    
+    print_success "Directories created at $DNSCLOAK_DIR"
+}
+
+#-------------------------------------------------------------------------------
+# Install Xray-core
+#-------------------------------------------------------------------------------
+
+XRAY_VERSION="1.8.24"
+XRAY_BIN="/usr/local/bin/xray"
+
+install_xray() {
+    if [[ -f "$XRAY_BIN" ]]; then
+        local current_ver
+        current_ver=$("$XRAY_BIN" version 2>/dev/null | head -1 | awk '{print $2}')
+        if [[ "$current_ver" == "$XRAY_VERSION" ]]; then
+            print_info "Xray $XRAY_VERSION already installed"
+            return 0
+        fi
+    fi
+    
+    print_step "Installing Xray-core v$XRAY_VERSION"
+    
+    local arch
+    arch=$(get_arch)
+    local url="https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-${arch}.zip"
+    
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+    
+    curl -sL "$url" -o "$tmp_dir/xray.zip"
+    unzip -q "$tmp_dir/xray.zip" -d "$tmp_dir"
+    
+    mv "$tmp_dir/xray" "$XRAY_BIN"
+    chmod +x "$XRAY_BIN"
+    
+    # Install geoip and geosite
+    mv "$tmp_dir/geoip.dat" "$DNSCLOAK_DIR/xray/" 2>/dev/null || true
+    mv "$tmp_dir/geosite.dat" "$DNSCLOAK_DIR/xray/" 2>/dev/null || true
+    
+    rm -rf "$tmp_dir"
+    
+    # Create systemd service
+    cat > /etc/systemd/system/xray.service <<EOF
+[Unit]
+Description=Xray Service
+Documentation=https://github.com/xtls
+After=network.target nss-lookup.target
+
+[Service]
+Type=simple
+User=root
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart=$XRAY_BIN run -config $DNSCLOAK_DIR/xray/config.json
+Restart=on-failure
+RestartPreventExitStatus=23
+LimitNPROC=10000
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    
+    print_success "Xray v$XRAY_VERSION installed"
+}
+
+#-------------------------------------------------------------------------------
+# Initialize Empty Xray Config
+#-------------------------------------------------------------------------------
+
+init_xray_config() {
+    local config="$DNSCLOAK_DIR/xray/config.json"
+    
+    if [[ -f "$config" ]]; then
+        return 0
+    fi
+    
+    print_step "Initializing Xray configuration"
+    
+    cat > "$config" <<EOF
+{
+  "log": {
+    "loglevel": "warning",
+    "access": "$DNSCLOAK_DIR/xray/access.log",
+    "error": "$DNSCLOAK_DIR/xray/error.log"
+  },
+  "inbounds": [],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": []
+  }
+}
+EOF
+    
+    chmod 600 "$config"
+    print_success "Xray config initialized"
+}
+
+#-------------------------------------------------------------------------------
+# Install DNSCloak CLI
+#-------------------------------------------------------------------------------
+
+install_cli() {
+    print_step "Installing dnscloak CLI"
+    
+    # CLI will be installed by the main installer
+    # This creates a placeholder that gets replaced
+    
+    if [[ ! -f "$DNSCLOAK_BIN" ]]; then
+        cat > "$DNSCLOAK_BIN" <<'EOF'
+#!/bin/bash
+echo "DNSCloak CLI - Run a service installer first"
+echo "Example: curl -sSL reality.dnscloak.net | sudo bash"
+EOF
+        chmod +x "$DNSCLOAK_BIN"
+    fi
+    
+    print_success "CLI placeholder installed"
+}
+
+#-------------------------------------------------------------------------------
+# Cloud Detection and Firewall
+#-------------------------------------------------------------------------------
+
+setup_cloud() {
+    print_step "Detecting cloud provider"
+    
+    cloud_detect
+    
+    if [[ "$CLOUD_PROVIDER" != "unknown" ]]; then
+        print_success "Detected: $CLOUD_PROVIDER ($CLOUD_REGION)"
+    else
+        print_info "Unknown provider, using local firewall"
+    fi
+    
+    # Get and store public IP
+    local ip
+    ip=$(cloud_get_public_ip)
+    if [[ -n "$ip" ]]; then
+        server_set "ip" "$ip"
+        server_set "provider" "$CLOUD_PROVIDER"
+        print_success "Public IP: $ip"
+    fi
+    
+    # Configure firewall
+    print_step "Configuring firewall"
+    cloud_configure_firewall
+    print_success "Firewall configured"
+}
+
+#-------------------------------------------------------------------------------
+# Main Bootstrap Function
+#-------------------------------------------------------------------------------
+
+bootstrap() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}First-Time Setup${RESET}"
+    print_line
+    echo ""
+    
+    check_root
+    check_os
+    
+    if is_bootstrapped; then
+        print_info "System already bootstrapped"
+        # Still run cloud detection in case IP changed
+        setup_cloud
+        return 0
+    fi
+    
+    print_info "Setting up DNSCloak on $PRETTY_NAME"
+    echo ""
+    
+    system_update
+    install_prerequisites
+    configure_sysctl
+    create_directories
+    install_xray
+    init_xray_config
+    install_cli
+    setup_cloud
+    
+    # Initialize users database
+    users_init
+    
+    mark_bootstrapped
+    
+    print_line
+    print_success "Bootstrap complete!"
+    echo ""
+}
+
+# Run if executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    bootstrap
+fi

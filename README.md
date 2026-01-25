@@ -1,117 +1,117 @@
 # DNSCloak
 
-MTProto Proxy with **Fake-TLS** support. Helps people in restricted regions access Telegram.
+Multi-protocol censorship bypass platform. Deploy proxy services on any VM with a single command.
 
-## How It Works
+## Services
 
-Your traffic is disguised as HTTPS to a legitimate website (e.g., google.com), bypassing deep packet inspection (DPI).
+| Service | Domain Required | Best For | Install Command |
+|---------|-----------------|----------|-----------------|
+| Reality | No | Primary proxy (all countries) | `curl -sSL reality.dnscloak.net \| sudo bash` |
+| WireGuard | No | Fast VPN tunnel | `curl -sSL wg.dnscloak.net \| sudo bash` |
+| MTP | Optional | Telegram access | `curl -sSL mtp.dnscloak.net \| sudo bash` |
+| V2Ray | Yes | Classic proxy with TLS | `curl -sSL vray.dnscloak.net \| sudo bash` |
+| WS+CDN | Yes (Cloudflare) | CDN fallback when blocked | `curl -sSL ws.dnscloak.net \| sudo bash` |
+| DNStt | Yes (NS records) | Emergency during blackouts | `curl -sSL dnstt.dnscloak.net \| sudo bash` |
 
-| Secret Prefix | Mode | Description |
-|---------------|------|-------------|
-| `ee` | Fake-TLS | Looks like HTTPS traffic. Most secure. |
-| `dd` | Secure | Random padding added. Backup option. |
-
----
-
-## Quick Install
+## Quick Start
 
 SSH into your VPS and run:
 
 ```bash
-curl -sSL mtp.dnscloak.net | sudo bash
+curl -sSL reality.dnscloak.net | sudo bash
 ```
 
-The script asks for:
-- **Port** (default: 443)
-- **Domain** (optional, for easier IP changes)
-- **Fake-TLS domain** (default: google.com)
-- **Username**
+The script will:
+1. Update system and install prerequisites
+2. Auto-detect cloud provider and configure firewall
+3. Install and configure the service
+4. Create your first user
+5. Display connection link/QR code
 
-Then shows your proxy link immediately.
+## Requirements
 
----
+- VPS with Ubuntu 20.04+ or Debian 11+
+- Root access (sudo)
+- 512MB RAM minimum
 
-## Setup Checklist
+## User Management
 
-### 1. Create a VPS
-
-Any cloud provider works (GCP, AWS, DigitalOcean, Vultr, etc.)
-- **OS**: Ubuntu 20.04+ or Debian 11+
-- **RAM**: 512MB minimum (1GB recommended)
-
-### 2. Run the Script
+After installation, use the `dnscloak` CLI:
 
 ```bash
-curl -sSL mtp.dnscloak.net | sudo bash
+dnscloak add reality alice      # Add user to Reality
+dnscloak add wg bob             # Add user to WireGuard
+dnscloak users                  # List all users
+dnscloak links alice            # Show all connection links for user
+dnscloak remove reality alice   # Remove user from Reality
+dnscloak status                 # Show all services status
+dnscloak uninstall reality      # Remove Reality service
 ```
 
-### 3. Open Firewall Port ⚠️
+## Client Apps
 
-**Required!** Open TCP port 443 in your cloud provider's firewall:
+| Platform | Apps |
+|----------|------|
+| iOS | Hiddify, Shadowrocket, Streisand, WireGuard |
+| Android | Hiddify, v2rayNG, WireGuard |
+| Windows | Hiddify, v2rayN, WireGuard |
+| macOS | Hiddify, V2rayU, WireGuard |
+| Linux | v2rayA, WireGuard |
 
-| Provider | Where to Configure |
-|----------|-------------------|
-| **GCP** | VPC Network → Firewall → Create rule → TCP 443, Source: 0.0.0.0/0 |
-| **AWS** | EC2 → Security Groups → Inbound rules → TCP 443 |
-| **DigitalOcean** | Networking → Firewalls → TCP 443 |
-| **Vultr** | Firewall → Add rule → TCP 443 |
+## Documentation
 
-### 4. DNS Setup (Optional)
+- [Firewall Setup](docs/firewall.md) - Cloud provider firewall configuration
+- [DNS Setup](docs/dns.md) - Domain and DNS record configuration
+- [Workers Deployment](docs/workers.md) - Cloudflare Workers setup
+- Protocol Guides:
+  - [Reality](docs/protocols/reality.md) - VLESS+REALITY setup and flow
+  - [WireGuard](docs/protocols/wg.md) - WireGuard VPN setup
+  - [MTP](docs/protocols/mtp.md) - MTProto Proxy for Telegram
+  - [V2Ray](docs/protocols/vray.md) - VLESS+TCP+TLS setup
+  - [WS+CDN](docs/protocols/ws.md) - WebSocket over Cloudflare CDN
+  - [DNStt](docs/protocols/dnstt.md) - DNS tunnel for emergencies
 
-Using a domain makes your proxy harder to block. If your IP gets blocked, just update the DNS to a new server.
+## Implementation Status
 
-**Cloudflare:**
-1. Add A record: `tg` → Your server IP
-2. **Important:** Set proxy to "DNS only" (gray cloud, not orange)
+### Phase 1: Core Libraries
+- [ ] lib/cloud.sh - Cloud provider detection and firewall
+- [ ] lib/bootstrap.sh - VM setup and prerequisites
+- [ ] lib/common.sh - Shared utilities and user management
+- [ ] lib/xray.sh - Xray config management
+- [ ] lib/selector.sh - Service recommendation
 
-> MTProto needs direct connection. Cloudflare's orange cloud proxy won't work.
+### Phase 2: Services
+- [ ] services/reality - VLESS+REALITY
+- [ ] services/wg - WireGuard
+- [ ] services/mtp - MTProto (refactor)
+- [ ] services/vray - VLESS+TCP+TLS
+- [ ] services/ws - VLESS+WebSocket+CDN
+- [ ] services/dnstt - DNS tunnel
 
----
+### Phase 3: CLI and Workers
+- [ ] cli/dnscloak.sh - Unified CLI
+- [ ] workers/* - Cloudflare Workers
 
-## Using the Proxy
+### Phase 4: Documentation
+- [ ] docs/firewall.md
+- [ ] docs/dns.md
+- [ ] docs/workers.md
+- [ ] docs/protocols/*.md
 
-**Mobile (iOS/Android):** Click the `tg://proxy?...` link → Telegram opens → Tap "Connect"
+## Architecture
 
-**Desktop:** Click the link, or: Settings → Advanced → Connection → Add MTProto Proxy
-
-**Manual setup:** Server + Port + Secret (the full string starting with `ee...`)
-
----
-
-## Management
-
-Run the script again for the menu:
-
-```bash
-curl -sSL mtp.dnscloak.net | sudo bash
 ```
+Port 443 (TCP)
+    |
+    +-> SNI: camouflage.com    -> Reality (VLESS+XTLS)
+    +-> SNI: yourdomain.com    -> V2Ray (VLESS+TLS)
+    +-> Path: /ws-path         -> WebSocket (VLESS+WS)
+    +-> Fallback               -> Fake website
 
-**Menu options:**
-1. **Proxy Links & Users** - View links, add users
-2. **Status & Restart** - Check/restart service
-3. **View Logs** - Debug issues
-4. **Update IP** - After VM IP change
-5. **Uninstall**
+Port 51820 (UDP)               -> WireGuard
 
-**Quick commands:**
-```bash
-sudo systemctl status telegram-proxy   # Status
-sudo journalctl -u telegram-proxy -f   # Logs
-sudo systemctl restart telegram-proxy  # Restart
+Port 53 (UDP)                  -> DNStt (emergency)
 ```
-
----
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| Telegram shows "unavailable" | Check firewall port is open |
-| Works then stops | Check if VM IP changed (use Update IP option) |
-| Using Cloudflare domain | Make sure cloud is **gray** (DNS only) |
-| Service not running | Run `sudo journalctl -u telegram-proxy -n 50` |
-
----
 
 ## License
 
@@ -119,4 +119,7 @@ MIT - See [LICENSE](LICENSE)
 
 ## Credits
 
-[mtprotoproxy](https://github.com/alexbers/mtprotoproxy) by alexbers
+- [Xray-core](https://github.com/XTLS/Xray-core)
+- [mtprotoproxy](https://github.com/alexbers/mtprotoproxy)
+- [dnstt](https://www.bamsoftware.com/software/dnstt/)
+- [WireGuard](https://www.wireguard.com/)
