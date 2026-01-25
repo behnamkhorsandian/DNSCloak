@@ -1484,7 +1484,16 @@ add_user() {
     new_user="${username}:${secret}:${PROXY_MODE:-tls}"
     
     # Add to config file (config stores clean secret without prefix)
-    sed -i "/^}$/i\\    \"$username\": \"${secret}\"," "$CONFIG_FILE"
+    # We need to insert the new user ONLY in the USERS block, not MODES
+    # Use awk for reliable cross-platform editing
+    awk -v user="$username" -v secret="$secret" '
+        /^USERS = \{/ { in_users=1 }
+        in_users && /^\}$/ {
+            print "    \"" user "\": \"" secret "\","
+            in_users=0
+        }
+        { print }
+    ' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     
     # Add to data file
     PROXY_USERS+=("$new_user")
