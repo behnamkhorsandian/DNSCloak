@@ -14,32 +14,30 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `lib/selector.sh` - Domain detection and service recommendation
 
 ### Phase 2: Services [IN PROGRESS]
-- [ ] `services/reality/install.sh` - VLESS+REALITY (no domain needed)
+- [x] `services/reality/install.sh` - VLESS+REALITY (no domain needed) ✅ TESTED
 - [ ] `services/wg/install.sh` - WireGuard VPN
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 - [ ] `services/ws/install.sh` - VLESS+WebSocket+CDN (requires Cloudflare)
 - [ ] `services/dnstt/install.sh` - DNS tunnel (emergency backup)
 
-### Phase 3: CLI and Workers
+### Phase 3: CLI and Workers [COMPLETE]
 - [ ] `cli/dnscloak.sh` - Unified management CLI
-- [ ] `workers/reality/` - Cloudflare Worker for reality.dnscloak.net
-- [ ] `workers/wg/` - Cloudflare Worker for wg.dnscloak.net
-- [ ] `workers/mtp/` - Update existing worker
-- [ ] `workers/vray/` - Cloudflare Worker for vray.dnscloak.net
-- [ ] `workers/ws/` - Cloudflare Worker for ws.dnscloak.net
-- [ ] `workers/dnstt/` - Cloudflare Worker for dnstt.dnscloak.net
+- [x] `workers/` - Unified Cloudflare Worker for all services ✅ DEPLOYED
+  - Routes: mtp, reality, wg, vray, ws, dnstt subdomains
+  - Aliases: tg1/tg2 → mtp, vless/xray → reality
 
-### Phase 4: Documentation
-- [ ] `docs/firewall.md` - Cloud provider firewall guides
-- [ ] `docs/dns.md` - DNS setup for each protocol
-- [ ] `docs/workers.md` - Cloudflare Workers deployment
-- [ ] `docs/protocols/reality.md` - VLESS+REALITY state machine
-- [ ] `docs/protocols/wg.md` - WireGuard state machine
-- [ ] `docs/protocols/mtp.md` - MTProto state machine
-- [ ] `docs/protocols/vray.md` - V2Ray state machine
-- [ ] `docs/protocols/ws.md` - WebSocket+CDN state machine
-- [ ] `docs/protocols/dnstt.md` - DNStt state machine
+### Phase 4: Documentation [COMPLETE]
+- [x] `docs/firewall.md` - Cloud provider firewall guides
+- [x] `docs/dns.md` - DNS setup for each protocol
+- [x] `docs/workers.md` - Cloudflare Workers deployment
+- [x] `docs/self-hosting.md` - Self-hosting guide
+- [x] `docs/protocols/reality.md` - VLESS+REALITY state machine
+- [x] `docs/protocols/wg.md` - WireGuard state machine
+- [x] `docs/protocols/mtp.md` - MTProto state machine
+- [x] `docs/protocols/vray.md` - V2Ray state machine
+- [x] `docs/protocols/ws.md` - WebSocket+CDN state machine
+- [x] `docs/protocols/dnstt.md` - DNStt state machine
 
 ## Architecture
 
