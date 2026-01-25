@@ -71,7 +71,7 @@ validate_domain() {
 check_domain_dns() {
     local domain="$1"
     local server_ip
-    server_ip=$(get_public_ip)
+    server_ip=$(cloud_get_public_ip)
     
     print_step "Checking DNS for $domain"
     
@@ -248,7 +248,7 @@ install_ws() {
     
     # Bootstrap
     print_step "Setting up prerequisites"
-    bootstrap_system
+    bootstrap
     setup_dnscloak_dirs
     detect_cloud_provider
     
@@ -323,7 +323,7 @@ EOF
     
     # Save config to users.json
     local server_ip
-    server_ip=$(get_public_ip)
+    server_ip=$(cloud_get_public_ip)
     
     json_set ".server.ip" "$server_ip"
     json_set ".server.ws_domain" "$domain"
