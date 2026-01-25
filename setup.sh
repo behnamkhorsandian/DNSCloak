@@ -167,8 +167,211 @@ check_port_available() {
     return 0
 }
 
+# Get detailed information about what's using a port
+get_port_usage_info() {
+    local port=$1
+    local info=""
+    
+    # Get process info using ss
+    local ss_output=$(ss -tlnp 2>/dev/null | grep ":${port} " | head -1)
+    
+    if [[ -n "$ss_output" ]]; then
+        # Extract PID and process name
+        local pid=$(echo "$ss_output" | grep -oP 'pid=\K[0-9]+' | head -1)
+        local process_name=$(echo "$ss_output" | grep -oP 'users:\(\("\K[^"]+' | head -1)
+        
+        if [[ -z "$process_name" && -n "$pid" ]]; then
+            process_name=$(ps -p "$pid" -o comm= 2>/dev/null)
+        fi
+        
+        if [[ -n "$pid" ]]; then
+            info="PID: $pid"
+            if [[ -n "$process_name" ]]; then
+                info="$process_name ($info)"
+            fi
+        fi
+    fi
+    
+    echo "$info"
+}
+
+# Check if port is used by our own telegram-proxy service
+is_port_used_by_telegram_proxy() {
+    local port=$1
+    local ss_output=$(ss -tlnp 2>/dev/null | grep ":${port} ")
+    
+    if echo "$ss_output" | grep -q "telegram-proxy\|mtprotoproxy"; then
+        return 0
+    fi
+    
+    # Also check if our service is configured for this port
+    if [[ -f "$CONFIG_FILE" ]] && grep -q "PORT = $port" "$CONFIG_FILE" 2>/dev/null; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# Stop and clean up our existing telegram-proxy service
+cleanup_existing_proxy() {
+    print_info "Stopping existing Telegram Proxy service..."
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+    sleep 1
+    print_success "Existing service stopped"
+}
+
+# Handle port conflict with smart options
+handle_port_conflict() {
+    local port=$1
+    local usage_info=$(get_port_usage_info "$port")
+    
+    echo ""
+    print_warning "Port $port is already in use!"
+    echo ""
+    
+    # Check if it's our own service
+    if is_port_used_by_telegram_proxy "$port"; then
+        echo -e "  ${CYAN}ℹ${RESET}  Used by: ${WHITE}DNSCloak/Telegram Proxy (previous installation)${RESET}"
+        echo ""
+        echo -e "  ${BOLD}Options:${RESET}"
+        echo -e "  ${CYAN}1)${RESET} Replace existing installation ${GREEN}(recommended)${RESET}"
+        echo -e "  ${CYAN}2)${RESET} Use a different port"
+        echo -e "  ${CYAN}3)${RESET} Cancel installation"
+        echo ""
+        
+        get_input "Select option" "1" conflict_choice
+        
+        case $conflict_choice in
+            1)
+                cleanup_existing_proxy
+                return 0  # Continue with same port
+                ;;
+            2)
+                return 1  # Signal to ask for new port
+                ;;
+            *)
+                return 2  # Cancel
+                ;;
+        esac
+    else
+        # Port used by something else
+        if [[ -n "$usage_info" ]]; then
+            echo -e "  ${CYAN}ℹ${RESET}  Used by: ${WHITE}$usage_info${RESET}"
+        else
+            echo -e "  ${CYAN}ℹ${RESET}  Used by: ${WHITE}Unknown process${RESET}"
+        fi
+        echo ""
+        echo -e "  ${BOLD}Options:${RESET}"
+        echo -e "  ${CYAN}1)${RESET} Use a different port ${GREEN}(recommended)${RESET}"
+        echo -e "  ${CYAN}2)${RESET} Try to stop the service and use this port"
+        echo -e "  ${CYAN}3)${RESET} Cancel installation"
+        echo ""
+        
+        get_input "Select option" "1" conflict_choice
+        
+        case $conflict_choice in
+            1)
+                return 1  # Signal to ask for new port
+                ;;
+            2)
+                # Try to identify and stop the service
+                local pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K[0-9]+' | head -1)
+                if [[ -n "$pid" ]]; then
+                    print_warning "Attempting to stop process (PID: $pid)..."
+                    kill "$pid" 2>/dev/null || true
+                    sleep 2
+                    
+                    if check_port_available "$port"; then
+                        print_success "Port $port is now available"
+                        return 0
+                    else
+                        print_error "Could not free up port $port"
+                        print_info "You may need to manually stop the service or use a different port"
+                        return 1
+                    fi
+                else
+                    print_error "Could not identify the process using port $port"
+                    return 1
+                fi
+                ;;
+            *)
+                return 2  # Cancel
+                ;;
+        esac
+    fi
+}
+
+# Suggest alternative ports
+suggest_alternative_port() {
+    local preferred_ports=(443 8443 2053 8080 8880 2083 2087 2096)
+    
+    for port in "${preferred_ports[@]}"; do
+        if check_port_available "$port"; then
+            echo "$port"
+            return
+        fi
+    done
+    
+    # Find any available port in common range
+    for port in {1024..65535}; do
+        if check_port_available "$port"; then
+            echo "$port"
+            return
+        fi
+    done
+    
+    echo "443"  # Fallback
+}
+
 is_installed() {
     [[ -f "$SERVICE_FILE" ]] && [[ -d "$INSTALL_DIR" ]]
+}
+
+# Check for orphaned/stale installations that may not have been cleaned up properly
+check_stale_installation() {
+    local stale=false
+    local issues=()
+    
+    # Check if service file exists but service is not running
+    if [[ -f "$SERVICE_FILE" ]]; then
+        if ! systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+            if ! systemctl is-enabled --quiet "$SERVICE_NAME" 2>/dev/null; then
+                stale=true
+                issues+=("Orphaned service file found")
+            fi
+        fi
+    fi
+    
+    # Check if install dir exists but service doesn't
+    if [[ -d "$INSTALL_DIR" ]] && [[ ! -f "$SERVICE_FILE" ]]; then
+        stale=true
+        issues+=("Orphaned installation directory found")
+    fi
+    
+    if $stale && [[ ${#issues[@]} -gt 0 ]]; then
+        echo ""
+        print_warning "Detected incomplete previous installation:"
+        for issue in "${issues[@]}"; do
+            echo -e "    ${GRAY}• $issue${RESET}"
+        done
+        echo ""
+        
+        if confirm "Clean up stale installation files?" "y"; then
+            cleanup_stale_installation
+            print_success "Cleanup completed"
+        fi
+        echo ""
+    fi
+}
+
+# Clean up any stale installation artifacts
+cleanup_stale_installation() {
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+    rm -f "$SERVICE_FILE" 2>/dev/null || true
+    rm -rf "$INSTALL_DIR" 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
 }
 
 # ============== INSTALLATION ==============
@@ -624,25 +827,59 @@ install_proxy() {
     fi
     echo ""
     
-    # Get port
+    # Get port with smart conflict handling
     echo -e "  ${BOLD}Port Configuration:${RESET}"
     echo -e "  ${GRAY}Port 443 is recommended (looks like HTTPS traffic)${RESET}"
     echo ""
     
-    get_input "Enter port number" "443" PROXY_PORT
-    
-    if ! [[ "$PROXY_PORT" =~ ^[0-9]+$ ]] || (( PROXY_PORT < 1 || PROXY_PORT > 65535 )); then
-        print_error "Invalid port number"
-        exit 1
-    fi
-    
-    # Check if port is available
-    if ! check_port_available "$PROXY_PORT"; then
-        print_warning "Port $PROXY_PORT is already in use!"
-        if ! confirm "Continue anyway?"; then
-            exit 1
+    # Determine default port (suggest available one)
+    local default_port="443"
+    if ! check_port_available 443; then
+        if is_port_used_by_telegram_proxy 443; then
+            default_port="443"  # We'll handle replacement
+        else
+            default_port=$(suggest_alternative_port)
+            if [[ "$default_port" != "443" ]]; then
+                print_info "Port 443 is in use, suggesting $default_port"
+            fi
         fi
     fi
+    
+    while true; do
+        get_input "Enter port number" "$default_port" PROXY_PORT
+        
+        if ! [[ "$PROXY_PORT" =~ ^[0-9]+$ ]] || (( PROXY_PORT < 1 || PROXY_PORT > 65535 )); then
+            print_error "Invalid port number (must be 1-65535)"
+            continue
+        fi
+        
+        # Check if port is available
+        if ! check_port_available "$PROXY_PORT"; then
+            handle_port_conflict "$PROXY_PORT"
+            local result=$?
+            
+            if [[ $result -eq 0 ]]; then
+                # Continue with this port (conflict resolved)
+                break
+            elif [[ $result -eq 1 ]]; then
+                # Ask for new port
+                echo ""
+                default_port=$(suggest_alternative_port)
+                print_info "Suggested available port: $default_port"
+                continue
+            else
+                # Cancel
+                echo ""
+                print_info "Installation cancelled"
+                exit 0
+            fi
+        else
+            break
+        fi
+    done
+    
+    echo ""
+    print_success "Using port: $PROXY_PORT"
     echo ""
     
     # Get domain (optional)
@@ -903,11 +1140,22 @@ uninstall_proxy() {
         systemctl stop "$SERVICE_NAME" 2>/dev/null || true
         systemctl disable "$SERVICE_NAME" 2>/dev/null || true
         
+        # Wait for port to be released
+        sleep 2
+        
         print_step "Removing files..."
         rm -f "$SERVICE_FILE"
         rm -rf "$INSTALL_DIR"
         
         systemctl daemon-reload
+        
+        # Verify cleanup
+        sleep 1
+        if [[ -f "$SERVICE_FILE" ]] || [[ -d "$INSTALL_DIR" ]]; then
+            print_warning "Some files may not have been removed completely"
+        else
+            print_success "All files removed"
+        fi
         
         print_success "Uninstalled successfully"
     else
@@ -1021,6 +1269,9 @@ main() {
         apt-get update -qq
         apt-get install -y -qq xxd > /dev/null 2>&1
     fi
+    
+    # Check for stale/orphaned installations
+    check_stale_installation
     
     # Run main menu
     main_menu
