@@ -59,3 +59,5 @@ build/
 # Local test configs
 test-config.py
 local-config.py
+.env
+workers/.env
