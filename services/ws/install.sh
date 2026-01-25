@@ -112,22 +112,13 @@ check_domain_dns() {
 }
 
 #-------------------------------------------------------------------------------
-# Certificate Management (Let's Encrypt via acme.sh)
+# Certificate Management
+# For Cloudflare-proxied domains, we generate a self-signed cert.
+# Cloudflare terminates TLS at edge and re-encrypts to origin.
+# With SSL mode "Full", self-signed certs work fine.
 #-------------------------------------------------------------------------------
 
-install_acme() {
-    if command -v "$HOME/.acme.sh/acme.sh" &>/dev/null; then
-        print_success "acme.sh already installed"
-        return 0
-    fi
-    
-    print_step "Installing acme.sh"
-    curl -sL https://get.acme.sh | sh -s email=admin@localhost 2>/dev/null
-    source "$HOME/.acme.sh/acme.sh.env" 2>/dev/null || true
-    print_success "acme.sh installed"
-}
-
-obtain_certificate() {
+generate_self_signed_cert() {
     local domain="$1"
     local cert_path="$CERT_DIR/$domain"
     
@@ -151,38 +142,29 @@ obtain_certificate() {
         fi
     fi
     
-    print_step "Obtaining Let's Encrypt certificate for $domain"
+    print_step "Generating TLS certificate for $domain"
     
-    # We need to temporarily stop any service using port 80
-    local port80_pid
-    port80_pid=$(lsof -ti:80 2>/dev/null || true)
-    if [[ -n "$port80_pid" ]]; then
-        print_warning "Port 80 in use, attempting standalone mode with webroot"
-    fi
+    # Generate self-signed certificate (valid for 10 years)
+    # This works with Cloudflare SSL mode "Full" (not "Full Strict")
+    openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+        -keyout "$cert_path/privkey.pem" \
+        -out "$cert_path/fullchain.pem" \
+        -sha256 -days 3650 \
+        -subj "/CN=$domain" \
+        -addext "subjectAltName=DNS:$domain" \
+        2>/dev/null
     
-    # Try standalone mode first (quickest)
-    if "$HOME/.acme.sh/acme.sh" --issue -d "$domain" --standalone \
-        --keylength ec-256 \
-        --cert-file "$cert_path/cert.pem" \
-        --key-file "$cert_path/privkey.pem" \
-        --fullchain-file "$cert_path/fullchain.pem" \
-        --force 2>/dev/null; then
-        print_success "Certificate obtained"
+    if [[ -f "$cert_path/fullchain.pem" ]]; then
+        print_success "Certificate generated"
+        echo ""
+        echo -e "  ${YELLOW}Important:${RESET} Set Cloudflare SSL/TLS mode to ${BOLD}Full${RESET}"
+        echo "  (Dashboard > SSL/TLS > Overview > Full)"
+        echo ""
         return 0
+    else
+        print_error "Failed to generate certificate"
+        return 1
     fi
-    
-    # Fallback: DNS mode instructions
-    print_error "Could not obtain certificate automatically"
-    echo ""
-    echo "  Options:"
-    echo "  1. Ensure port 80 is open and not in use"
-    echo "  2. Use Cloudflare API token for DNS validation:"
-    echo ""
-    echo "     export CF_Token=\"your-api-token\""
-    echo "     export CF_Zone_ID=\"your-zone-id\""
-    echo "     acme.sh --issue -d $domain --dns dns_cf"
-    echo ""
-    return 1
 }
 
 #-------------------------------------------------------------------------------
@@ -255,9 +237,8 @@ install_ws() {
     # Install Xray
     install_xray
     
-    # Install acme.sh and get certificate
-    install_acme
-    if ! obtain_certificate "$domain"; then
+    # Generate TLS certificate
+    if ! generate_self_signed_cert "$domain"; then
         print_error "Cannot proceed without a valid certificate"
         exit 1
     fi
@@ -620,9 +601,9 @@ change_ws_domain() {
         fi
     done
     
-    # Get new certificate
-    if ! obtain_certificate "$new_domain"; then
-        print_error "Could not obtain certificate for $new_domain"
+    # Generate new certificate
+    if ! generate_self_signed_cert "$new_domain"; then
+        print_error "Could not generate certificate for $new_domain"
         return 1
     fi
     
@@ -777,7 +758,7 @@ show_ws_menu() {
             8)
                 local domain
                 domain=$(json_get ".server.ws_domain")
-                obtain_certificate "$domain"
+                generate_self_signed_cert "$domain"
                 systemctl reload xray 2>/dev/null || true
                 ;;
             9) uninstall_ws; break ;;
