@@ -10,10 +10,16 @@
 #   - DNS A record pointing to server (Proxied/orange cloud)
 #===============================================================================
 
+# Cleanup old cached files for fresh install
+rm -rf /tmp/dnscloak-lib /tmp/dnscloak* 2>/dev/null || true
+
 # Download and source libraries
 LIB_DIR="/tmp/dnscloak-lib"
 mkdir -p "$LIB_DIR"
 GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+
+# Force fresh download (bypass cache)
+CURL_OPTS="-H 'Cache-Control: no-cache' -H 'Pragma: no-cache'"
 
 echo "Downloading libraries..."
 
@@ -42,7 +48,7 @@ set -e
 #-------------------------------------------------------------------------------
 
 SERVICE_NAME="ws"
-WS_PORT=443
+WS_PORT=80  # HTTP on origin - Cloudflare handles TLS at edge
 CERT_DIR="/opt/dnscloak/certs"
 
 #-------------------------------------------------------------------------------
@@ -237,11 +243,8 @@ install_ws() {
     # Install Xray
     install_xray
     
-    # Generate TLS certificate
-    if ! generate_self_signed_cert "$domain"; then
-        print_error "Cannot proceed without a valid certificate"
-        exit 1
-    fi
+    # Note: No TLS certificate needed - Cloudflare handles TLS at edge
+    # Origin uses HTTP (port 80), CF encrypts client connection
     
     # Generate WS path
     local ws_path
@@ -259,9 +262,7 @@ install_ws() {
     # Configure Xray
     print_step "Configuring Xray for WS+CDN"
     
-    local cert_path="$CERT_DIR/$domain"
-    
-    # Create inbound config
+    # Create inbound config (HTTP on origin - Cloudflare handles TLS)
     local inbound_config
     inbound_config=$(cat <<EOF
 {
@@ -285,16 +286,7 @@ install_ws() {
         "Host": "$domain"
       }
     },
-    "security": "tls",
-    "tlsSettings": {
-      "serverName": "$domain",
-      "certificates": [
-        {
-          "certificateFile": "$cert_path/fullchain.pem",
-          "keyFile": "$cert_path/privkey.pem"
-        }
-      ]
-    }
+    "security": "none"
   }
 }
 EOF
@@ -313,10 +305,10 @@ EOF
     # Add user
     user_add "$first_user" "ws" "{\"uuid\": \"$uuid\"}"
     
-    # Configure firewall
+    # Configure firewall - only need port 80 (HTTP)
+    # Cloudflare handles HTTPS on port 443
     print_step "Configuring firewall"
     cloud_open_port $WS_PORT tcp
-    cloud_open_port 80 tcp  # For certificate renewal
     
     # Start/restart Xray
     print_step "Starting Xray service"
@@ -332,6 +324,24 @@ EOF
         journalctl -u xray -n 20 --no-pager
         exit 1
     fi
+    
+    # Verify port is listening
+    if netstat -tuln 2>/dev/null | grep -q ":$WS_PORT " || ss -tuln | grep -q ":$WS_PORT "; then
+        print_success "Listening on port $WS_PORT"
+    else
+        print_warning "Port $WS_PORT may not be listening"
+    fi
+    
+    # Cloudflare setup reminder
+    echo ""
+    echo -e "  ${YELLOW}IMPORTANT: Cloudflare SSL/TLS Settings${RESET}"
+    print_line
+    echo "  Go to Cloudflare Dashboard > SSL/TLS > Overview"
+    echo "  Set encryption mode to: ${BOLD}Flexible${RESET}"
+    echo ""
+    echo "  This allows Cloudflare to accept HTTPS from clients"
+    echo "  but connect to your server over HTTP (port 80)."
+    echo ""
     
     # Show result
     show_ws_user_links "$first_user"
