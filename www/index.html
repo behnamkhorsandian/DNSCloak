@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DNSCloak - Multi-Protocol Censorship Bypass Platform</title>
+  <meta name="description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-purple: #a371f7;
+      --accent-orange: #f0883e;
+      --accent-red: #f85149;
+      --border: #30363d;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    /* Header */
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .logo-icon {
+      font-size: 32px;
+    }
+    
+    nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      margin-left: 30px;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    
+    nav a:hover {
+      color: var(--text-primary);
+    }
+    
+    /* Hero */
+    .hero {
+      padding: 80px 0;
+      text-align: center;
+    }
+    
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    
+    .install-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 30px;
+      display: inline-block;
+      margin-bottom: 30px;
+    }
+    
+    .install-box code {
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 16px;
+      color: var(--accent-green);
+    }
+    
+    .copy-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 15px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .copy-btn:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+    
+    /* Protocols Grid */
+    .protocols {
+      padding: 60px 0;
+    }
+    
+    .protocols h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 50px;
+    }
+    
+    .protocol-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    
+    .protocol-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 25px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    
+    .protocol-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+    
+    .protocol-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .protocol-icon {
+      font-size: 32px;
+    }
+    
+    .protocol-name {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .protocol-status {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-left: auto;
+    }
+    
+    .status-ready {
+      background: rgba(63, 185, 80, 0.2);
+      color: var(--accent-green);
+    }
+    
+    .status-coming {
+      background: rgba(240, 136, 62, 0.2);
+      color: var(--accent-orange);
+    }
+    
+    .protocol-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    
+    .protocol-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .feature-tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+    
+    .protocol-install {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      color: var(--accent-green);
+      background: var(--bg-primary);
+      padding: 10px 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    
+    /* Features */
+    .features {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+    
+    .features h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 50px;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+    }
+    
+    .feature-item {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .feature-item h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    
+    .feature-item p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    
+    footer p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 32px;
+      }
+      
+      .hero p {
+        font-size: 16px;
+      }
+      
+      .install-box {
+        padding: 15px 20px;
+        display: block;
+      }
+      
+      .install-box code {
+        font-size: 14px;
+        display: block;
+        margin-bottom: 10px;
+      }
+      
+      .copy-btn {
+        margin-left: 0;
+        display: block;
+        width: 100%;
+      }
+      
+      nav {
+        display: none;
+      }
+      
+      .protocol-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <a href="/" class="logo">
+        <span class="logo-icon">🔐</span>
+        <span>DNSCloak</span>
+      </a>
+      <nav>
+        <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a>
+        <a href="https://github.com/behnamkhorsandian/DNSCloak/tree/main/docs">Docs</a>
+        <a href="https://github.com/behnamkhorsandian/DNSCloak/issues">Support</a>
+      </nav>
+    </div>
+  </header>
+  
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Bypass Censorship, Your Way</h1>
+        <p>Open-source multi-protocol proxy platform. One command to install, multiple protocols to connect. Choose what works best in your region.</p>
+        
+        <div class="install-box">
+          <code id="main-cmd">curl -sSL reality.dnscloak.net | sudo bash</code>
+          <button class="copy-btn" onclick="copyCommand()">Copy</button>
+        </div>
+        
+        <p style="font-size: 14px; color: var(--text-secondary);">
+          Run on any fresh Linux VPS (Ubuntu/Debian recommended)
+        </p>
+      </div>
+    </section>
+    
+    <section class="protocols">
+      <div class="container">
+        <h2>Choose Your Protocol</h2>
+        
+        <div class="protocol-grid">
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">⚡</span>
+              <span class="protocol-name">REALITY</span>
+              <span class="protocol-status status-ready">Ready</span>
+            </div>
+            <p class="protocol-desc">
+              Advanced VLESS protocol with TLS camouflage. Mimics legitimate HTTPS traffic to popular websites. No domain required.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">No Domain</span>
+              <span class="feature-tag">Fast</span>
+              <span class="feature-tag">Undetectable</span>
+            </div>
+            <div class="protocol-install">
+              curl -sSL reality.dnscloak.net | sudo bash
+            </div>
+          </div>
+          
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">☁️</span>
+              <span class="protocol-name">WS + CDN</span>
+              <span class="protocol-status status-ready">Ready</span>
+            </div>
+            <p class="protocol-desc">
+              VLESS over WebSocket through Cloudflare CDN. Your server IP is completely hidden behind Cloudflare's network.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">IP Hidden</span>
+              <span class="feature-tag">CDN Protected</span>
+              <span class="feature-tag">Cloudflare</span>
+            </div>
+            <div class="protocol-install">
+              curl -sSL ws.dnscloak.net | sudo bash
+            </div>
+          </div>
+          
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">🚨</span>
+              <span class="protocol-name">DNS Tunnel</span>
+              <span class="protocol-status status-ready">Ready</span>
+            </div>
+            <p class="protocol-desc">
+              Emergency protocol for total blackouts. Tunnels traffic through DNS queries. Works when everything else is blocked.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">Emergency</span>
+              <span class="feature-tag">Last Resort</span>
+              <span class="feature-tag">Slow</span>
+            </div>
+            <div class="protocol-install">
+              curl -sSL dnstt.dnscloak.net | sudo bash
+            </div>
+          </div>
+          
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">📱</span>
+              <span class="protocol-name">MTProto</span>
+              <span class="protocol-status status-coming">Coming</span>
+            </div>
+            <p class="protocol-desc">
+              Telegram-specific proxy with Fake-TLS support. Direct integration with Telegram apps, no third-party client needed.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">Telegram</span>
+              <span class="feature-tag">Fake-TLS</span>
+              <span class="feature-tag">Easy</span>
+            </div>
+            <div class="protocol-install" style="color: var(--text-secondary);">
+              curl -sSL mtp.dnscloak.net | sudo bash
+            </div>
+          </div>
+          
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">🔒</span>
+              <span class="protocol-name">WireGuard</span>
+              <span class="protocol-status status-coming">Coming</span>
+            </div>
+            <p class="protocol-desc">
+              Modern VPN protocol with native app support. Fast, secure, and works with official WireGuard apps on all platforms.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">VPN</span>
+              <span class="feature-tag">Native Apps</span>
+              <span class="feature-tag">Fast</span>
+            </div>
+            <div class="protocol-install" style="color: var(--text-secondary);">
+              curl -sSL wg.dnscloak.net | sudo bash
+            </div>
+          </div>
+          
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">🌐</span>
+              <span class="protocol-name">VLESS + TLS</span>
+              <span class="protocol-status status-coming">Coming</span>
+            </div>
+            <p class="protocol-desc">
+              Classic V2Ray setup with real TLS certificate. Requires a domain but provides excellent compatibility.
+            </p>
+            <div class="protocol-features">
+              <span class="feature-tag">Domain Required</span>
+              <span class="feature-tag">Let's Encrypt</span>
+              <span class="feature-tag">Compatible</span>
+            </div>
+            <div class="protocol-install" style="color: var(--text-secondary);">
+              curl -sSL vray.dnscloak.net | sudo bash
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="features">
+      <div class="container">
+        <h2>Why DNSCloak?</h2>
+        
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon">🚀</div>
+            <h3>One Command Install</h3>
+            <p>No complex setup. Just run one curl command and follow the prompts. Works on any fresh Linux VPS.</p>
+          </div>
+          
+          <div class="feature-item">
+            <div class="feature-icon">🔄</div>
+            <h3>Multiple Protocols</h3>
+            <p>Different protocols for different situations. If one gets blocked, switch to another with the same server.</p>
+          </div>
+          
+          <div class="feature-item">
+            <div class="feature-icon">☁️</div>
+            <h3>Cloud Auto-Detection</h3>
+            <p>Automatically detects AWS, GCP, Azure, DigitalOcean, Vultr, Hetzner, Oracle, and Linode. Configures firewalls for you.</p>
+          </div>
+          
+          <div class="feature-item">
+            <div class="feature-icon">👥</div>
+            <h3>Multi-User Support</h3>
+            <p>Add multiple users with separate credentials. Each user gets their own QR code and connection link.</p>
+          </div>
+          
+          <div class="feature-item">
+            <div class="feature-icon">📱</div>
+            <h3>QR Code Ready</h3>
+            <p>Scan QR codes directly into Hiddify, v2rayNG, or other compatible apps. No manual configuration needed.</p>
+          </div>
+          
+          <div class="feature-item">
+            <div class="feature-icon">🔓</div>
+            <h3>Open Source</h3>
+            <p>100% open source. Audit the code, contribute improvements, or fork for your own needs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a> · 
+        <a href="https://github.com/behnamkhorsandian/DNSCloak/tree/main/docs">Documentation</a> · 
+        <a href="https://github.com/behnamkhorsandian/DNSCloak/issues">Report Issues</a>
+      </p>
+      <p style="margin-top: 15px;">
+        Made for internet freedom 🌍
+      </p>
+    </div>
+  </footer>
+  
+  <script>
+    function copyCommand() {
+      const cmd = document.getElementById('main-cmd').innerText;
+      navigator.clipboard.writeText(cmd);
+      const btn = document.querySelector('.copy-btn');
+      btn.innerText = 'Copied!';
+      setTimeout(() => btn.innerText = 'Copy', 2000);
+    }
+  </script>
+</body>
+</html>

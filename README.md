@@ -2,16 +2,18 @@
 
 Multi-protocol censorship bypass platform. Deploy proxy services on any VM with a single command.
 
+🌐 **Website:** [dnscloak.net](https://www.dnscloak.net)
+
 ## Services
 
-| Service | Domain Required | Best For | Install Command |
-|---------|-----------------|----------|-----------------|
-| Reality | No | Primary proxy (all countries) | `curl -sSL reality.dnscloak.net \| sudo bash` |
-| WireGuard | No | Fast VPN tunnel | `curl -sSL wg.dnscloak.net \| sudo bash` |
-| MTP | Optional | Telegram access | `curl -sSL mtp.dnscloak.net \| sudo bash` |
-| V2Ray | Yes | Classic proxy with TLS | `curl -sSL vray.dnscloak.net \| sudo bash` |
-| WS+CDN | Yes (Cloudflare) | CDN fallback when blocked | `curl -sSL ws.dnscloak.net \| sudo bash` |
-| DNStt | Yes (NS records) | Emergency during blackouts | `curl -sSL dnstt.dnscloak.net \| sudo bash` |
+| Service | Status | Domain Required | Best For | Install Command |
+|---------|--------|-----------------|----------|-----------------|
+| Reality | ✅ Ready | No | Primary proxy (all countries) | `curl -sSL reality.dnscloak.net \| sudo bash` |
+| WS+CDN | ✅ Ready | Yes (Cloudflare) | IP hidden behind CDN | `curl -sSL ws.dnscloak.net \| sudo bash` |
+| DNStt | ✅ Ready | Yes (NS records) | Emergency during blackouts | `curl -sSL dnstt.dnscloak.net \| sudo bash` |
+| WireGuard | 🔜 Coming | No | Fast VPN tunnel | `curl -sSL wg.dnscloak.net \| sudo bash` |
+| MTP | 🔜 Coming | Optional | Telegram access | `curl -sSL mtp.dnscloak.net \| sudo bash` |
+| V2Ray | 🔜 Coming | Yes | Classic proxy with TLS | `curl -sSL vray.dnscloak.net \| sudo bash` |
 
 ## Quick Start
 
@@ -75,30 +77,31 @@ dnscloak uninstall reality      # Remove Reality service
 
 ## Implementation Status
 
-### Phase 1: Core Libraries
-- [ ] lib/cloud.sh - Cloud provider detection and firewall
-- [ ] lib/bootstrap.sh - VM setup and prerequisites
-- [ ] lib/common.sh - Shared utilities and user management
-- [ ] lib/xray.sh - Xray config management
-- [ ] lib/selector.sh - Service recommendation
+### Phase 1: Core Libraries ✅
+- [x] lib/cloud.sh - Cloud provider detection and firewall
+- [x] lib/bootstrap.sh - VM setup and prerequisites
+- [x] lib/common.sh - Shared utilities and user management
+- [x] lib/xray.sh - Xray config management
+- [x] lib/selector.sh - Service recommendation
 
-### Phase 2: Services
-- [ ] services/reality - VLESS+REALITY
+### Phase 2: Services (In Progress)
+- [x] services/reality - VLESS+REALITY ✅ Tested
+- [x] services/ws - VLESS+WebSocket+CDN ✅ Tested
+- [x] services/dnstt - DNS tunnel ✅ Tested
 - [ ] services/wg - WireGuard
 - [ ] services/mtp - MTProto (refactor)
 - [ ] services/vray - VLESS+TCP+TLS
-- [ ] services/ws - VLESS+WebSocket+CDN
-- [ ] services/dnstt - DNS tunnel
 
-### Phase 3: CLI and Workers
+### Phase 3: CLI and Workers ✅
 - [ ] cli/dnscloak.sh - Unified CLI
-- [ ] workers/* - Cloudflare Workers
+- [x] workers/* - Cloudflare Workers ✅ Deployed
+- [x] www/* - Landing page ✅ Ready
 
-### Phase 4: Documentation
-- [ ] docs/firewall.md
-- [ ] docs/dns.md
-- [ ] docs/workers.md
-- [ ] docs/protocols/*.md
+### Phase 4: Documentation ✅
+- [x] docs/firewall.md
+- [x] docs/dns.md
+- [x] docs/workers.md
+- [x] docs/protocols/*.md
 
 ## Architecture
 

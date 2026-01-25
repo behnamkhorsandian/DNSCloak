@@ -6,7 +6,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 
 ## Implementation Checklist
 
-### Phase 1: Core Libraries [COMPLETE - v2.0.0-alpha]
+### Phase 1: Core Libraries [COMPLETE - v2.0.0]
 - [x] `lib/cloud.sh` - Cloud provider detection and firewall auto-config
 - [x] `lib/bootstrap.sh` - VM setup, prerequisites, Xray-core install
 - [x] `lib/common.sh` - Shared utilities, colors, user CRUD on users.json
@@ -15,17 +15,18 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 
 ### Phase 2: Services [IN PROGRESS]
 - [x] `services/reality/install.sh` - VLESS+REALITY (no domain needed) ✅ TESTED
-- [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (requires Cloudflare) ✅ CREATED
+- [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (Cloudflare) ✅ TESTED
+- [x] `services/dnstt/install.sh` - DNS tunnel (emergency backup) ✅ TESTED
 - [ ] `services/wg/install.sh` - WireGuard VPN
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
-- [ ] `services/dnstt/install.sh` - DNS tunnel (emergency backup)
 
 ### Phase 3: CLI and Workers [COMPLETE]
 - [ ] `cli/dnscloak.sh` - Unified management CLI
 - [x] `workers/` - Unified Cloudflare Worker for all services ✅ DEPLOYED
   - Routes: mtp, reality, wg, vray, ws, dnstt subdomains
-  - Aliases: tg1/tg2 → mtp, vless/xray → reality
+  - DNSTT client setup: /client, /setup/linux, /setup/macos, /setup/windows
+- [x] `www/` - Landing page on Cloudflare Pages
 
 ### Phase 4: Documentation [COMPLETE]
 - [x] `docs/firewall.md` - Cloud provider firewall guides
