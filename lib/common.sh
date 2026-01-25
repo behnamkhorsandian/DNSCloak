@@ -11,6 +11,7 @@ DNSCLOAK_VERSION="2.0.0"
 DNSCLOAK_DIR="/opt/dnscloak"
 DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
 DNSCLOAK_BIN="/usr/local/bin/dnscloak"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
 
 #-------------------------------------------------------------------------------
 # Colors (No emojis - ASCII only)
@@ -28,22 +29,44 @@ RESET='\033[0m'
 BOLD='\033[1m'
 
 #-------------------------------------------------------------------------------
+# Banner Functions
+#-------------------------------------------------------------------------------
+
+# Load banner from file (local or remote)
+# Usage: load_banner "setup" or load_banner "menu" or load_banner "reality"
+load_banner() {
+    local banner_name="$1"
+    local banner_file="/opt/dnscloak/banners/${banner_name}.txt"
+    local banner_url="${GITHUB_RAW}/banners/${banner_name}.txt"
+    
+    # Try local file first
+    if [[ -f "$banner_file" ]]; then
+        cat "$banner_file"
+    # Try temp directory (during installation)
+    elif [[ -f "/tmp/dnscloak-banners/${banner_name}.txt" ]]; then
+        cat "/tmp/dnscloak-banners/${banner_name}.txt"
+    # Download from GitHub
+    else
+        mkdir -p /tmp/dnscloak-banners
+        if curl -sL "$banner_url" -o "/tmp/dnscloak-banners/${banner_name}.txt" 2>/dev/null; then
+            cat "/tmp/dnscloak-banners/${banner_name}.txt"
+        else
+            # Fallback to hardcoded
+            echo "  DNSCloak v${DNSCLOAK_VERSION}"
+        fi
+    fi
+}
+
+#-------------------------------------------------------------------------------
 # Output Functions
 #-------------------------------------------------------------------------------
 
 print_banner() {
+    local banner_type="${1:-setup}"
     clear
     echo -e "${CYAN}"
-    echo '  ============================================================'
-    echo '         ____  _   _______    ________            __          '
-    echo '        / __ \/ | / / ___/   / ____/ /___  ____ _/ /__        '
-    echo '       / / / /  |/ /\__ \   / /   / / __ \/ __ `/ //_/        '
-    echo '      / /_/ / /|  /___/ /  / /___/ / /_/ / /_/ / ,<           '
-    echo '     /_____/_/ |_//____/   \____/_/\____/\__,_/_/|_|          '
-    echo '                                                              '
-    echo '  ============================================================'
+    load_banner "$banner_type"
     echo -e "${RESET}"
-    echo -e "  ${GRAY}Version: ${WHITE}$DNSCLOAK_VERSION${GRAY} | Multi-Protocol Proxy Platform${RESET}"
     echo ""
 }
 
