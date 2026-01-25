@@ -437,6 +437,9 @@ show_dnstt_info() {
     pubkey=$(server_get "dnstt_pubkey")
     server_ip=$(server_get "ip")
     
+    # URL-encode the pubkey and domain for the setup URL
+    local setup_url="https://dnstt.dnscloak.net/client?key=${pubkey}&domain=t.${domain}"
+    
     clear
     load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak DNSTT ===${RESET}\n"
     
@@ -448,7 +451,14 @@ show_dnstt_info() {
     echo -e "  ${BOLD}Public Key:${RESET}"
     echo -e "  ${GREEN}$pubkey${RESET}"
     echo ""
-    echo -e "  ${BOLD}${WHITE}Client Commands${RESET}"
+    echo -e "  ${BOLD}${YELLOW}Easy Client Setup (Recommended)${RESET}"
+    print_line
+    echo ""
+    echo -e "  Open this URL in your browser for one-click setup:"
+    echo ""
+    echo -e "  ${CYAN}$setup_url${RESET}"
+    echo ""
+    echo -e "  ${BOLD}${WHITE}Manual Client Commands${RESET}"
     print_line
     echo ""
     echo -e "  ${CYAN}Linux/macOS:${RESET}"
@@ -456,10 +466,6 @@ show_dnstt_info() {
     echo ""
     echo -e "  ${GREEN}Windows:${RESET}"
     echo "  .\\dnstt-client.exe -udp 8.8.8.8:53 -pubkey $pubkey t.$domain 127.0.0.1:1080"
-    echo ""
-    echo -e "  ${BOLD}${WHITE}Download Client${RESET}"
-    print_line
-    echo "  https://www.bamsoftware.com/software/dnstt/"
     echo ""
     echo -e "  ${BOLD}${WHITE}After Running Client${RESET}"
     print_line
