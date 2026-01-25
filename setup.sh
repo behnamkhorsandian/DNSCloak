@@ -82,7 +82,7 @@ print_step() {
 press_enter() {
     echo ""
     echo -e -n "  ${GRAY}Press Enter to continue...${RESET}"
-    read
+    read </dev/tty
 }
 
 confirm() {
@@ -96,7 +96,7 @@ confirm() {
     fi
     
     echo -e -n "  ${YELLOW}?${RESET} $prompt"
-    read answer
+    read answer </dev/tty
     
     if [[ -z "$answer" ]]; then
         answer="$default"
@@ -116,7 +116,7 @@ get_input() {
         echo -e -n "  ${CYAN}→${RESET} $prompt: "
     fi
     
-    read input
+    read input </dev/tty
     
     if [[ -z "$input" && -n "$default" ]]; then
         input="$default"
