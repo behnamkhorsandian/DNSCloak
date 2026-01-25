@@ -311,7 +311,7 @@ EOF
     server_set "ws_path" "$ws_path"
     
     # Add user
-    user_add "$first_user" "ws" "uuid" "$uuid"
+    user_add "$first_user" "ws" "{\"uuid\": \"$uuid\"}"
     
     # Configure firewall
     print_step "Configuring firewall"
@@ -363,7 +363,7 @@ add_ws_user() {
     xray_add_client "ws-in" "$uuid" "${username}@dnscloak"
     
     # Save to users.json
-    user_add "$username" "ws" "uuid" "$uuid"
+    user_add "$username" "ws" "{\"uuid\": \"$uuid\"}"
     
     # Reload Xray
     systemctl reload xray 2>/dev/null || systemctl restart xray

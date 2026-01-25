@@ -257,10 +257,16 @@ EOF
 }
 
 # Check if user exists
-# Usage: user_exists "username"
+# Usage: user_exists "username" ["protocol"]
 user_exists() {
     local username="$1"
-    jq -e ".users[\"$username\"]" "$DNSCLOAK_USERS" >/dev/null 2>&1
+    local protocol="${2:-}"
+    
+    if [[ -n "$protocol" ]]; then
+        jq -e ".users[\"$username\"].protocols[\"$protocol\"]" "$DNSCLOAK_USERS" >/dev/null 2>&1
+    else
+        jq -e ".users[\"$username\"]" "$DNSCLOAK_USERS" >/dev/null 2>&1
+    fi
 }
 
 # Add user with protocol credentials
@@ -327,12 +333,17 @@ user_remove() {
 }
 
 # Get user credentials for protocol
-# Usage: user_get "username" "protocol"
+# Usage: user_get "username" "protocol" ["key"]
 user_get() {
     local username="$1"
     local protocol="$2"
+    local key="${3:-}"
     
-    jq -r ".users[\"$username\"].protocols[\"$protocol\"]" "$DNSCLOAK_USERS" 2>/dev/null
+    if [[ -n "$key" ]]; then
+        jq -r ".users[\"$username\"].protocols[\"$protocol\"][\"$key\"]" "$DNSCLOAK_USERS" 2>/dev/null
+    else
+        jq -r ".users[\"$username\"].protocols[\"$protocol\"]" "$DNSCLOAK_USERS" 2>/dev/null
+    fi
 }
 
 # List all users
