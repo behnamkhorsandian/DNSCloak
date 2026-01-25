@@ -68,25 +68,7 @@ download_dnstt() {
     
     mkdir -p "$DNSTT_DIR"
     
-    # Method 1: Try to install via Go
-    if command -v go &>/dev/null || install_go; then
-        print_info "Building dnstt from source..."
-        
-        export GOPATH="/tmp/go"
-        export PATH="$PATH:/usr/local/go/bin:$GOPATH/bin"
-        mkdir -p "$GOPATH"
-        
-        # Install dnstt
-        if go install www.bamsoftware.com/git/dnstt.git/dnstt-server@latest 2>/dev/null; then
-            mv "$GOPATH/bin/dnstt-server" "$DNSTT_DIR/"
-            chmod +x "$DNSTT_DIR/dnstt-server"
-            rm -rf "$GOPATH"
-            print_success "Built dnstt-server from source"
-            return 0
-        fi
-    fi
-    
-    # Method 2: Download pre-built binary from GitHub mirror
+    # Method 1: Download pre-built binary (fastest)
     local arch
     arch=$(uname -m)
     case "$arch" in
@@ -98,34 +80,63 @@ download_dnstt() {
             ;;
     esac
     
-    # Try GitHub releases (community builds)
-    local urls=(
-        "https://github.com/nicholasmhughes/dnstt/releases/latest/download/dnstt-server-linux-${arch}"
-        "https://github.com/nicholasmhughes/dnstt/releases/download/v0.20220315.0/dnstt-server-linux-${arch}"
-    )
+    # Build from source using Go (need 1.21+)
+    print_info "Installing Go 1.21..."
     
-    for url in "${urls[@]}"; do
-        if curl -sfL "$url" -o "$DNSTT_DIR/dnstt-server" 2>/dev/null; then
-            chmod +x "$DNSTT_DIR/dnstt-server"
-            print_success "Downloaded dnstt-server"
-            return 0
+    local go_version="1.21.6"
+    local go_arch="$arch"
+    local go_url="https://go.dev/dl/go${go_version}.linux-${go_arch}.tar.gz"
+    
+    # Download Go
+    if curl -sfL "$go_url" -o "/tmp/go.tar.gz"; then
+        rm -rf /usr/local/go
+        tar -C /usr/local -xzf /tmp/go.tar.gz
+        rm /tmp/go.tar.gz
+        
+        export PATH="/usr/local/go/bin:$PATH"
+        export GOPATH="/tmp/gopath"
+        export GOCACHE="/tmp/gocache"
+        mkdir -p "$GOPATH" "$GOCACHE"
+        
+        print_info "Building dnstt from source..."
+        
+        # Clone and build dnstt
+        if /usr/local/go/bin/go install www.bamsoftware.com/git/dnstt.git/dnstt-server@latest 2>&1; then
+            if [[ -f "$GOPATH/bin/dnstt-server" ]]; then
+                mv "$GOPATH/bin/dnstt-server" "$DNSTT_DIR/"
+                chmod +x "$DNSTT_DIR/dnstt-server"
+                rm -rf "$GOPATH" "$GOCACHE"
+                print_success "Built dnstt-server from source"
+                return 0
+            fi
         fi
-    done
+        
+        # If go install failed, try git clone method
+        print_info "Trying alternative build method..."
+        apt-get install -y git 2>/dev/null || true
+        
+        rm -rf /tmp/dnstt-build
+        if git clone https://www.bamsoftware.com/git/dnstt.git /tmp/dnstt-build 2>/dev/null; then
+            cd /tmp/dnstt-build/dnstt-server
+            if /usr/local/go/bin/go build -o "$DNSTT_DIR/dnstt-server" . 2>&1; then
+                chmod +x "$DNSTT_DIR/dnstt-server"
+                cd - >/dev/null
+                rm -rf /tmp/dnstt-build "$GOPATH" "$GOCACHE"
+                print_success "Built dnstt-server from source"
+                return 0
+            fi
+            cd - >/dev/null
+        fi
+    fi
     
-    print_error "Failed to download dnstt. Please install Go and retry."
+    print_error "Failed to build dnstt"
     echo ""
     echo "  Manual installation:"
-    echo "  1. Install Go: apt install golang-go"
-    echo "  2. Run: go install www.bamsoftware.com/git/dnstt.git/dnstt-server@latest"
-    echo "  3. Copy to: $DNSTT_DIR/dnstt-server"
+    echo "  1. Download Go: https://go.dev/dl/"
+    echo "  2. Clone: git clone https://www.bamsoftware.com/git/dnstt.git"
+    echo "  3. Build: cd dnstt/dnstt-server && go build"
+    echo "  4. Copy to: $DNSTT_DIR/dnstt-server"
     return 1
-}
-
-install_go() {
-    print_info "Installing Go..."
-    apt-get update
-    apt-get install -y golang-go
-    return $?
 }
 
 #-------------------------------------------------------------------------------
