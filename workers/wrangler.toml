@@ -1,0 +1,14 @@
+name = "dnscloak-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Route to your custom domain
+routes = [
+  { pattern = "api.dnscloak.net", custom_domain = true }
+]
+
+# Optional: Add more routes
+# routes = [
+#   { pattern = "api.dnscloak.net", custom_domain = true },
+#   { pattern = "dnscloak.net", custom_domain = true }
+# ]
