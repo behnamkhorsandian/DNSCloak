@@ -10,28 +10,24 @@
 #   - DNS A record pointing to server (Proxied/orange cloud)
 #===============================================================================
 
-set -e
+# Download and source libraries
+LIB_DIR="/tmp/dnscloak-lib"
+mkdir -p "$LIB_DIR"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
 
-# Determine script location (works for both local and piped execution)
-if [[ -f "${BASH_SOURCE[0]}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    LIB_DIR="$(dirname "$SCRIPT_DIR")/../lib"
-else
-    # Piped execution - download libs
-    LIB_DIR="/tmp/dnscloak-lib"
-    mkdir -p "$LIB_DIR"
-    GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
-    curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
-    curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
-    curl -sL "$GITHUB_RAW/lib/bootstrap.sh" -o "$LIB_DIR/bootstrap.sh"
-    curl -sL "$GITHUB_RAW/lib/xray.sh" -o "$LIB_DIR/xray.sh"
-fi
+# Always download fresh copies when piped
+curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
+curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
+curl -sL "$GITHUB_RAW/lib/bootstrap.sh" -o "$LIB_DIR/bootstrap.sh"
+curl -sL "$GITHUB_RAW/lib/xray.sh" -o "$LIB_DIR/xray.sh"
 
 # Source libraries
 source "$LIB_DIR/common.sh"
 source "$LIB_DIR/cloud.sh"
 source "$LIB_DIR/bootstrap.sh"
 source "$LIB_DIR/xray.sh"
+
+set -e
 
 #-------------------------------------------------------------------------------
 # WS+CDN Configuration
