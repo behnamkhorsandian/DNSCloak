@@ -15,7 +15,7 @@
 #
 #===============================================================================
 
-set -e
+# Note: Not using 'set -e' to allow interactive reads to work when piped
 
 # ============== COLORS ==============
 RED='\033[0;31m'
