@@ -8,7 +8,9 @@
   <link rel="icon" href="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/globe_2_question/default/48px.svg">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
     :root {
       --bg-primary: #232323;
@@ -299,7 +301,8 @@
     .markdown-content em { color: var(--accent-yellow); font-style: normal; }
     .markdown-content code { background: var(--bg-secondary); color: var(--accent-light-green); padding: 2px 6px; border-radius: 3px; font-size: 13px; }
     .markdown-content pre { background: var(--bg-secondary); border: 1px solid var(--border); border-left: 3px solid var(--accent-green); padding: 15px; margin: 15px 0; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-    .markdown-content pre code { background: none; padding: 0; color: var(--accent-light-green); }
+    .markdown-content pre code { background: none; padding: 0; }
+    .markdown-content pre code.hljs { background: transparent; padding: 0; }
     .markdown-content ul, .markdown-content ol { margin: 15px 0; padding-left: 25px; color: var(--text-secondary); }
     .markdown-content li { margin-bottom: 8px; }
     .markdown-content li::marker { color: var(--accent-yellow); }
@@ -722,8 +725,17 @@
     window.addEventListener('popstate', handleRoute);
     window.addEventListener('hashchange', handleRoute);
     
-    // Configure marked
-    marked.setOptions({ gfm: true, breaks: true });
+    // Configure marked with highlight.js
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      }
+    });
     
     // Initial route
     handleRoute();
