@@ -64,37 +64,68 @@ is_dnstt_installed() {
 #-------------------------------------------------------------------------------
 
 download_dnstt() {
+    print_step "Installing dnstt-server"
+    
+    mkdir -p "$DNSTT_DIR"
+    
+    # Method 1: Try to install via Go
+    if command -v go &>/dev/null || install_go; then
+        print_info "Building dnstt from source..."
+        
+        export GOPATH="/tmp/go"
+        export PATH="$PATH:/usr/local/go/bin:$GOPATH/bin"
+        mkdir -p "$GOPATH"
+        
+        # Install dnstt
+        if go install www.bamsoftware.com/git/dnstt.git/dnstt-server@latest 2>/dev/null; then
+            mv "$GOPATH/bin/dnstt-server" "$DNSTT_DIR/"
+            chmod +x "$DNSTT_DIR/dnstt-server"
+            rm -rf "$GOPATH"
+            print_success "Built dnstt-server from source"
+            return 0
+        fi
+    fi
+    
+    # Method 2: Download pre-built binary from GitHub mirror
     local arch
     arch=$(uname -m)
-    
     case "$arch" in
         x86_64)  arch="amd64" ;;
         aarch64) arch="arm64" ;;
-        armv7l)  arch="arm" ;;
         *)
             print_error "Unsupported architecture: $arch"
             return 1
             ;;
     esac
     
-    print_step "Downloading dnstt-server"
+    # Try GitHub releases (community builds)
+    local urls=(
+        "https://github.com/nicholasmhughes/dnstt/releases/latest/download/dnstt-server-linux-${arch}"
+        "https://github.com/nicholasmhughes/dnstt/releases/download/v0.20220315.0/dnstt-server-linux-${arch}"
+    )
     
-    mkdir -p "$DNSTT_DIR"
+    for url in "${urls[@]}"; do
+        if curl -sfL "$url" -o "$DNSTT_DIR/dnstt-server" 2>/dev/null; then
+            chmod +x "$DNSTT_DIR/dnstt-server"
+            print_success "Downloaded dnstt-server"
+            return 0
+        fi
+    done
     
-    # Download from official source
-    local url="https://www.bamsoftware.com/software/dnstt/dnstt-${DNSTT_VERSION}-linux-${arch}.tar.gz"
-    
-    if ! curl -sfL "$url" -o "/tmp/dnstt.tar.gz"; then
-        print_error "Failed to download dnstt"
-        return 1
-    fi
-    
-    tar -xzf "/tmp/dnstt.tar.gz" -C "/tmp/"
-    mv "/tmp/dnstt-${DNSTT_VERSION}-linux-${arch}/dnstt-server" "$DNSTT_DIR/"
-    chmod +x "$DNSTT_DIR/dnstt-server"
-    rm -rf "/tmp/dnstt.tar.gz" "/tmp/dnstt-*"
-    
-    print_success "Downloaded dnstt-server"
+    print_error "Failed to download dnstt. Please install Go and retry."
+    echo ""
+    echo "  Manual installation:"
+    echo "  1. Install Go: apt install golang-go"
+    echo "  2. Run: go install www.bamsoftware.com/git/dnstt.git/dnstt-server@latest"
+    echo "  3. Copy to: $DNSTT_DIR/dnstt-server"
+    return 1
+}
+
+install_go() {
+    print_info "Installing Go..."
+    apt-get update
+    apt-get install -y golang-go
+    return $?
 }
 
 #-------------------------------------------------------------------------------
