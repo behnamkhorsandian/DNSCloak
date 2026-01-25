@@ -413,6 +413,7 @@ cleanup_existing_proxy() {
 handle_port_conflict() {
     local port=$1
     local usage_info=$(get_port_usage_info "$port")
+    local pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K[0-9]+' | head -1)
     
     echo ""
     print_warning "Port $port is already in use!"
@@ -421,6 +422,9 @@ handle_port_conflict() {
     # Check if it's our own service
     if is_port_used_by_telegram_proxy "$port"; then
         echo -e "  ${CYAN}ℹ${RESET}  Used by: ${WHITE}DNSCloak/Telegram Proxy (previous installation)${RESET}"
+        if [[ -n "$pid" ]]; then
+            echo -e "  ${CYAN}ℹ${RESET}  PID: ${WHITE}$pid${RESET}"
+        fi
         echo ""
         echo -e "  ${BOLD}Options:${RESET}"
         echo -e "  ${CYAN}1)${RESET} Replace existing installation ${GREEN}(recommended)${RESET}"
@@ -433,7 +437,19 @@ handle_port_conflict() {
         case $conflict_choice in
             1)
                 cleanup_existing_proxy
-                return 0  # Continue with same port
+                # Also kill by PID if still running
+                if [[ -n "$pid" ]] && ! check_port_available "$port"; then
+                    print_info "Killing process $pid..."
+                    kill -9 "$pid" 2>/dev/null || true
+                    sleep 1
+                fi
+                if check_port_available "$port"; then
+                    print_success "Port $port is now available"
+                    return 0
+                else
+                    print_error "Could not free up port $port"
+                    return 1
+                fi
                 ;;
             2)
                 return 1  # Signal to ask for new port
@@ -449,10 +465,17 @@ handle_port_conflict() {
         else
             echo -e "  ${CYAN}ℹ${RESET}  Used by: ${WHITE}Unknown process${RESET}"
         fi
+        if [[ -n "$pid" ]]; then
+            echo -e "  ${CYAN}ℹ${RESET}  PID: ${WHITE}$pid${RESET}"
+        fi
         echo ""
         echo -e "  ${BOLD}Options:${RESET}"
         echo -e "  ${CYAN}1)${RESET} Use a different port ${GREEN}(recommended)${RESET}"
-        echo -e "  ${CYAN}2)${RESET} Try to stop the service and use this port"
+        if [[ -n "$pid" ]]; then
+            echo -e "  ${CYAN}2)${RESET} Kill process (PID: $pid) and use this port"
+        else
+            echo -e "  ${CYAN}2)${RESET} Try to stop the service and use this port"
+        fi
         echo -e "  ${CYAN}3)${RESET} Cancel installation"
         echo ""
         
@@ -463,23 +486,29 @@ handle_port_conflict() {
                 return 1  # Signal to ask for new port
                 ;;
             2)
-                # Try to identify and stop the service
-                local pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K[0-9]+' | head -1)
                 if [[ -n "$pid" ]]; then
-                    print_warning "Attempting to stop process (PID: $pid)..."
-                    kill "$pid" 2>/dev/null || true
-                    sleep 2
-                    
-                    if check_port_available "$port"; then
-                        print_success "Port $port is now available"
-                        return 0
+                    echo ""
+                    echo -e "  ${YELLOW}⚠️  Warning:${RESET} This will kill the process using port $port"
+                    echo -e "  ${GRAY}Process: $usage_info${RESET}"
+                    echo ""
+                    if confirm "Kill process $pid and use port $port?" "n"; then
+                        print_info "Killing process $pid..."
+                        kill -9 "$pid" 2>/dev/null || true
+                        sleep 2
+                        
+                        if check_port_available "$port"; then
+                            print_success "Port $port is now available"
+                            return 0
+                        else
+                            print_error "Could not free up port $port"
+                            print_info "The process may have respawned. Try stopping its service first."
+                            return 1
+                        fi
                     else
-                        print_error "Could not free up port $port"
-                        print_info "You may need to manually stop the service or use a different port"
-                        return 1
+                        return 1  # Ask for different port
                     fi
                 else
-                    print_error "Could not identify the process using port $port"
+                    print_error "Could not identify the process PID"
                     return 1
                 fi
                 ;;
