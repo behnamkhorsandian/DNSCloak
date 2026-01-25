@@ -249,7 +249,7 @@ install_ws() {
     # Bootstrap
     print_step "Setting up prerequisites"
     bootstrap
-    setup_dnscloak_dirs
+    create_directories
     detect_cloud_provider
     
     # Install Xray
