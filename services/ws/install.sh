@@ -254,7 +254,7 @@ install_ws() {
     get_input "Username" "user1" first_user
     
     local uuid
-    uuid=$(generate_uuid)
+    uuid=$(random_uuid)
     
     # Configure Xray
     print_step "Configuring Xray for WS+CDN"
@@ -357,7 +357,7 @@ add_ws_user() {
     fi
     
     local uuid
-    uuid=$(generate_uuid)
+    uuid=$(random_uuid)
     
     # Add to Xray config
     xray_add_client "ws-in" "$uuid" "${username}@dnscloak"
