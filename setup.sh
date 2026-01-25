@@ -1478,6 +1478,17 @@ add_user() {
         return
     fi
     
+    # Check for duplicate username
+    for existing_user in "${PROXY_USERS[@]}"; do
+        IFS=':' read -r existing_name _ _ <<< "$existing_user"
+        if [[ "$existing_name" == "$username" ]]; then
+            print_error "User '$username' already exists!"
+            print_info "Use a different name or delete the existing user first"
+            press_enter
+            return
+        fi
+    done
+    
     secret=$(generate_secret)
     
     # Store with mode info
