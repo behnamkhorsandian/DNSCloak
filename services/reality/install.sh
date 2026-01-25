@@ -344,6 +344,17 @@ show_user_links() {
     echo "  Short ID: $sid"
     echo "  Fingerprint: chrome"
     echo ""
+    
+    # Client usage instructions
+    echo -e "  ${BOLD}${WHITE}How to Connect${RESET}"
+    print_line
+    echo -e "  ${CYAN}iOS/macOS:${RESET} Hiddify (App Store) > + > Scan QR or paste link"
+    echo -e "  ${GREEN}Android:${RESET}  Hiddify (Play Store) or v2rayNG > + > Scan/Import"
+    echo -e "  ${BLUE}Windows:${RESET}  Hiddify (hiddify.com) > + > Paste clipboard"
+    echo -e "  ${MAGENTA}Linux:${RESET}    nekoray or sing-box with config import"
+    echo ""
+    echo -e "  ${DIM}Tip: Copy the vless:// link and paste directly into any app${RESET}"
+    echo ""
 }
 
 #-------------------------------------------------------------------------------

@@ -15,10 +15,10 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 
 ### Phase 2: Services [IN PROGRESS]
 - [x] `services/reality/install.sh` - VLESS+REALITY (no domain needed) ✅ TESTED
+- [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (requires Cloudflare) ✅ CREATED
 - [ ] `services/wg/install.sh` - WireGuard VPN
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
-- [ ] `services/ws/install.sh` - VLESS+WebSocket+CDN (requires Cloudflare)
 - [ ] `services/dnstt/install.sh` - DNS tunnel (emergency backup)
 
 ### Phase 3: CLI and Workers [COMPLETE]

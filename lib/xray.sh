@@ -209,6 +209,26 @@ EOF
     chmod 600 "$XRAY_CONFIG"
 }
 
+# Add generic inbound from JSON
+# Usage: xray_add_inbound '{"tag": "...", ...}'
+xray_add_inbound() {
+    local inbound="$1"
+    
+    # Extract tag from JSON to check if exists
+    local tag
+    tag=$(echo "$inbound" | jq -r '.tag' 2>/dev/null)
+    
+    if [[ -n "$tag" ]] && xray_inbound_exists "$tag"; then
+        print_info "Inbound '$tag' already exists"
+        return 0
+    fi
+    
+    local tmp
+    tmp=$(mktemp)
+    jq ".inbounds += [$inbound]" "$XRAY_CONFIG" > "$tmp" && mv "$tmp" "$XRAY_CONFIG"
+    chmod 600 "$XRAY_CONFIG"
+}
+
 # Remove inbound
 # Usage: xray_remove_inbound "reality-in"
 xray_remove_inbound() {
