@@ -61,3 +61,6 @@ test-config.py
 local-config.py
 .env
 workers/.env
+
+# Private configuration files
+VPNS.txt
