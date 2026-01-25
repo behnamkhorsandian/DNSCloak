@@ -615,7 +615,7 @@ clone_mtprotoproxy() {
 }
 
 generate_secret() {
-    head -c 16 /dev/urandom | xxd -ps
+    head -c 16 /dev/urandom | xxd -p | tr -d '\n'
 }
 
 create_config() {
@@ -1510,7 +1510,7 @@ add_user() {
     local tls_domain_hex=""
     
     if [[ "$PROXY_MODE" == "tls" && -n "$TLS_DOMAIN" ]]; then
-        tls_domain_hex=$(echo -n "$TLS_DOMAIN" | xxd -ps | tr -d '\n')
+        tls_domain_hex=$(printf '%s' "$TLS_DOMAIN" | xxd -p | tr -d '\n')
         full_secret="ee${secret}${tls_domain_hex}"
     elif [[ "$PROXY_MODE" == "secure" ]]; then
         full_secret="dd${secret}"
