@@ -250,7 +250,7 @@ install_ws() {
     print_step "Setting up prerequisites"
     bootstrap
     create_directories
-    detect_cloud_provider
+    cloud_detect
     
     # Install Xray
     install_xray
@@ -334,8 +334,8 @@ EOF
     
     # Configure firewall
     print_step "Configuring firewall"
-    configure_firewall $WS_PORT tcp
-    configure_firewall 80 tcp  # For certificate renewal
+    cloud_open_port $WS_PORT tcp
+    cloud_open_port 80 tcp  # For certificate renewal
     
     # Start/restart Xray
     print_step "Starting Xray service"
