@@ -15,17 +15,25 @@ LIB_DIR="/tmp/dnscloak-lib"
 mkdir -p "$LIB_DIR"
 GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
 
-# Always download fresh copies when piped
-curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
-curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
-curl -sL "$GITHUB_RAW/lib/bootstrap.sh" -o "$LIB_DIR/bootstrap.sh"
-curl -sL "$GITHUB_RAW/lib/xray.sh" -o "$LIB_DIR/xray.sh"
+echo "Downloading libraries..."
 
-# Source libraries
-source "$LIB_DIR/common.sh"
-source "$LIB_DIR/cloud.sh"
-source "$LIB_DIR/bootstrap.sh"
-source "$LIB_DIR/xray.sh"
+# Download each library with error checking
+for lib in common.sh cloud.sh bootstrap.sh xray.sh; do
+    if ! curl -sfL "$GITHUB_RAW/lib/$lib" -o "$LIB_DIR/$lib"; then
+        echo "ERROR: Failed to download $lib"
+        exit 1
+    fi
+done
+
+# Source libraries with error checking
+for lib in common.sh cloud.sh bootstrap.sh xray.sh; do
+    if [[ ! -f "$LIB_DIR/$lib" ]]; then
+        echo "ERROR: Library not found: $LIB_DIR/$lib"
+        exit 1
+    fi
+    # shellcheck source=/dev/null
+    . "$LIB_DIR/$lib"
+done
 
 set -e
 
