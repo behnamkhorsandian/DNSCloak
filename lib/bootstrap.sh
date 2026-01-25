@@ -32,10 +32,32 @@ mark_bootstrapped() {
 # System Update
 #-------------------------------------------------------------------------------
 
+wait_for_apt_lock() {
+    local max_wait=60
+    local waited=0
+    
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+          fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
+        if [[ $waited -eq 0 ]]; then
+            print_info "Waiting for other apt process to finish..."
+        fi
+        sleep 2
+        ((waited+=2))
+        if [[ $waited -ge $max_wait ]]; then
+            print_warning "Apt lock timeout, attempting to continue..."
+            break
+        fi
+    done
+}
+
 system_update() {
     print_step "Updating system packages"
     
     export DEBIAN_FRONTEND=noninteractive
+    
+    # Wait for any existing apt processes
+    wait_for_apt_lock
     
     apt-get update -qq
     apt-get upgrade -y -qq

@@ -71,13 +71,28 @@ const SERVICES = {
   },
 };
 
+// Service aliases (legacy subdomains)
+const SERVICE_ALIASES = {
+  'tg1': 'mtp',
+  'tg2': 'mtp',
+  'telegram': 'mtp',
+  'mtproto': 'mtp',
+  'vless': 'reality',
+  'xray': 'reality',
+};
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     const hostname = url.hostname;
     
     // Extract service from subdomain (e.g., "reality" from "reality.dnscloak.net")
-    const service = hostname.split('.')[0];
+    let service = hostname.split('.')[0];
+    
+    // Check for aliases
+    if (SERVICE_ALIASES[service]) {
+      service = SERVICE_ALIASES[service];
+    }
     
     // CORS headers
     const corsHeaders = {
