@@ -1208,255 +1208,88 @@ show_usage_instructions() {
 
 install_proxy() {
     print_banner
-    echo -e "  ${BOLD}${WHITE}🚀 NEW INSTALLATION${RESET}"
+    echo -e "  ${BOLD}${WHITE}🚀 INSTALL${RESET}"
     print_line
     echo ""
     
     # Get public IP
-    print_info "Detecting your public IP..."
     PUBLIC_IP=$(get_public_ip)
-    
     if [[ -z "$PUBLIC_IP" ]]; then
-        print_error "Could not detect public IP"
-        get_input "Enter your server's public IP" "" PUBLIC_IP
+        get_input "Server IP" "" PUBLIC_IP
     else
-        print_success "Detected IP: $PUBLIC_IP"
+        echo -e "  IP: ${WHITE}$PUBLIC_IP${RESET}"
     fi
     echo ""
     
-    # Ask if user wants to see port analysis
-    if confirm "Show port & firewall analysis before continuing?" "y"; then
-        show_port_analysis
-    fi
-    
-    print_banner
-    echo -e "  ${BOLD}${WHITE}🚀 CONFIGURATION${RESET}"
-    print_line
-    echo ""
-    
-    # Get port with smart conflict handling
-    echo -e "  ${BOLD}Port Configuration:${RESET}"
-    echo -e "  ${GRAY}Port 443 is recommended (looks like HTTPS traffic)${RESET}"
-    echo ""
-    
-    # Show quick port summary
-    echo -e "  ${WHITE}Common ports status:${RESET}"
-    for check_port in 443 8443 2053 8080; do
-        if check_port_available "$check_port"; then
-            echo -e "    ${GREEN}●${RESET} Port $check_port: Available"
-        else
-            local usage=$(get_port_usage_info "$check_port")
-            echo -e "    ${YELLOW}●${RESET} Port $check_port: In use ${GRAY}($usage)${RESET}"
-        fi
-    done
-    echo ""
-    
-    # Determine default port (suggest available one)
+    # Port
     local default_port="443"
     if ! check_port_available 443; then
-        if is_port_used_by_telegram_proxy 443; then
-            default_port="443"  # We'll handle replacement
-        else
-            default_port=$(suggest_alternative_port)
-            if [[ "$default_port" != "443" ]]; then
-                print_info "Port 443 is in use, suggesting $default_port"
-            fi
-        fi
+        default_port="8443"
     fi
-    
-    while true; do
-        get_input "Enter port number" "$default_port" PROXY_PORT
-        
-        if ! [[ "$PROXY_PORT" =~ ^[0-9]+$ ]] || (( PROXY_PORT < 1 || PROXY_PORT > 65535 )); then
-            print_error "Invalid port number (must be 1-65535)"
-            continue
-        fi
-        
-        # Check if port is available
-        if ! check_port_available "$PROXY_PORT"; then
-            handle_port_conflict "$PROXY_PORT"
-            local result=$?
-            
-            if [[ $result -eq 0 ]]; then
-                # Continue with this port (conflict resolved)
-                break
-            elif [[ $result -eq 1 ]]; then
-                # Ask for new port
-                echo ""
-                default_port=$(suggest_alternative_port)
-                print_info "Suggested available port: $default_port"
-                continue
-            else
-                # Cancel
-                echo ""
-                print_info "Installation cancelled"
-                exit 0
-            fi
-        else
-            break
-        fi
-    done
-    
-    # Check firewall for selected port
-    echo ""
-    check_port_accessibility "$PROXY_PORT"
-    
-    echo ""
-    print_success "Using port: $PROXY_PORT"
+    get_input "Port" "$default_port" PROXY_PORT
     echo ""
     
-    # Get domain (optional)
-    echo -e "  ${BOLD}Domain Configuration (Optional):${RESET}"
-    echo -e "  ${GRAY}Using a domain makes it harder to block your proxy${RESET}"
-    echo ""
-    
-    get_input "Enter your domain (or 'none' to skip)" "none" PROXY_DOMAIN
-    
-    if [[ "$PROXY_DOMAIN" != "none" && -n "$PROXY_DOMAIN" ]]; then
-        # Remove http:// or https:// if present
+    # Domain (optional)
+    get_input "Domain (optional, press enter to skip)" "" PROXY_DOMAIN
+    if [[ -z "$PROXY_DOMAIN" ]]; then
+        PROXY_DOMAIN="none"
+    else
         PROXY_DOMAIN=$(echo "$PROXY_DOMAIN" | sed 's|https\?://||' | sed 's|/.*||')
     fi
     echo ""
     
-    # ============== PROXY MODE SELECTION ==============
-    echo -e "  ${BOLD}Proxy Mode Selection:${RESET}"
-    echo ""
-    echo -e "  ${CYAN}1)${RESET} ${GREEN}Fake-TLS (Recommended)${RESET}"
-    echo -e "     Traffic looks like HTTPS to a real website"
-    echo -e "     Most resistant to deep packet inspection (DPI)"
-    echo -e "     Secret prefix: ${WHITE}ee${RESET}"
-    echo ""
-    echo -e "  ${CYAN}2)${RESET} Secure Mode with Random Padding"
-    echo -e "     Adds random padding to packets"
-    echo -e "     Good alternative if Fake-TLS is blocked"
-    echo -e "     Secret prefix: ${WHITE}dd${RESET}"
+    # Fake-TLS domain
+    get_input "Fake-TLS domain (traffic disguise)" "google.com" TLS_DOMAIN
     echo ""
     
-    get_input "Select mode" "1" mode_choice
-    
-    local PROXY_MODE="tls"
-    local RANDOM_PADDING="no"
-    
-    case $mode_choice in
-        1)
-            PROXY_MODE="tls"
-            echo ""
-            echo -e "  ${BOLD}Fake-TLS Configuration:${RESET}"
-            echo -e "  ${GRAY}Your traffic will look like HTTPS to this website${RESET}"
-            echo -e "  ${GRAY}Choose a popular site that's not blocked in target region${RESET}"
-            echo ""
-            echo -e "  ${WHITE}Suggestions:${RESET}"
-            echo -e "  • www.google.com (default)"
-            echo -e "  • www.cloudflare.com"
-            echo -e "  • www.microsoft.com"
-            echo -e "  • www.apple.com"
-            echo -e "  • www.bing.com"
-            echo ""
-            
-            get_input "Enter fake-TLS domain" "www.google.com" TLS_DOMAIN
-            
-            # Ask about random padding for TLS mode
-            echo ""
-            if confirm "Also enable random padding for extra obfuscation?" "y"; then
-                RANDOM_PADDING="yes"
-                print_success "Random padding enabled (dd mode will also work)"
-            fi
-            ;;
-        2)
-            PROXY_MODE="secure"
-            TLS_DOMAIN="www.google.com"  # Not used but set for config
-            print_success "Secure mode with random padding selected"
-            ;;
-        *)
-            PROXY_MODE="tls"
-            TLS_DOMAIN="www.google.com"
-            ;;
-    esac
-    
-    echo ""
-    
-    # Get number of users
-    echo -e "  ${BOLD}User Configuration:${RESET}"
-    echo -e "  ${GRAY}You can create multiple users with different secrets${RESET}"
-    echo ""
-    
-    get_input "How many users to create?" "1" NUM_USERS
-    
-    if ! [[ "$NUM_USERS" =~ ^[0-9]+$ ]] || (( NUM_USERS < 1 || NUM_USERS > 100 )); then
-        print_error "Invalid number (1-100)"
-        exit 1
-    fi
-    
-    # Create users
+    # First user
+    get_input "First username" "user1" username
+    local secret=$(generate_secret)
     declare -a USERS
-    echo ""
-    
-    for ((i=1; i<=NUM_USERS; i++)); do
-        get_input "Enter name for user $i" "user$i" username
-        secret=$(generate_secret)
-        # Store with mode info: name:secret:mode
-        USERS+=("${username}:${secret}:${PROXY_MODE}")
-        print_success "Created user: $username"
-    done
-    
-    echo ""
-    print_line
-    echo ""
-    
-    # Confirm installation
-    echo -e "  ${BOLD}Configuration Summary:${RESET}"
-    echo ""
-    echo -e "  Server IP:      ${WHITE}$PUBLIC_IP${RESET}"
-    echo -e "  Port:           ${WHITE}$PROXY_PORT${RESET}"
-    echo -e "  Domain:         ${WHITE}${PROXY_DOMAIN:-none}${RESET}"
-    echo -e "  Proxy Mode:     ${WHITE}${PROXY_MODE}${RESET}"
-    if [[ "$PROXY_MODE" == "tls" ]]; then
-        echo -e "  Fake-TLS Host:  ${WHITE}$TLS_DOMAIN${RESET}"
-    fi
-    echo -e "  Random Padding: ${WHITE}$RANDOM_PADDING${RESET}"
-    echo -e "  Users:          ${WHITE}$NUM_USERS${RESET}"
-    echo ""
-    
-    if ! confirm "Proceed with installation?" "y"; then
-        echo ""
-        print_info "Installation cancelled"
-        exit 0
-    fi
-    
-    echo ""
-    print_line
+    USERS+=("${username}:${secret}:tls")
     echo ""
     
     # Install
+    print_step "Installing..."
     install_dependencies
     clone_mtprotoproxy
+    
+    local PROXY_MODE="tls"
+    local RANDOM_PADDING="yes"
+    
     create_config "$PROXY_PORT" "$TLS_DOMAIN" "$PROXY_MODE" "$RANDOM_PADDING" "${USERS[@]}"
     create_service
     save_proxy_data "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${USERS[@]}"
     
     if start_service; then
         echo ""
+        print_success "Installed!"
+        echo ""
+        
+        # Use domain if available
+        local server="$PUBLIC_IP"
+        if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
+            server="$PROXY_DOMAIN"
+        fi
+        
+        local tls_domain_hex=$(printf '%s' "$TLS_DOMAIN" | xxd -p | tr -d '\n')
+        
+        echo -e "  ${BOLD}Your proxy link:${RESET}"
+        echo -e "  ${GREEN}tg://proxy?server=${server}&port=${PROXY_PORT}&secret=ee${secret}${tls_domain_hex}${RESET}"
+        echo ""
+        
         print_line
         echo ""
-        print_success "${BOLD}Installation complete!${RESET}"
+        echo -e "  ${BOLD}${YELLOW}⚠️  IMPORTANT:${RESET}"
         echo ""
-        
-        press_enter
-        
-        # Show firewall instructions
-        show_firewall_instructions "$PROXY_PORT"
-        
-        # Show DNS instructions
-        show_dns_instructions "$PUBLIC_IP" "$PROXY_DOMAIN"
-        
-        # Show proxy links
-        show_proxy_links "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "${USERS[@]}"
-        
-        press_enter
-        
-        # Show usage instructions
-        show_usage_instructions
+        echo -e "  ${WHITE}1. Firewall:${RESET} Open port ${CYAN}$PROXY_PORT${RESET} in your cloud provider"
+        if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
+            echo -e "  ${WHITE}2. DNS:${RESET} Point ${CYAN}$PROXY_DOMAIN${RESET} → ${CYAN}$PUBLIC_IP${RESET}"
+        fi
+        echo ""
     fi
+    
+    press_enter
 }
 
 # ============== MANAGEMENT FUNCTIONS ==============
@@ -1681,15 +1514,14 @@ main_menu() {
         # Show quick status
         if is_installed; then
             if systemctl is-active --quiet "$SERVICE_NAME"; then
-                echo -e "  Proxy Status: ${GREEN}● Running${RESET}"
+                echo -e "  Status: ${GREEN}● Running${RESET}"
             else
-                echo -e "  Proxy Status: ${RED}● Stopped${RESET}"
+                echo -e "  Status: ${RED}● Stopped${RESET}"
             fi
             
             if [[ -f "$DATA_FILE" ]]; then
                 source "$DATA_FILE"
                 echo -e "  Server: ${WHITE}${PROXY_DOMAIN:-$PROXY_IP}:$PROXY_PORT${RESET}"
-                echo -e "  Mode: ${WHITE}${PROXY_MODE:-tls}${RESET}"
                 echo -e "  Users: ${WHITE}${#PROXY_USERS[@]}${RESET}"
                 
                 # Check for IP change
@@ -1697,88 +1529,174 @@ main_menu() {
                 new_ip=$(check_ip_changed)
                 if [[ $? -eq 0 ]]; then
                     echo ""
-                    echo -e "  ${RED}⚠️  IP CHANGED!${RESET}"
-                    echo -e "  ${YELLOW}Old: $PROXY_IP → New: $new_ip${RESET}"
-                    echo -e "  ${YELLOW}Use option 12 to update${RESET}"
+                    echo -e "  ${RED}⚠️  IP CHANGED: $PROXY_IP → $new_ip${RESET}"
                 fi
             fi
         else
-            echo -e "  Proxy Status: ${YELLOW}● Not installed${RESET}"
+            echo -e "  Status: ${YELLOW}● Not installed${RESET}"
         fi
         
         echo ""
         print_line
         echo ""
-        echo -e "  ${BOLD}Main Menu:${RESET}"
-        echo ""
         
         if is_installed; then
-            echo -e "  ${CYAN}1)${RESET} View Status"
-            echo -e "  ${CYAN}2)${RESET} View Proxy Links"
-            echo -e "  ${CYAN}3)${RESET} Add New User"
-            echo -e "  ${CYAN}4)${RESET} Restart Proxy"
-            echo -e "  ${CYAN}5)${RESET} View Logs"
-            echo -e "  ${CYAN}6)${RESET} Port & Firewall Analysis"
-            echo -e "  ${CYAN}7)${RESET} Firewall Instructions"
-            echo -e "  ${CYAN}8)${RESET} DNS Instructions"
-            echo -e "  ${CYAN}9)${RESET} Usage Instructions"
-            echo -e "  ${CYAN}10)${RESET} Reinstall"
-            echo -e "  ${CYAN}11)${RESET} Update IP Address"
-            echo -e "  ${RED}12)${RESET} Uninstall"
+            echo -e "  ${CYAN}1)${RESET} Proxy Links & Users"
+            echo -e "  ${CYAN}2)${RESET} Status & Restart"
+            echo -e "  ${CYAN}3)${RESET} View Logs"
+            echo -e "  ${CYAN}4)${RESET} Update IP"
+            echo -e "  ${RED}5)${RESET} Uninstall"
         else
             echo -e "  ${CYAN}1)${RESET} Install Proxy"
-            echo -e "  ${CYAN}2)${RESET} Port & Firewall Analysis"
         fi
         
         echo -e "  ${CYAN}0)${RESET} Exit"
         echo ""
-        print_line
-        echo ""
         
-        get_input "Select option" "" choice
+        get_input "Select" "" choice
         
         if is_installed; then
             case $choice in
-                1) show_status ;;
-                2) view_links ;;
-                3) add_user ;;
-                4) restart_service ;;
-                5) view_logs ;;
-                6) show_port_analysis ;;
-                7) 
-                    source "$DATA_FILE" 2>/dev/null
-                    show_firewall_instructions "${PROXY_PORT:-443}"
-                    ;;
-                8)
-                    source "$DATA_FILE" 2>/dev/null
-                    show_dns_instructions "$PROXY_IP" "$PROXY_DOMAIN"
-                    ;;
-                9) show_usage_instructions ;;
-                10) install_proxy ;;
-                11) update_ip ;;
-                12) uninstall_proxy ;;
-                0) 
-                    echo ""
-                    print_info "Goodbye!"
-                    echo ""
-                    exit 0
-                    ;;
+                1) manage_users ;;
+                2) status_menu ;;
+                3) view_logs ;;
+                4) update_ip ;;
+                5) uninstall_proxy ;;
+                0) echo ""; exit 0 ;;
                 *) print_error "Invalid option" ;;
             esac
         else
             case $choice in
                 1) install_proxy ;;
-                2) show_port_analysis ;;
-                0)
-                    echo ""
-                    print_info "Goodbye!"
-                    echo ""
-                    exit 0
-                    ;;
+                0) echo ""; exit 0 ;;
                 *) print_error "Invalid option" ;;
             esac
         fi
     done
+}
+
+# Combined users management
+manage_users() {
+    while true; do
+        print_banner
+        source "$DATA_FILE" 2>/dev/null
+        
+        # Use domain if available
+        local server="$PROXY_IP"
+        if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
+            server="$PROXY_DOMAIN"
+        fi
+        
+        # Encode TLS domain
+        local tls_domain_hex=""
+        if [[ -n "$TLS_DOMAIN" ]]; then
+            tls_domain_hex=$(printf '%s' "$TLS_DOMAIN" | xxd -p | tr -d '\n')
+        fi
+        
+        echo -e "  ${BOLD}${WHITE}🔗 PROXY LINKS${RESET}"
+        print_line
+        echo ""
+        
+        for user in "${PROXY_USERS[@]}"; do
+            IFS=':' read -r name raw_secret mode <<< "$user"
+            local clean_secret="${raw_secret#ee}"
+            clean_secret="${clean_secret#dd}"
+            clean_secret="${clean_secret:0:32}"
+            
+            echo -e "  ${CYAN}$name${RESET}"
+            echo -e "  ${GRAY}dd (secure):${RESET} tg://proxy?server=${server}&port=${PROXY_PORT}&secret=dd${clean_secret}"
+            echo -e "  ${GRAY}ee (fake-tls):${RESET} tg://proxy?server=${server}&port=${PROXY_PORT}&secret=ee${clean_secret}${tls_domain_hex}"
+            echo ""
+        done
+        
+        print_line
+        echo ""
+        echo -e "  ${CYAN}1)${RESET} Add User"
+        echo -e "  ${CYAN}0)${RESET} Back"
+        echo ""
+        
+        get_input "Select" "" choice
+        
+        case $choice in
+            1) add_user_simple ;;
+            0) return ;;
+            *) ;;
+        esac
+    done
+}
+
+# Simplified add user
+add_user_simple() {
+    echo ""
+    source "$DATA_FILE"
+    
+    get_input "Username" "" username
+    
+    if [[ -z "$username" ]]; then
+        print_error "Username required"
+        press_enter
+        return
+    fi
+    
+    # Check duplicate
+    for existing_user in "${PROXY_USERS[@]}"; do
+        IFS=':' read -r existing_name _ _ <<< "$existing_user"
+        if [[ "$existing_name" == "$username" ]]; then
+            print_error "User '$username' already exists"
+            press_enter
+            return
+        fi
+    done
+    
+    local secret=$(generate_secret)
+    local new_user="${username}:${secret}:${PROXY_MODE:-tls}"
+    
+    # Add to config
+    awk -v user="$username" -v secret="$secret" '
+        /^USERS = \{/ { in_users=1 }
+        in_users && /^\}$/ {
+            print "    \"" user "\": \"" secret "\","
+            in_users=0
+        }
+        { print }
+    ' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    
+    PROXY_USERS+=("$new_user")
+    save_proxy_data "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${PROXY_USERS[@]}"
+    
+    systemctl restart "$SERVICE_NAME"
+    print_success "User '$username' added"
+    sleep 1
+}
+
+# Status submenu
+status_menu() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}📊 STATUS${RESET}"
+    print_line
+    echo ""
+    
+    systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null | head -15 | sed 's/^/  /'
+    
+    echo ""
+    print_line
+    echo ""
+    echo -e "  ${CYAN}1)${RESET} Restart Proxy"
+    echo -e "  ${CYAN}0)${RESET} Back"
+    echo ""
+    
+    get_input "Select" "" choice
+    
+    if [[ "$choice" == "1" ]]; then
+        systemctl restart "$SERVICE_NAME"
+        sleep 2
+        if systemctl is-active --quiet "$SERVICE_NAME"; then
+            print_success "Restarted"
+        else
+            print_error "Failed to restart"
+        fi
+        press_enter
+    fi
 }
 
 # ============== ENTRY POINT ==============
