@@ -6,7 +6,7 @@ Complete guide to hosting your own DNSCloak platform with custom domain.
 
 DNSCloak uses Cloudflare Workers to serve installation scripts from GitHub. When a user runs `curl -sSL reality.dnscloak.net | sudo bash`, the request goes to your Cloudflare Worker, which fetches the script from your GitHub repo.
 
-```
+```text
 User's VM                 Cloudflare Worker              GitHub
     |                           |                          |
     |  curl reality.domain.com  |                          |
@@ -139,7 +139,7 @@ After deploying each worker:
 4. Cloudflare auto-creates DNS record
 
 Verify DNS records exist:
-```
+```text
 CNAME  reality  ->  dnscloak-reality.your-subdomain.workers.dev
 CNAME  wg       ->  dnscloak-wg.your-subdomain.workers.dev
 CNAME  mtp      ->  dnscloak-mtp.your-subdomain.workers.dev
@@ -171,7 +171,7 @@ curl reality.yourdomain.com/info
 ## Directory Structure
 
 Your workers folder should look like:
-```
+```text
 workers/
   reality/
     wrangler.toml
@@ -224,7 +224,7 @@ export default {
 ```
 
 Then use wildcard DNS:
-```
+```text
 CNAME  *  ->  dnscloak-main.workers.dev
 ```
 

@@ -25,7 +25,7 @@ Emergency protocol for extreme censorship. Tunnels data through DNS queries.
 
 ## How It Works
 
-```
+```text
 +--------+            +---------+            +--------+            +--------+
 | Client |  DNS Query | Local   |  DNS Query | Auth   |  DNS Query | Your   |
 | Device |----------->| ISP DNS |----------->| DNS    |----------->| Server |
@@ -42,7 +42,7 @@ Data is encoded in DNS queries:
 
 ## State Machine
 
-```
+```text
                 +-------------+
                 |    INIT     |
                 +------+------+
@@ -89,7 +89,7 @@ Data is encoded in DNS queries:
 
 ### Step 1: A Record for Nameserver
 
-```
+```text
 Type: A
 Name: ns1
 Value: <your-server-ip>
@@ -98,7 +98,7 @@ TTL: Auto
 
 ### Step 2: NS Record for Tunnel Subdomain
 
-```
+```text
 Type: NS
 Name: t
 Value: ns1.yourdomain.com
@@ -129,7 +129,7 @@ During setup:
 
 ## Server Components
 
-```
+```text
 /opt/dnscloak/dnstt/
     server.key          # Server private key
     server.pub          # Server public key (share with clients)

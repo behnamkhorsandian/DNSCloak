@@ -22,7 +22,7 @@ DNSCloak auto-detects your cloud provider and configures firewall rules. This gu
 2. Select your instance's security group
 3. Edit inbound rules:
 
-```
+```text
 Type        Protocol    Port    Source
 SSH         TCP         22      Your IP or 0.0.0.0/0
 HTTPS       TCP         443     0.0.0.0/0
@@ -48,7 +48,7 @@ aws ec2 authorize-security-group-ingress --group-id $SG_ID \
 1. Go to VPC Network > Firewall
 2. Create firewall rule:
 
-```
+```text
 Name: allow-dnscloak
 Direction: Ingress
 Targets: All instances / Specific tags
@@ -72,7 +72,7 @@ gcloud compute firewall-rules create allow-dnscloak \
 1. Go to Virtual Machine > Networking
 2. Add inbound port rules:
 
-```
+```text
 Priority    Name            Port    Protocol
 100         Allow-HTTPS     443     TCP
 110         Allow-WG        51820   UDP
@@ -96,7 +96,7 @@ az network nsg rule create \
 1. Go to Networking > Firewalls
 2. Create or edit firewall:
 
-```
+```text
 Inbound Rules:
 TCP     443     All IPv4, All IPv6
 UDP     51820   All IPv4, All IPv6
@@ -117,7 +117,7 @@ doctl compute firewall create \
 1. Go to Products > Firewall
 2. Add firewall group with rules:
 
-```
+```text
 Protocol    Port        Source
 TCP         443         0.0.0.0/0
 UDP         51820       0.0.0.0/0
@@ -141,7 +141,7 @@ hcloud firewall add-rule dnscloak --direction in --protocol udp --port 53 --sour
 1. Go to Networking > Virtual Cloud Networks > Security Lists
 2. Add ingress rules:
 
-```
+```text
 Stateless   Source        Protocol    Dest Port
 No          0.0.0.0/0     TCP         443
 No          0.0.0.0/0     UDP         51820

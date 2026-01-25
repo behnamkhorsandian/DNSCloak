@@ -17,7 +17,7 @@ MTProto Proxy with Fake-TLS makes Telegram accessible in restricted regions by d
 
 ## How It Works
 
-```
+```text
 +--------+           +--------+           +----------+
 | Tele-  | Fake-TLS  | MTP    |  MTProto  | Telegram |
 | gram   |---------->| Proxy  |---------->| Servers  |
@@ -31,7 +31,7 @@ MTProto Proxy with Fake-TLS makes Telegram accessible in restricted regions by d
 
 ## State Machine
 
-```
+```text
                 +-------------+
                 |    INIT     |
                 +------+------+
@@ -92,7 +92,7 @@ Generates:
 
 ## Share Link Format
 
-```
+```text
 tg://proxy?server=SERVER&port=443&secret=ee<SECRET><DOMAIN_HEX>
 ```
 
@@ -103,7 +103,7 @@ tg://proxy?server=SERVER&port=443&secret=ee<SECRET><DOMAIN_HEX>
 | secret | ee + 32-char hex + domain in hex |
 
 Example with google.com:
-```
+```text
 tg://proxy?server=1.2.3.4&port=443&secret=ee1234567890abcdef1234567890abcdef676f6f676c652e636f6d
 ```
 

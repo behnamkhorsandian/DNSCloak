@@ -18,7 +18,7 @@ WireGuard is a fast, modern VPN protocol. Simple configuration, excellent perfor
 
 ## How It Works
 
-```
+```text
 +--------+                    +--------+
 | Client |   UDP Encrypted    | Server |
 | Phone  |<==================>| VPS    |
@@ -31,7 +31,7 @@ WireGuard is a fast, modern VPN protocol. Simple configuration, excellent perfor
 
 ## State Machine
 
-```
+```text
                 +-------------+
                 |    IDLE     |
                 +------+------+
@@ -76,7 +76,7 @@ curl -sSL wg.dnscloak.net | sudo bash
 
 ## Network Layout
 
-```
+```text
 Server: 10.66.66.1/24 (gateway)
 User 1: 10.66.66.2/32
 User 2: 10.66.66.3/32

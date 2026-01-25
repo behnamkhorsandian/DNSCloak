@@ -4,7 +4,7 @@ Each DNSCloak service has its own Cloudflare Worker that serves the installation
 
 ## Worker Architecture
 
-```
+```text
 User runs: curl -sSL reality.dnscloak.net | sudo bash
                          |
                          v
@@ -253,7 +253,7 @@ After deployment:
 
 ### Files Structure
 
-```
+```text
 www/
   index.html      # Landing page with protocol overview
   _redirects      # SPA routing (optional)

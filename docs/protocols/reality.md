@@ -11,7 +11,7 @@ REALITY is the most advanced censorship bypass protocol. It "borrows" TLS certif
 
 ## How It Works
 
-```
+```text
 +--------+          +--------+          +---------------+
 | Client |  TLS 1.3 | Server |  TLS 1.3 | Camouflage    |
 | (User) |--------->| (Xray) |--------->| (google.com)  |
@@ -34,7 +34,7 @@ REALITY is the most advanced censorship bypass protocol. It "borrows" TLS certif
 
 ## State Machine
 
-```
+```text
                     +-------------+
                     |    INIT     |
                     +------+------+
@@ -107,7 +107,7 @@ This generates:
 
 ## Share Link Format
 
-```
+```text
 vless://UUID@SERVER:443?
   type=tcp&
   security=reality&

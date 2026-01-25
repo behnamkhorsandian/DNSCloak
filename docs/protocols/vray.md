@@ -18,7 +18,7 @@ Classic V2Ray setup with proper TLS certificates. Requires a domain.
 
 ## How It Works
 
-```
+```text
 +--------+           +--------+           +----------+
 | Client |   TLS 1.3 | Server |   Direct  | Internet |
 | (App)  |---------->| (Xray) |---------->|          |
@@ -31,7 +31,7 @@ Classic V2Ray setup with proper TLS certificates. Requires a domain.
 
 ## State Machine
 
-```
+```text
                 +-------------+
                 |    INIT     |
                 +------+------+
@@ -122,7 +122,7 @@ Generates:
 
 ## Share Link Format
 
-```
+```text
 vless://UUID@DOMAIN:443?
   type=tcp&
   security=tls&
@@ -186,7 +186,7 @@ Location: `/opt/dnscloak/xray/config.json`
 
 When both Reality and V2Ray are installed:
 
-```
+```text
 Port 443
     |
     +-- SNI: www.google.com --> Reality inbound

@@ -18,7 +18,7 @@ Route traffic through Cloudflare CDN. Hides server IP completely.
 
 ## How It Works
 
-```
+```text
 +--------+           +-----------+           +--------+           +----------+
 | Client |   HTTPS   | Cloudflare|  HTTPS    | Server |  Direct   | Internet |
 | (App)  |---------->| CDN       |---------->| (Xray) |---------->|          |
@@ -31,7 +31,7 @@ Route traffic through Cloudflare CDN. Hides server IP completely.
 
 ## State Machine
 
-```
+```text
                 +-------------+
                 |    INIT     |
                 +------+------+
@@ -85,7 +85,7 @@ During setup:
 
 ### DNS Record
 
-```
+```text
 Type: A
 Name: ws (or subdomain of choice)
 IPv4: <your-server-ip>
@@ -105,7 +105,7 @@ Proxy: Proxied (orange cloud)  <-- REQUIRED
 ### (Optional) Page Rules
 
 For better caching:
-```
+```text
 URL: ws.yourdomain.com/*
 Settings:
   - Cache Level: Bypass
@@ -126,7 +126,7 @@ Generates:
 
 ## Share Link Format
 
-```
+```text
 vless://UUID@ws.DOMAIN:443?
   type=ws&
   security=tls&
@@ -188,7 +188,7 @@ Location: `/opt/dnscloak/xray/config.json`
 
 WS service shares port 443 via path-based routing:
 
-```
+```text
 Port 443
     |
     +-- SNI: google.com      --> Reality (tcp)

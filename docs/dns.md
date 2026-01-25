@@ -22,7 +22,7 @@ Some DNSCloak services require domain configuration. This guide covers setup for
 3. Go to DNS > Records
 4. Add record:
 
-```
+```text
 Type: A
 Name: proxy (or your subdomain)
 IPv4: <your-server-ip>
@@ -36,7 +36,7 @@ Result: `proxy.yourdomain.com` points directly to your server.
 
 1. Same steps as above, but:
 
-```
+```text
 Type: A
 Name: ws (or your subdomain)
 IPv4: <your-server-ip>
@@ -75,7 +75,7 @@ DNStt requires special NS (nameserver) records to route DNS queries to your serv
 
 ### Step 1: Create A Record for Nameserver
 
-```
+```text
 Type: A
 Name: ns1
 IPv4: <your-server-ip>
@@ -87,7 +87,7 @@ Result: `ns1.yourdomain.com` = your server IP
 
 ### Step 2: Create NS Record for Tunnel Subdomain
 
-```
+```text
 Type: NS
 Name: t (tunnel subdomain)
 Nameserver: ns1.yourdomain.com
@@ -111,7 +111,7 @@ dig test.t.yourdomain.com
 
 ### DNStt DNS Diagram
 
-```
+```text
 Client                    ISP DNS           Authoritative       Your Server
   |                          |              (Cloudflare)            |
   |--dig x.t.example.com---->|                   |                  |
