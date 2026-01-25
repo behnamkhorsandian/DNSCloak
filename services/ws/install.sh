@@ -205,9 +205,7 @@ install_ws() {
     # Check if already installed
     if is_ws_installed; then
         print_warning "WS+CDN is already installed"
-        echo ""
-        read -rp "  Reinstall? [y/N]: " reinstall </dev/tty
-        if [[ ! "$reinstall" =~ ^[Yy]$ ]]; then
+        if ! confirm "Reinstall?"; then
             return 0
         fi
     fi
@@ -223,7 +221,12 @@ install_ws() {
     
     local domain=""
     while true; do
-        read -rp "  Enter your domain (e.g., ws.example.com): " domain </dev/tty
+        get_input "Enter your domain (e.g., ws.example.com)" "" domain
+        
+        if [[ -z "$domain" ]]; then
+            print_error "Domain cannot be empty"
+            continue
+        fi
         
         if ! validate_domain "$domain"; then
             print_error "Invalid domain format"
@@ -234,8 +237,7 @@ install_ws() {
             break
         fi
         
-        read -rp "  Try anyway? [y/N]: " try_anyway </dev/tty
-        if [[ "$try_anyway" =~ ^[Yy]$ ]]; then
+        if confirm "Try anyway?"; then
             break
         fi
     done
@@ -264,11 +266,7 @@ install_ws() {
     echo ""
     echo -e "  ${BOLD}${WHITE}Create First User${RESET}"
     print_line
-    read -rp "  Username: " first_user </dev/tty
-    
-    if [[ -z "$first_user" ]]; then
-        first_user="user1"
-    fi
+    get_input "Username" "user1" first_user
     
     local uuid
     uuid=$(generate_uuid)
@@ -360,8 +358,8 @@ EOF
 #-------------------------------------------------------------------------------
 
 add_ws_user() {
-    echo ""
-    read -rp "  New username: " username </dev/tty
+    local username
+    get_input "New username" "" username
     
     if [[ -z "$username" ]]; then
         print_error "Username cannot be empty"
@@ -406,7 +404,8 @@ remove_ws_user() {
     done
     echo ""
     
-    read -rp "  Username to remove: " username </dev/tty
+    local username
+    get_input "Username to remove" "" username
     
     if ! user_exists "$username" "ws"; then
         print_error "User '$username' not found"
@@ -547,8 +546,7 @@ uninstall_ws() {
     echo "  - TLS certificates (optional)"
     echo ""
     
-    read -rp "  Continue? [y/N]: " confirm </dev/tty
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    if ! confirm "Continue?"; then
         return 0
     fi
     
@@ -569,8 +567,7 @@ uninstall_ws() {
     json_set ".server.ws_path" "null"
     
     # Ask about certs
-    read -rp "  Remove TLS certificates? [y/N]: " remove_certs </dev/tty
-    if [[ "$remove_certs" =~ ^[Yy]$ ]]; then
+    if confirm "Remove TLS certificates?"; then
         rm -rf "$CERT_DIR" 2>/dev/null || true
         print_success "Certificates removed"
     fi
@@ -598,7 +595,7 @@ change_ws_domain() {
     
     local new_domain=""
     while true; do
-        read -rp "  New domain (e.g., ws.example.com): " new_domain </dev/tty
+        get_input "New domain (e.g., ws.example.com)" "" new_domain
         
         if [[ -z "$new_domain" || "$new_domain" == "$current_domain" ]]; then
             echo "  Keeping current domain"
@@ -614,8 +611,7 @@ change_ws_domain() {
             break
         fi
         
-        read -rp "  Try anyway? [y/N]: " try_anyway </dev/tty
-        if [[ "$try_anyway" =~ ^[Yy]$ ]]; then
+        if confirm "Try anyway?"; then
             break
         fi
     done
@@ -759,14 +755,16 @@ show_ws_menu() {
         echo "  0) Exit"
         echo ""
         
-        read -rp "  Select [0-9]: " choice </dev/tty
+        local choice
+        get_input "Select [0-9]" "" choice
         
         case $choice in
             1) add_ws_user ;;
             2) remove_ws_user ;;
             3) list_ws_users ;;
             4)
-                read -rp "  Username: " username </dev/tty
+                local username
+                get_input "Username" "" username
                 show_ws_user_links "$username"
                 ;;
             5) show_all_ws_links ;;
