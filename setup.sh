@@ -974,10 +974,20 @@ show_proxy_links() {
     echo ""
     
     # Encode TLS domain to hex for fake-TLS secrets
+    # Use printf + od as fallback if xxd not available
     local tls_domain_hex=""
     if [[ -n "$tls_domain" ]]; then
-        tls_domain_hex=$(echo -n "$tls_domain" | xxd -ps | tr -d '\n')
+        if command -v xxd &>/dev/null; then
+            tls_domain_hex=$(printf '%s' "$tls_domain" | xxd -p | tr -d '\n')
+        else
+            # Fallback using od
+            tls_domain_hex=$(printf '%s' "$tls_domain" | od -An -tx1 | tr -d ' \n')
+        fi
     fi
+    
+    # Debug: show domain hex (uncomment if needed)
+    # echo -e "  ${GRAY}DEBUG: TLS Domain: $tls_domain -> Hex: $tls_domain_hex${RESET}"
+    # echo ""
     
     local user_num=1
     for user in "${users[@]}"; do
@@ -1038,9 +1048,12 @@ show_proxy_links() {
         # Show secret details for debugging
         echo ""
         echo -e "  ${GRAY}Secret breakdown:${RESET}"
-        echo -e "  ${GRAY}  Prefix: ${mode:-$proxy_mode} | Base: ${clean_secret:0:8}...${RESET}"
+        echo -e "  ${GRAY}  Mode: ${mode:-$proxy_mode}${RESET}"
+        echo -e "  ${GRAY}  Base secret (32 chars): ${clean_secret}${RESET}"
         if [[ "$link_type" == *"ee"* ]]; then
             echo -e "  ${GRAY}  TLS Domain: $tls_domain${RESET}"
+            echo -e "  ${GRAY}  Domain Hex: $tls_domain_hex${RESET}"
+            echo -e "  ${GRAY}  Full secret length: ${#full_secret} chars${RESET}"
         fi
         
         echo ""
