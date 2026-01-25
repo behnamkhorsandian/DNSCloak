@@ -1077,27 +1077,26 @@ show_proxy_links() {
     print_line
     echo ""
     
+    # Use domain if available, otherwise IP
+    local server="$ip"
+    if [[ -n "$domain" && "$domain" != "none" ]]; then
+        server="$domain"
+    fi
+    
     # Encode TLS domain to hex for fake-TLS secrets
-    # Use printf + od as fallback if xxd not available
     local tls_domain_hex=""
     if [[ -n "$tls_domain" ]]; then
         if command -v xxd &>/dev/null; then
             tls_domain_hex=$(printf '%s' "$tls_domain" | xxd -p | tr -d '\n')
         else
-            # Fallback using od
             tls_domain_hex=$(printf '%s' "$tls_domain" | od -An -tx1 | tr -d ' \n')
         fi
     fi
     
-    # Debug: show domain hex (uncomment if needed)
-    # echo -e "  ${GRAY}DEBUG: TLS Domain: $tls_domain -> Hex: $tls_domain_hex${RESET}"
-    # echo ""
-    
-    local user_num=1
     for user in "${users[@]}"; do
         IFS=':' read -r name raw_secret mode <<< "$user"
         
-        echo -e "  ${BOLD}${CYAN}User: $name${RESET}"
+        echo -e "  ${BOLD}${CYAN}━━━ User: $name ━━━${RESET}"
         echo ""
         
         # Clean the secret (remove any existing prefix)
@@ -1105,65 +1104,22 @@ show_proxy_links() {
         clean_secret="${clean_secret#dd}"
         clean_secret="${clean_secret:0:32}"
         
-        # Build the full secret based on mode
-        local full_secret=""
-        local link_type=""
+        # Build both secrets
+        local dd_secret="dd${clean_secret}"
+        local ee_secret="ee${clean_secret}${tls_domain_hex}"
         
-        if [[ "$mode" == "tls" || "$proxy_mode" == "tls" ]]; then
-            # Fake-TLS mode: ee + secret + domain_hex
-            full_secret="ee${clean_secret}${tls_domain_hex}"
-            link_type="Fake-TLS (ee)"
-        elif [[ "$mode" == "secure" || "$proxy_mode" == "secure" ]]; then
-            # Secure mode with random padding: dd + secret
-            full_secret="dd${clean_secret}"
-            link_type="Secure/Random Padding (dd)"
-        else
-            # Classic mode (not recommended)
-            full_secret="${clean_secret}"
-            link_type="Classic"
-        fi
-        
-        echo -e "  ${WHITE}Mode:${RESET} ${GREEN}$link_type${RESET}"
+        # Secure mode link (dd)
+        echo -e "  ${WHITE}Secure Mode (dd)${RESET} ${GRAY}- Random padding, harder to detect${RESET}"
+        echo -e "  ${GREEN}tg://proxy?server=${server}&port=${port}&secret=${dd_secret}${RESET}"
         echo ""
         
-        # IP-based link
-        local ip_link="tg://proxy?server=${ip}&port=${port}&secret=${full_secret}"
-        local ip_web="https://t.me/proxy?server=${ip}&port=${port}&secret=${full_secret}"
-        
-        echo -e "  ${WHITE}Direct Link (IP):${RESET}"
-        echo -e "  ${GREEN}$ip_link${RESET}"
+        # Fake-TLS mode link (ee)
+        echo -e "  ${WHITE}Fake-TLS Mode (ee)${RESET} ${GRAY}- Looks like HTTPS to ${tls_domain}${RESET}"
+        echo -e "  ${GREEN}tg://proxy?server=${server}&port=${port}&secret=${ee_secret}${RESET}"
         echo ""
-        echo -e "  ${WHITE}Web Link:${RESET}"
-        echo -e "  ${BLUE}$ip_web${RESET}"
         
-        # Domain-based link
-        if [[ -n "$domain" && "$domain" != "none" ]]; then
-            local domain_link="tg://proxy?server=${domain}&port=${port}&secret=${full_secret}"
-            local domain_web="https://t.me/proxy?server=${domain}&port=${port}&secret=${full_secret}"
-            
-            echo ""
-            echo -e "  ${WHITE}Domain Link:${RESET}"
-            echo -e "  ${GREEN}$domain_link${RESET}"
-            echo ""
-            echo -e "  ${WHITE}Domain Web Link:${RESET}"
-            echo -e "  ${BLUE}$domain_web${RESET}"
-        fi
-        
-        # Show secret details for debugging
-        echo ""
-        echo -e "  ${GRAY}Secret breakdown:${RESET}"
-        echo -e "  ${GRAY}  Mode: ${mode:-$proxy_mode}${RESET}"
-        echo -e "  ${GRAY}  Base secret (32 chars): ${clean_secret}${RESET}"
-        if [[ "$link_type" == *"ee"* ]]; then
-            echo -e "  ${GRAY}  TLS Domain: $tls_domain${RESET}"
-            echo -e "  ${GRAY}  Domain Hex: $tls_domain_hex${RESET}"
-            echo -e "  ${GRAY}  Full secret length: ${#full_secret} chars${RESET}"
-        fi
-        
-        echo ""
         print_line
         echo ""
-        ((user_num++))
     done
 }
 
@@ -1620,32 +1576,28 @@ add_user() {
     print_success "User '$username' added!"
     echo ""
     
-    # Build the full secret for display
-    local full_secret=""
-    local tls_domain_hex=""
-    
-    if [[ "$PROXY_MODE" == "tls" && -n "$TLS_DOMAIN" ]]; then
-        tls_domain_hex=$(printf '%s' "$TLS_DOMAIN" | xxd -p | tr -d '\n')
-        full_secret="ee${secret}${tls_domain_hex}"
-    elif [[ "$PROXY_MODE" == "secure" ]]; then
-        full_secret="dd${secret}"
-    else
-        full_secret="${secret}"
+    # Use domain if available, otherwise IP
+    local server="$PROXY_IP"
+    if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
+        server="$PROXY_DOMAIN"
     fi
     
-    echo -e "  ${WHITE}Mode:${RESET} ${PROXY_MODE:-tls}"
-    echo -e "  ${WHITE}Base Secret:${RESET} ${secret}"
-    echo ""
+    # Build secrets for display
+    local tls_domain_hex=""
+    if [[ -n "$TLS_DOMAIN" ]]; then
+        tls_domain_hex=$(printf '%s' "$TLS_DOMAIN" | xxd -p | tr -d '\n')
+    fi
+    
+    local dd_secret="dd${secret}"
+    local ee_secret="ee${secret}${tls_domain_hex}"
     
     # Show links for new user
-    echo -e "  ${WHITE}Link:${RESET}"
-    echo -e "  ${GREEN}tg://proxy?server=${PROXY_IP}&port=${PROXY_PORT}&secret=${full_secret}${RESET}"
+    echo -e "  ${WHITE}Secure Mode (dd)${RESET} ${GRAY}- Random padding, harder to detect${RESET}"
+    echo -e "  ${GREEN}tg://proxy?server=${server}&port=${PROXY_PORT}&secret=${dd_secret}${RESET}"
+    echo ""
     
-    if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
-        echo ""
-        echo -e "  ${WHITE}Domain Link:${RESET}"
-        echo -e "  ${GREEN}tg://proxy?server=${PROXY_DOMAIN}&port=${PROXY_PORT}&secret=${full_secret}${RESET}"
-    fi
+    echo -e "  ${WHITE}Fake-TLS Mode (ee)${RESET} ${GRAY}- Looks like HTTPS to ${TLS_DOMAIN}${RESET}"
+    echo -e "  ${GREEN}tg://proxy?server=${server}&port=${PROXY_PORT}&secret=${ee_secret}${RESET}"
     
     echo ""
     press_enter
