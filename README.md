@@ -1,18 +1,49 @@
 # DNSCloak
 
-**MTProto Proxy with Fake-TLS** support. Perfect for helping people in restricted regions access Telegram.
+**MTProto Proxy with Fake-TLS & Secure Mode** support. Perfect for helping people in restricted regions access Telegram.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
 ##  Features
 
-- **Fake-TLS Support** - Traffic disguised as HTTPS to popular websites (bypasses DPI)
+- **Fake-TLS Support (ee)** - Traffic disguised as HTTPS to popular websites (bypasses DPI)
+- **Secure Mode with Random Padding (dd)** - Adds random padding for extra obfuscation
 - **Domain Support** - Use your own domain for better reliability
 - **Multi-User** - Create multiple proxy users with different secrets
+- **Port & Firewall Analysis** - Check open ports, processes, and firewall status
 - **Cross-Platform** - Works on iOS, Android, Desktop, and Web
 - **Cloud Agnostic** - Works with GCP, AWS, DigitalOcean, Vultr, etc.
 - **Interactive Setup** - Guided installation with clear instructions
+
+---
+
+## Secret Prefixes Explained
+
+| Prefix | Mode | Description |
+|--------|------|-------------|
+| `ee` | Fake-TLS | Traffic looks like HTTPS. Format: `ee` + `32-char-secret` + `domain-as-hex` |
+| `dd` | Secure | Random padding added. Format: `dd` + `32-char-secret` |
+| none | Classic | Basic MTProto (easily detectable, not recommended) |
+
+### Example Secrets
+
+```
+# Fake-TLS (ee) - Correct format:
+ee7f45a9c40d648d9709c7fa40f27ad97777772e676f6f676c652e636f6d
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                                 |
+   32-char hex secret               "www.google.com" in hex
+
+# Secure (dd) - Correct format:
+dd7f45a9c40d648d9709c7fa40f27ad9
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   32-char hex secret
+```
+
+⚠️ **Common Mistake**: If your ee-prefixed secret doesn't include the domain hex at the end, the proxy won't work!
 
 ---
 

@@ -30,12 +30,16 @@ RESET='\033[0m'
 BOLD='\033[1m'
 
 # ============== GLOBAL VARS ==============
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.1.0"
 INSTALL_DIR="/opt/telegram-proxy"
 CONFIG_FILE="$INSTALL_DIR/config.py"
 SERVICE_NAME="telegram-proxy"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 DATA_FILE="$INSTALL_DIR/proxy_data.sh"
+
+# Proxy modes
+MODE_TLS="tls"          # Fake-TLS (ee prefix) - traffic looks like HTTPS
+MODE_SECURE="secure"    # Random padding (dd prefix) - harder to detect
 
 # ============== HELPER FUNCTIONS ==============
 
@@ -165,6 +169,190 @@ check_port_available() {
         return 1
     fi
     return 0
+}
+
+# ============== PORT & FIREWALL ANALYSIS ==============
+
+# Get list of open ports with details
+get_open_ports_info() {
+    echo ""
+    echo -e "  ${BOLD}${WHITE}📡 OPEN PORTS ANALYSIS${RESET}"
+    print_line
+    echo ""
+    
+    # Get all listening TCP ports
+    echo -e "  ${BOLD}${CYAN}Listening TCP Ports:${RESET}"
+    echo ""
+    
+    local port_list=$(ss -tlnp 2>/dev/null | grep LISTEN | awk '{print $4}' | sed 's/.*://' | sort -n | uniq)
+    
+    if [[ -z "$port_list" ]]; then
+        echo -e "  ${GRAY}No listening ports found${RESET}"
+    else
+        printf "  ${WHITE}%-10s %-20s %-30s${RESET}\n" "PORT" "PROCESS" "DETAILS"
+        echo -e "  ${GRAY}─────────────────────────────────────────────────────────${RESET}"
+        
+        while read -r port; do
+            if [[ -n "$port" && "$port" =~ ^[0-9]+$ ]]; then
+                local ss_line=$(ss -tlnp 2>/dev/null | grep ":${port} " | head -1)
+                local process_info=$(echo "$ss_line" | grep -oP 'users:\(\("\K[^"]+' 2>/dev/null || echo "unknown")
+                local pid=$(echo "$ss_line" | grep -oP 'pid=\K[0-9]+' 2>/dev/null | head -1)
+                
+                local details=""
+                if [[ -n "$pid" ]]; then
+                    details="PID: $pid"
+                fi
+                
+                # Highlight common ports
+                local port_color="${WHITE}"
+                case $port in
+                    22) details="SSH"; port_color="${GREEN}" ;;
+                    80) details="HTTP"; port_color="${CYAN}" ;;
+                    443) details="HTTPS/TLS"; port_color="${CYAN}" ;;
+                    3306) details="MySQL"; port_color="${YELLOW}" ;;
+                    5432) details="PostgreSQL"; port_color="${YELLOW}" ;;
+                    6379) details="Redis"; port_color="${YELLOW}" ;;
+                    8080|8443) details="Alt HTTP/HTTPS"; port_color="${CYAN}" ;;
+                esac
+                
+                # Check if it's our proxy
+                if echo "$ss_line" | grep -q "telegram-proxy\|mtprotoproxy\|python3"; then
+                    if [[ -f "$CONFIG_FILE" ]] && grep -q "PORT = $port" "$CONFIG_FILE" 2>/dev/null; then
+                        process_info="telegram-proxy"
+                        details="${details:+$details | }${GREEN}DNSCloak Proxy${RESET}"
+                        port_color="${GREEN}"
+                    fi
+                fi
+                
+                printf "  ${port_color}%-10s${RESET} %-20s %-30b\n" "$port" "$process_info" "$details"
+            fi
+        done <<< "$port_list"
+    fi
+    
+    echo ""
+}
+
+# Check firewall status
+check_firewall_status() {
+    echo -e "  ${BOLD}${CYAN}Firewall Status:${RESET}"
+    echo ""
+    
+    local firewall_found=false
+    
+    # Check UFW (Ubuntu Firewall)
+    if command -v ufw &> /dev/null; then
+        firewall_found=true
+        local ufw_status=$(sudo ufw status 2>/dev/null | head -1)
+        if echo "$ufw_status" | grep -qi "active"; then
+            echo -e "  ${YELLOW}●${RESET} UFW: ${GREEN}Active${RESET}"
+            echo ""
+            echo -e "  ${WHITE}UFW Rules:${RESET}"
+            sudo ufw status numbered 2>/dev/null | head -15 | sed 's/^/    /'
+        else
+            echo -e "  ${GRAY}●${RESET} UFW: ${GRAY}Inactive${RESET}"
+        fi
+        echo ""
+    fi
+    
+    # Check iptables
+    if command -v iptables &> /dev/null; then
+        firewall_found=true
+        local iptables_rules=$(sudo iptables -L INPUT -n 2>/dev/null | grep -c "ACCEPT\|DROP\|REJECT" || echo "0")
+        if [[ "$iptables_rules" -gt 2 ]]; then
+            echo -e "  ${YELLOW}●${RESET} iptables: ${GREEN}Rules configured${RESET} ($iptables_rules rules)"
+        else
+            echo -e "  ${GRAY}●${RESET} iptables: ${GRAY}Default/minimal rules${RESET}"
+        fi
+        echo ""
+    fi
+    
+    # Check firewalld (CentOS/RHEL style)
+    if command -v firewall-cmd &> /dev/null; then
+        firewall_found=true
+        if systemctl is-active --quiet firewalld 2>/dev/null; then
+            echo -e "  ${YELLOW}●${RESET} firewalld: ${GREEN}Active${RESET}"
+            echo ""
+            echo -e "  ${WHITE}Open ports:${RESET}"
+            sudo firewall-cmd --list-ports 2>/dev/null | sed 's/^/    /'
+        else
+            echo -e "  ${GRAY}●${RESET} firewalld: ${GRAY}Inactive${RESET}"
+        fi
+        echo ""
+    fi
+    
+    # Check nftables
+    if command -v nft &> /dev/null; then
+        local nft_rules=$(sudo nft list ruleset 2>/dev/null | grep -c "accept\|drop\|reject" || echo "0")
+        if [[ "$nft_rules" -gt 0 ]]; then
+            firewall_found=true
+            echo -e "  ${YELLOW}●${RESET} nftables: ${GREEN}Rules configured${RESET} ($nft_rules rules)"
+            echo ""
+        fi
+    fi
+    
+    if ! $firewall_found; then
+        echo -e "  ${GRAY}No local firewall detected${RESET}"
+        echo ""
+    fi
+    
+    # Cloud provider note
+    echo -e "  ${YELLOW}⚠️  Note:${RESET} Cloud providers (AWS, GCP, Azure, etc.) have their own firewalls"
+    echo -e "     that must be configured separately from the VM's firewall."
+    echo ""
+}
+
+# Check if a specific port is likely accessible
+check_port_accessibility() {
+    local port=$1
+    
+    echo -e "  ${BOLD}${CYAN}Port $port Accessibility:${RESET}"
+    echo ""
+    
+    # Check if port is in use
+    if check_port_available "$port"; then
+        echo -e "  ${GRAY}●${RESET} Port status: ${GRAY}Not in use${RESET}"
+    else
+        local usage_info=$(get_port_usage_info "$port")
+        echo -e "  ${GREEN}●${RESET} Port status: ${GREEN}In use${RESET} by $usage_info"
+    fi
+    
+    # Check UFW rules for this port
+    if command -v ufw &> /dev/null; then
+        if sudo ufw status 2>/dev/null | grep -q "^$port"; then
+            echo -e "  ${GREEN}●${RESET} UFW: ${GREEN}Port allowed${RESET}"
+        elif sudo ufw status 2>/dev/null | grep -qi "active"; then
+            echo -e "  ${RED}●${RESET} UFW: ${RED}Port not explicitly allowed${RESET}"
+        fi
+    fi
+    
+    # Check iptables for this port
+    if command -v iptables &> /dev/null; then
+        if sudo iptables -L INPUT -n 2>/dev/null | grep -q "dpt:$port"; then
+            if sudo iptables -L INPUT -n 2>/dev/null | grep "dpt:$port" | grep -qi "ACCEPT"; then
+                echo -e "  ${GREEN}●${RESET} iptables: ${GREEN}Port allowed${RESET}"
+            else
+                echo -e "  ${RED}●${RESET} iptables: ${RED}Port may be blocked${RESET}"
+            fi
+        fi
+    fi
+    
+    echo ""
+}
+
+# Show comprehensive port analysis during installation
+show_port_analysis() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}🔍 PORT & FIREWALL ANALYSIS${RESET}"
+    print_line
+    
+    get_open_ports_info
+    print_line
+    echo ""
+    check_firewall_status
+    print_line
+    echo ""
+    
+    press_enter
 }
 
 # Get detailed information about what's using a port
@@ -404,34 +592,73 @@ generate_secret() {
 create_config() {
     local port=$1
     local tls_domain=$2
-    shift 2
+    local proxy_mode=$3
+    local random_padding=$4
+    shift 4
     local users=("$@")
     
     print_step "Creating configuration..."
     
+    # Determine modes based on selection
+    local mode_classic="False"
+    local mode_secure="False"
+    local mode_tls="False"
+    
+    if [[ "$proxy_mode" == "tls" ]]; then
+        mode_tls="True"
+        # If random padding enabled with TLS, also enable secure mode
+        if [[ "$random_padding" == "yes" ]]; then
+            mode_secure="True"
+        fi
+    elif [[ "$proxy_mode" == "secure" ]]; then
+        mode_secure="True"
+    fi
+    
     cat > "$CONFIG_FILE" << EOF
 # MTProto Proxy Configuration
-# Generated by TelegramProxy Setup Script
+# Generated by DNSCloak Setup Script v${SCRIPT_VERSION}
 
 PORT = $port
 
 USERS = {
 EOF
 
-    # Add users
+    # Add users (secrets are stored without prefix in config)
     for user in "${users[@]}"; do
-        IFS=':' read -r name secret <<< "$user"
-        echo "    \"$name\": \"$secret\"," >> "$CONFIG_FILE"
+        IFS=':' read -r name secret mode <<< "$user"
+        # Remove any prefix (ee/dd) from secret for config file
+        local clean_secret="${secret#ee}"
+        clean_secret="${clean_secret#dd}"
+        # Ensure it's 32 chars
+        clean_secret="${clean_secret:0:32}"
+        echo "    \"$name\": \"$clean_secret\"," >> "$CONFIG_FILE"
     done
 
     cat >> "$CONFIG_FILE" << EOF
 }
 
-# Fake-TLS: Traffic will look like HTTPS to this domain
+# Proxy Modes
+MODES = {
+    # Classic mode, easy to detect
+    "classic": $mode_classic,
+
+    # Secure mode with random padding (dd prefix)
+    # Makes the proxy harder to detect
+    "secure": $mode_secure,
+
+    # Fake-TLS mode (ee prefix)
+    # Makes the proxy even harder to detect
+    # Traffic looks like HTTPS to the TLS_DOMAIN
+    "tls": $mode_tls
+}
+
+# The domain for TLS mode - traffic will look like HTTPS to this site
+# Bad clients are proxied there, so use a real website
 TLS_DOMAIN = "$tls_domain"
 
 # Performance settings
 PREFER_IPV6 = False
+FAST_MODE = True
 EOF
 
     print_success "Configuration created"
@@ -468,7 +695,10 @@ save_proxy_data() {
     local public_ip=$1
     local domain=$2
     local port=$3
-    shift 3
+    local proxy_mode=$4
+    local tls_domain=$5
+    local random_padding=$6
+    shift 6
     local users=("$@")
     
     cat > "$DATA_FILE" << EOF
@@ -476,6 +706,9 @@ save_proxy_data() {
 PROXY_IP="$public_ip"
 PROXY_DOMAIN="$domain"
 PROXY_PORT="$port"
+PROXY_MODE="$proxy_mode"
+TLS_DOMAIN="$tls_domain"
+RANDOM_PADDING="$random_padding"
 PROXY_USERS=(
 EOF
 
@@ -701,7 +934,9 @@ show_proxy_links() {
     local ip=$1
     local domain=$2
     local port=$3
-    shift 3
+    local proxy_mode=$4
+    local tls_domain=$5
+    shift 5
     local users=("$@")
     
     print_banner
@@ -709,18 +944,50 @@ show_proxy_links() {
     print_line
     echo ""
     
+    # Encode TLS domain to hex for fake-TLS secrets
+    local tls_domain_hex=""
+    if [[ -n "$tls_domain" ]]; then
+        tls_domain_hex=$(echo -n "$tls_domain" | xxd -ps | tr -d '\n')
+    fi
+    
     local user_num=1
     for user in "${users[@]}"; do
-        IFS=':' read -r name secret <<< "$user"
+        IFS=':' read -r name raw_secret mode <<< "$user"
         
         echo -e "  ${BOLD}${CYAN}User: $name${RESET}"
         echo ""
         
-        # IP-based link
-        local ip_link="tg://proxy?server=${ip}&port=${port}&secret=${secret}"
-        local ip_web="https://t.me/proxy?server=${ip}&port=${port}&secret=${secret}"
+        # Clean the secret (remove any existing prefix)
+        local clean_secret="${raw_secret#ee}"
+        clean_secret="${clean_secret#dd}"
+        clean_secret="${clean_secret:0:32}"
         
-        echo -e "  ${WHITE}Direct (IP):${RESET}"
+        # Build the full secret based on mode
+        local full_secret=""
+        local link_type=""
+        
+        if [[ "$mode" == "tls" || "$proxy_mode" == "tls" ]]; then
+            # Fake-TLS mode: ee + secret + domain_hex
+            full_secret="ee${clean_secret}${tls_domain_hex}"
+            link_type="Fake-TLS (ee)"
+        elif [[ "$mode" == "secure" || "$proxy_mode" == "secure" ]]; then
+            # Secure mode with random padding: dd + secret
+            full_secret="dd${clean_secret}"
+            link_type="Secure/Random Padding (dd)"
+        else
+            # Classic mode (not recommended)
+            full_secret="${clean_secret}"
+            link_type="Classic"
+        fi
+        
+        echo -e "  ${WHITE}Mode:${RESET} ${GREEN}$link_type${RESET}"
+        echo ""
+        
+        # IP-based link
+        local ip_link="tg://proxy?server=${ip}&port=${port}&secret=${full_secret}"
+        local ip_web="https://t.me/proxy?server=${ip}&port=${port}&secret=${full_secret}"
+        
+        echo -e "  ${WHITE}Direct Link (IP):${RESET}"
         echo -e "  ${GREEN}$ip_link${RESET}"
         echo ""
         echo -e "  ${WHITE}Web Link:${RESET}"
@@ -728,8 +995,8 @@ show_proxy_links() {
         
         # Domain-based link
         if [[ -n "$domain" && "$domain" != "none" ]]; then
-            local domain_link="tg://proxy?server=${domain}&port=${port}&secret=${secret}"
-            local domain_web="https://t.me/proxy?server=${domain}&port=${port}&secret=${secret}"
+            local domain_link="tg://proxy?server=${domain}&port=${port}&secret=${full_secret}"
+            local domain_web="https://t.me/proxy?server=${domain}&port=${port}&secret=${full_secret}"
             
             echo ""
             echo -e "  ${WHITE}Domain Link:${RESET}"
@@ -737,6 +1004,14 @@ show_proxy_links() {
             echo ""
             echo -e "  ${WHITE}Domain Web Link:${RESET}"
             echo -e "  ${BLUE}$domain_web${RESET}"
+        fi
+        
+        # Show secret details for debugging
+        echo ""
+        echo -e "  ${GRAY}Secret breakdown:${RESET}"
+        echo -e "  ${GRAY}  Prefix: ${mode:-$proxy_mode} | Base: ${clean_secret:0:8}...${RESET}"
+        if [[ "$link_type" == *"ee"* ]]; then
+            echo -e "  ${GRAY}  TLS Domain: $tls_domain${RESET}"
         fi
         
         echo ""
@@ -797,11 +1072,31 @@ show_usage_instructions() {
     print_line
     echo ""
     
+    echo -e "  ${BOLD}${YELLOW}� Secret Prefixes Explained:${RESET}"
+    echo ""
+    echo -e "  ${WHITE}ee${RESET} = Fake-TLS Mode (Recommended)"
+    echo -e "      Traffic looks like HTTPS to a real website"
+    echo -e "      Most resistant to DPI (Deep Packet Inspection)"
+    echo -e "      Secret format: ee + 32-char-hex + domain-as-hex"
+    echo ""
+    echo -e "  ${WHITE}dd${RESET} = Secure Mode with Random Padding"
+    echo -e "      Adds random padding to packets"
+    echo -e "      Harder to detect than classic mode"
+    echo -e "      Secret format: dd + 32-char-hex"
+    echo ""
+    echo -e "  ${WHITE}No prefix${RESET} = Classic Mode (Not Recommended)"
+    echo -e "      Easy to detect and block"
+    echo -e "      Only for compatibility with very old clients"
+    echo ""
+    print_line
+    echo ""
+    
     echo -e "  ${BOLD}${YELLOW}💡 Tips:${RESET}"
     echo ""
     echo -e "  • Share the ${BLUE}https://t.me/proxy?...${RESET} link for easy sharing"
     echo -e "  • Use domain links if your IP gets blocked"
-    echo -e "  • The ${WHITE}ee${RESET} prefix in secret = Fake-TLS enabled"
+    echo -e "  • Fake-TLS (ee) is the most censorship-resistant mode"
+    echo -e "  • If Fake-TLS doesn't work, try Secure mode (dd)"
     echo ""
     
     press_enter
@@ -827,9 +1122,31 @@ install_proxy() {
     fi
     echo ""
     
+    # Ask if user wants to see port analysis
+    if confirm "Show port & firewall analysis before continuing?" "y"; then
+        show_port_analysis
+    fi
+    
+    print_banner
+    echo -e "  ${BOLD}${WHITE}🚀 CONFIGURATION${RESET}"
+    print_line
+    echo ""
+    
     # Get port with smart conflict handling
     echo -e "  ${BOLD}Port Configuration:${RESET}"
     echo -e "  ${GRAY}Port 443 is recommended (looks like HTTPS traffic)${RESET}"
+    echo ""
+    
+    # Show quick port summary
+    echo -e "  ${WHITE}Common ports status:${RESET}"
+    for check_port in 443 8443 2053 8080; do
+        if check_port_available "$check_port"; then
+            echo -e "    ${GREEN}●${RESET} Port $check_port: Available"
+        else
+            local usage=$(get_port_usage_info "$check_port")
+            echo -e "    ${YELLOW}●${RESET} Port $check_port: In use ${GRAY}($usage)${RESET}"
+        fi
+    done
     echo ""
     
     # Determine default port (suggest available one)
@@ -878,6 +1195,10 @@ install_proxy() {
         fi
     done
     
+    # Check firewall for selected port
+    echo ""
+    check_port_accessibility "$PROXY_PORT"
+    
     echo ""
     print_success "Using port: $PROXY_PORT"
     echo ""
@@ -895,19 +1216,61 @@ install_proxy() {
     fi
     echo ""
     
-    # Get TLS domain (for fake-TLS)
-    echo -e "  ${BOLD}Fake-TLS Configuration:${RESET}"
-    echo -e "  ${GRAY}Your traffic will look like HTTPS to this website${RESET}"
-    echo -e "  ${GRAY}Choose a popular site that's not blocked in target region${RESET}"
+    # ============== PROXY MODE SELECTION ==============
+    echo -e "  ${BOLD}Proxy Mode Selection:${RESET}"
     echo ""
-    echo -e "  ${WHITE}Suggestions:${RESET}"
-    echo -e "  • www.google.com (default)"
-    echo -e "  • www.cloudflare.com"
-    echo -e "  • www.microsoft.com"
-    echo -e "  • www.apple.com"
+    echo -e "  ${CYAN}1)${RESET} ${GREEN}Fake-TLS (Recommended)${RESET}"
+    echo -e "     Traffic looks like HTTPS to a real website"
+    echo -e "     Most resistant to deep packet inspection (DPI)"
+    echo -e "     Secret prefix: ${WHITE}ee${RESET}"
+    echo ""
+    echo -e "  ${CYAN}2)${RESET} Secure Mode with Random Padding"
+    echo -e "     Adds random padding to packets"
+    echo -e "     Good alternative if Fake-TLS is blocked"
+    echo -e "     Secret prefix: ${WHITE}dd${RESET}"
     echo ""
     
-    get_input "Enter fake-TLS domain" "www.google.com" TLS_DOMAIN
+    get_input "Select mode" "1" mode_choice
+    
+    local PROXY_MODE="tls"
+    local RANDOM_PADDING="no"
+    
+    case $mode_choice in
+        1)
+            PROXY_MODE="tls"
+            echo ""
+            echo -e "  ${BOLD}Fake-TLS Configuration:${RESET}"
+            echo -e "  ${GRAY}Your traffic will look like HTTPS to this website${RESET}"
+            echo -e "  ${GRAY}Choose a popular site that's not blocked in target region${RESET}"
+            echo ""
+            echo -e "  ${WHITE}Suggestions:${RESET}"
+            echo -e "  • www.google.com (default)"
+            echo -e "  • www.cloudflare.com"
+            echo -e "  • www.microsoft.com"
+            echo -e "  • www.apple.com"
+            echo -e "  • www.bing.com"
+            echo ""
+            
+            get_input "Enter fake-TLS domain" "www.google.com" TLS_DOMAIN
+            
+            # Ask about random padding for TLS mode
+            echo ""
+            if confirm "Also enable random padding for extra obfuscation?" "y"; then
+                RANDOM_PADDING="yes"
+                print_success "Random padding enabled (dd mode will also work)"
+            fi
+            ;;
+        2)
+            PROXY_MODE="secure"
+            TLS_DOMAIN="www.google.com"  # Not used but set for config
+            print_success "Secure mode with random padding selected"
+            ;;
+        *)
+            PROXY_MODE="tls"
+            TLS_DOMAIN="www.google.com"
+            ;;
+    esac
+    
     echo ""
     
     # Get number of users
@@ -929,8 +1292,8 @@ install_proxy() {
     for ((i=1; i<=NUM_USERS; i++)); do
         get_input "Enter name for user $i" "user$i" username
         secret=$(generate_secret)
-        # Add 'ee' prefix for fake-TLS
-        USERS+=("${username}:ee${secret}")
+        # Store with mode info: name:secret:mode
+        USERS+=("${username}:${secret}:${PROXY_MODE}")
         print_success "Created user: $username"
     done
     
@@ -941,11 +1304,15 @@ install_proxy() {
     # Confirm installation
     echo -e "  ${BOLD}Configuration Summary:${RESET}"
     echo ""
-    echo -e "  Server IP:    ${WHITE}$PUBLIC_IP${RESET}"
-    echo -e "  Port:         ${WHITE}$PROXY_PORT${RESET}"
-    echo -e "  Domain:       ${WHITE}${PROXY_DOMAIN:-none}${RESET}"
-    echo -e "  Fake-TLS:     ${WHITE}$TLS_DOMAIN${RESET}"
-    echo -e "  Users:        ${WHITE}$NUM_USERS${RESET}"
+    echo -e "  Server IP:      ${WHITE}$PUBLIC_IP${RESET}"
+    echo -e "  Port:           ${WHITE}$PROXY_PORT${RESET}"
+    echo -e "  Domain:         ${WHITE}${PROXY_DOMAIN:-none}${RESET}"
+    echo -e "  Proxy Mode:     ${WHITE}${PROXY_MODE}${RESET}"
+    if [[ "$PROXY_MODE" == "tls" ]]; then
+        echo -e "  Fake-TLS Host:  ${WHITE}$TLS_DOMAIN${RESET}"
+    fi
+    echo -e "  Random Padding: ${WHITE}$RANDOM_PADDING${RESET}"
+    echo -e "  Users:          ${WHITE}$NUM_USERS${RESET}"
     echo ""
     
     if ! confirm "Proceed with installation?" "y"; then
@@ -961,9 +1328,9 @@ install_proxy() {
     # Install
     install_dependencies
     clone_mtprotoproxy
-    create_config "$PROXY_PORT" "$TLS_DOMAIN" "${USERS[@]}"
+    create_config "$PROXY_PORT" "$TLS_DOMAIN" "$PROXY_MODE" "$RANDOM_PADDING" "${USERS[@]}"
     create_service
-    save_proxy_data "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "${USERS[@]}"
+    save_proxy_data "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${USERS[@]}"
     
     if start_service; then
         echo ""
@@ -981,7 +1348,7 @@ install_proxy() {
         show_dns_instructions "$PUBLIC_IP" "$PROXY_DOMAIN"
         
         # Show proxy links
-        show_proxy_links "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "${USERS[@]}"
+        show_proxy_links "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "${USERS[@]}"
         
         press_enter
         
@@ -1009,10 +1376,15 @@ show_status() {
         if [[ -f "$DATA_FILE" ]]; then
             source "$DATA_FILE"
             echo ""
-            echo -e "  IP:      ${WHITE}$PROXY_IP${RESET}"
-            echo -e "  Domain:  ${WHITE}${PROXY_DOMAIN:-none}${RESET}"
-            echo -e "  Port:    ${WHITE}$PROXY_PORT${RESET}"
-            echo -e "  Users:   ${WHITE}${#PROXY_USERS[@]}${RESET}"
+            echo -e "  IP:           ${WHITE}$PROXY_IP${RESET}"
+            echo -e "  Domain:       ${WHITE}${PROXY_DOMAIN:-none}${RESET}"
+            echo -e "  Port:         ${WHITE}$PROXY_PORT${RESET}"
+            echo -e "  Mode:         ${WHITE}${PROXY_MODE:-tls}${RESET}"
+            if [[ "${PROXY_MODE:-tls}" == "tls" ]]; then
+                echo -e "  TLS Domain:   ${WHITE}${TLS_DOMAIN:-www.google.com}${RESET}"
+            fi
+            echo -e "  Rand Padding: ${WHITE}${RANDOM_PADDING:-no}${RESET}"
+            echo -e "  Users:        ${WHITE}${#PROXY_USERS[@]}${RESET}"
         fi
         
         echo ""
@@ -1034,7 +1406,7 @@ show_status() {
 view_links() {
     if [[ -f "$DATA_FILE" ]]; then
         source "$DATA_FILE"
-        show_proxy_links "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "${PROXY_USERS[@]}"
+        show_proxy_links "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "${PROXY_USERS[@]}"
         press_enter
     else
         print_error "No proxy data found. Install first."
@@ -1065,31 +1437,48 @@ add_user() {
     fi
     
     secret=$(generate_secret)
-    new_user="${username}:ee${secret}"
     
-    # Add to config file
-    sed -i "/^}$/i\\    \"$username\": \"ee${secret}\"," "$CONFIG_FILE"
+    # Store with mode info
+    new_user="${username}:${secret}:${PROXY_MODE:-tls}"
+    
+    # Add to config file (config stores clean secret without prefix)
+    sed -i "/^}$/i\\    \"$username\": \"${secret}\"," "$CONFIG_FILE"
     
     # Add to data file
     PROXY_USERS+=("$new_user")
-    save_proxy_data "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "${PROXY_USERS[@]}"
+    save_proxy_data "$PROXY_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${PROXY_USERS[@]}"
     
     # Restart service
     systemctl restart "$SERVICE_NAME"
     
     print_success "User '$username' added!"
     echo ""
-    echo -e "  ${WHITE}Secret:${RESET} ee${secret}"
+    
+    # Build the full secret for display
+    local full_secret=""
+    local tls_domain_hex=""
+    
+    if [[ "$PROXY_MODE" == "tls" && -n "$TLS_DOMAIN" ]]; then
+        tls_domain_hex=$(echo -n "$TLS_DOMAIN" | xxd -ps | tr -d '\n')
+        full_secret="ee${secret}${tls_domain_hex}"
+    elif [[ "$PROXY_MODE" == "secure" ]]; then
+        full_secret="dd${secret}"
+    else
+        full_secret="${secret}"
+    fi
+    
+    echo -e "  ${WHITE}Mode:${RESET} ${PROXY_MODE:-tls}"
+    echo -e "  ${WHITE}Base Secret:${RESET} ${secret}"
     echo ""
     
     # Show links for new user
     echo -e "  ${WHITE}Link:${RESET}"
-    echo -e "  ${GREEN}tg://proxy?server=${PROXY_IP}&port=${PROXY_PORT}&secret=ee${secret}${RESET}"
+    echo -e "  ${GREEN}tg://proxy?server=${PROXY_IP}&port=${PROXY_PORT}&secret=${full_secret}${RESET}"
     
     if [[ -n "$PROXY_DOMAIN" && "$PROXY_DOMAIN" != "none" ]]; then
         echo ""
         echo -e "  ${WHITE}Domain Link:${RESET}"
-        echo -e "  ${GREEN}tg://proxy?server=${PROXY_DOMAIN}&port=${PROXY_PORT}&secret=ee${secret}${RESET}"
+        echo -e "  ${GREEN}tg://proxy?server=${PROXY_DOMAIN}&port=${PROXY_PORT}&secret=${full_secret}${RESET}"
     fi
     
     echo ""
@@ -1182,6 +1571,7 @@ main_menu() {
             if [[ -f "$DATA_FILE" ]]; then
                 source "$DATA_FILE"
                 echo -e "  Server: ${WHITE}${PROXY_DOMAIN:-$PROXY_IP}:$PROXY_PORT${RESET}"
+                echo -e "  Mode: ${WHITE}${PROXY_MODE:-tls}${RESET}"
                 echo -e "  Users: ${WHITE}${#PROXY_USERS[@]}${RESET}"
             fi
         else
@@ -1200,13 +1590,15 @@ main_menu() {
             echo -e "  ${CYAN}3)${RESET} Add New User"
             echo -e "  ${CYAN}4)${RESET} Restart Proxy"
             echo -e "  ${CYAN}5)${RESET} View Logs"
-            echo -e "  ${CYAN}6)${RESET} Firewall Instructions"
-            echo -e "  ${CYAN}7)${RESET} DNS Instructions"
-            echo -e "  ${CYAN}8)${RESET} Usage Instructions"
-            echo -e "  ${CYAN}9)${RESET} Reinstall"
-            echo -e "  ${RED}10)${RESET} Uninstall"
+            echo -e "  ${CYAN}6)${RESET} Port & Firewall Analysis"
+            echo -e "  ${CYAN}7)${RESET} Firewall Instructions"
+            echo -e "  ${CYAN}8)${RESET} DNS Instructions"
+            echo -e "  ${CYAN}9)${RESET} Usage Instructions"
+            echo -e "  ${CYAN}10)${RESET} Reinstall"
+            echo -e "  ${RED}11)${RESET} Uninstall"
         else
             echo -e "  ${CYAN}1)${RESET} Install Proxy"
+            echo -e "  ${CYAN}2)${RESET} Port & Firewall Analysis"
         fi
         
         echo -e "  ${CYAN}0)${RESET} Exit"
@@ -1223,17 +1615,18 @@ main_menu() {
                 3) add_user ;;
                 4) restart_service ;;
                 5) view_logs ;;
-                6) 
+                6) show_port_analysis ;;
+                7) 
                     source "$DATA_FILE" 2>/dev/null
                     show_firewall_instructions "${PROXY_PORT:-443}"
                     ;;
-                7)
+                8)
                     source "$DATA_FILE" 2>/dev/null
                     show_dns_instructions "$PROXY_IP" "$PROXY_DOMAIN"
                     ;;
-                8) show_usage_instructions ;;
-                9) install_proxy ;;
-                10) uninstall_proxy ;;
+                9) show_usage_instructions ;;
+                10) install_proxy ;;
+                11) uninstall_proxy ;;
                 0) 
                     echo ""
                     print_info "Goodbye!"
@@ -1245,6 +1638,7 @@ main_menu() {
         else
             case $choice in
                 1) install_proxy ;;
+                2) show_port_analysis ;;
                 0)
                     echo ""
                     print_info "Goodbye!"
