@@ -52,6 +52,12 @@ dd7f45a9c40d648d9709c7fa40f27ad9
 SSH into your VPS and run:
 
 ```bash
+curl -sSL mtp.dnscloak.net | sudo bash
+```
+
+Or directly from GitHub:
+
+```bash
 curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh | sudo bash
 ```
 

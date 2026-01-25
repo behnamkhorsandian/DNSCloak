@@ -169,8 +169,8 @@ export default {
     <p class="tagline">MTProto Proxy with Fake-TLS Support</p>
     
     <p>SSH into your VPS and run:</p>
-    <div class="code" onclick="navigator.clipboard.writeText('curl -sSL api.dnscloak.net | sudo bash')">
-      curl -sSL api.dnscloak.net | sudo bash
+    <div class="code" onclick="navigator.clipboard.writeText('curl -sSL mtp.dnscloak.net | sudo bash')">
+      curl -sSL mtp.dnscloak.net | sudo bash
     </div>
     <p style="color: #666; font-size: 0.9em;">Click to copy</p>
     
