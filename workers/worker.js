@@ -103,7 +103,13 @@ export default {
     // Get service config
     const config = SERVICES[service];
     if (!config) {
-      return new Response(`Unknown service: ${service}`, { status: 404 });
+      // Fallback for root domain or unknown subdomains
+      return new Response(getLandingPage(), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      });
     }
 
     // Info page (for browsers)
@@ -147,11 +153,97 @@ export default {
   },
 };
 
+function getLandingPage() {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>DNSCloak - Beacon is Lit!</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .container { padding: 40px 20px; max-width: 800px; }
+    .beacon {
+      font-size: 80px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    h1 {
+      font-size: 3em;
+      margin: 20px 0;
+      background: linear-gradient(90deg, #00d4ff, #7b2cbf, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tagline { color: #888; font-size: 1.2em; margin-bottom: 40px; }
+    .services {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .services a {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 15px 25px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .services a:hover {
+      background: rgba(0,212,255,0.2);
+      border-color: #00d4ff;
+      transform: translateY(-2px);
+    }
+    .footer { margin-top: 50px; color: #555; }
+    .footer a { color: #00d4ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="beacon">🔥</div>
+    <h1>Beacon is Lit!</h1>
+    <p class="tagline">Multi-protocol censorship bypass platform</p>
+    
+    <div class="services">
+      <a href="https://reality.dnscloak.net/info">Reality</a>
+      <a href="https://wg.dnscloak.net/info">WireGuard</a>
+      <a href="https://mtp.dnscloak.net/info">MTProto</a>
+      <a href="https://vray.dnscloak.net/info">V2Ray</a>
+      <a href="https://ws.dnscloak.net/info">WS+CDN</a>
+      <a href="https://dnstt.dnscloak.net/info">DNStt</a>
+    </div>
+    
+    <p class="footer">
+      <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a>
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
 function getInfoPage(service, config) {
   const appLinks = Object.entries(config.clientApps)
     .map(([platform, url]) => {
       if (platform === 'note') {
         return `<li><em>${url}</em></li>`;
+      }
       }
       return `<li><strong>${platform}:</strong> <a href="${url}" target="_blank">${url}</a></li>`;
     })
