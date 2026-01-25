@@ -30,12 +30,15 @@ RESET='\033[0m'
 BOLD='\033[1m'
 
 # ============== GLOBAL VARS ==============
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.3.0"
 INSTALL_DIR="/opt/telegram-proxy"
 CONFIG_FILE="$INSTALL_DIR/config.py"
 SERVICE_NAME="telegram-proxy"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 DATA_FILE="$INSTALL_DIR/proxy_data.sh"
+STATS_FILE="$INSTALL_DIR/stats.json"
+STATS_COLLECTOR="$INSTALL_DIR/stats_collector.py"
+STATS_PORT=8888
 
 # Proxy modes
 MODE_TLS="tls"          # Fake-TLS (ee prefix) - traffic looks like HTTPS
@@ -740,6 +743,446 @@ EOF
     print_success "Network keepalive configured"
 }
 
+# ============== STATS TRACKING ==============
+
+create_stats_collector() {
+    print_step "Creating stats collector..."
+    
+    cat > "$STATS_COLLECTOR" << 'STATS_SCRIPT'
+#!/usr/bin/env python3
+"""
+DNSCloak Stats Collector
+Collects metrics from mtprotoproxy and maintains user statistics
+"""
+
+import json
+import os
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+STATS_FILE = "/opt/telegram-proxy/stats.json"
+PROMETHEUS_URL = "http://127.0.0.1:8888/metrics"
+
+def load_stats():
+    """Load existing stats or create new"""
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {
+        "start_time": time.time(),
+        "last_update": time.time(),
+        "total_connections": 0,
+        "total_bytes_in": 0,
+        "total_bytes_out": 0,
+        "users": {}
+    }
+
+def save_stats(stats):
+    """Save stats to file"""
+    stats["last_update"] = time.time()
+    with open(STATS_FILE, 'w') as f:
+        json.dump(stats, f, indent=2)
+
+def parse_prometheus_metrics(text):
+    """Parse Prometheus format metrics"""
+    metrics = {}
+    for line in text.split('\n'):
+        if line.startswith('#') or not line.strip():
+            continue
+        try:
+            if ' ' in line:
+                key, value = line.rsplit(' ', 1)
+                # Handle labels like mtprotoproxy_user_bytes{user="user1",direction="out"}
+                if '{' in key:
+                    base_name = key.split('{')[0]
+                    labels_str = key.split('{')[1].rstrip('}')
+                    labels = {}
+                    for part in labels_str.split(','):
+                        if '=' in part:
+                            k, v = part.split('=', 1)
+                            labels[k] = v.strip('"')
+                    metrics.setdefault(base_name, []).append({
+                        "labels": labels,
+                        "value": float(value)
+                    })
+                else:
+                    metrics[key] = float(value)
+        except:
+            continue
+    return metrics
+
+def fetch_metrics():
+    """Fetch metrics from mtprotoproxy Prometheus endpoint"""
+    try:
+        req = urllib.request.Request(PROMETHEUS_URL, headers={'User-Agent': 'DNSCloak-Stats/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return parse_prometheus_metrics(response.read().decode('utf-8'))
+    except Exception as e:
+        return None
+
+def update_stats():
+    """Update stats from proxy metrics"""
+    stats = load_stats()
+    metrics = fetch_metrics()
+    
+    if metrics:
+        # Update global counters
+        if 'mtprotoproxy_connections' in metrics:
+            stats['current_connections'] = int(metrics.get('mtprotoproxy_connections', 0))
+        
+        # Get user-specific metrics
+        user_bytes = metrics.get('mtprotoproxy_user_bytes', [])
+        user_conns = metrics.get('mtprotoproxy_user_connections', [])
+        
+        # Process user bytes (in/out)
+        for item in user_bytes:
+            user = item['labels'].get('user', 'unknown')
+            direction = item['labels'].get('direction', 'in')
+            value = int(item['value'])
+            
+            if user not in stats['users']:
+                stats['users'][user] = {
+                    "bytes_in": 0,
+                    "bytes_out": 0,
+                    "connections": 0,
+                    "current_connections": 0,
+                    "last_seen": None,
+                    "first_seen": time.time()
+                }
+            
+            if direction == 'in':
+                if value > stats['users'][user].get('bytes_in', 0):
+                    stats['users'][user]['last_seen'] = time.time()
+                stats['users'][user]['bytes_in'] = value
+            else:
+                stats['users'][user]['bytes_out'] = value
+        
+        # Process user connections
+        for item in user_conns:
+            user = item['labels'].get('user', 'unknown')
+            value = int(item['value'])
+            
+            if user not in stats['users']:
+                stats['users'][user] = {
+                    "bytes_in": 0,
+                    "bytes_out": 0,
+                    "connections": 0,
+                    "current_connections": 0,
+                    "last_seen": None,
+                    "first_seen": time.time()
+                }
+            
+            # Check if connection count increased (new connection)
+            prev_conns = stats['users'][user].get('total_connections', 0)
+            if value > prev_conns:
+                stats['users'][user]['last_seen'] = time.time()
+            stats['users'][user]['total_connections'] = value
+            stats['users'][user]['current_connections'] = value
+        
+        # Calculate totals
+        stats['total_bytes_in'] = sum(u.get('bytes_in', 0) for u in stats['users'].values())
+        stats['total_bytes_out'] = sum(u.get('bytes_out', 0) for u in stats['users'].values())
+        stats['total_connections'] = sum(u.get('total_connections', 0) for u in stats['users'].values())
+    
+    save_stats(stats)
+    return stats
+
+def get_stats():
+    """Get current stats (for display)"""
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE, 'r') as f:
+            return json.load(f)
+    return None
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "update":
+        stats = update_stats()
+        print(json.dumps(stats, indent=2))
+    elif len(sys.argv) > 1 and sys.argv[1] == "show":
+        stats = get_stats()
+        if stats:
+            print(json.dumps(stats, indent=2))
+        else:
+            print("{}")
+    else:
+        # Continuous collection mode
+        while True:
+            update_stats()
+            time.sleep(10)
+STATS_SCRIPT
+
+    chmod +x "$STATS_COLLECTOR"
+    print_success "Stats collector created"
+}
+
+create_stats_service() {
+    print_step "Creating stats collector service..."
+    
+    local STATS_SERVICE="/etc/systemd/system/telegram-proxy-stats.service"
+    
+    tee "$STATS_SERVICE" > /dev/null << EOF
+[Unit]
+Description=Telegram Proxy Stats Collector
+After=telegram-proxy.service
+Requires=telegram-proxy.service
+
+[Service]
+Type=simple
+WorkingDirectory=$INSTALL_DIR
+ExecStart=/usr/bin/python3 $STATS_COLLECTOR
+Restart=always
+RestartSec=10
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable telegram-proxy-stats > /dev/null 2>&1
+    systemctl start telegram-proxy-stats 2>/dev/null || true
+    
+    print_success "Stats collector service created"
+}
+
+format_bytes() {
+    local bytes=$1
+    if [[ $bytes -ge 1073741824 ]]; then
+        echo "$(awk "BEGIN {printf \"%.2f\", $bytes/1073741824}") GB"
+    elif [[ $bytes -ge 1048576 ]]; then
+        echo "$(awk "BEGIN {printf \"%.2f\", $bytes/1048576}") MB"
+    elif [[ $bytes -ge 1024 ]]; then
+        echo "$(awk "BEGIN {printf \"%.2f\", $bytes/1024}") KB"
+    else
+        echo "$bytes B"
+    fi
+}
+
+format_duration() {
+    local seconds=$1
+    local days=$((seconds / 86400))
+    local hours=$(((seconds % 86400) / 3600))
+    local minutes=$(((seconds % 3600) / 60))
+    local secs=$((seconds % 60))
+    
+    if [[ $days -gt 0 ]]; then
+        echo "${days}d ${hours}h ${minutes}m"
+    elif [[ $hours -gt 0 ]]; then
+        echo "${hours}h ${minutes}m ${secs}s"
+    elif [[ $minutes -gt 0 ]]; then
+        echo "${minutes}m ${secs}s"
+    else
+        echo "${secs}s"
+    fi
+}
+
+format_timestamp() {
+    local ts=$1
+    if [[ -z "$ts" || "$ts" == "null" ]]; then
+        echo "Never"
+    else
+        date -d "@${ts%.*}" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -r "${ts%.*}" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "Unknown"
+    fi
+}
+
+time_ago() {
+    local ts=$1
+    if [[ -z "$ts" || "$ts" == "null" ]]; then
+        echo "Never"
+        return
+    fi
+    
+    local now=$(date +%s)
+    local diff=$((now - ${ts%.*}))
+    
+    if [[ $diff -lt 60 ]]; then
+        echo "Just now"
+    elif [[ $diff -lt 3600 ]]; then
+        echo "$((diff / 60)) min ago"
+    elif [[ $diff -lt 86400 ]]; then
+        echo "$((diff / 3600)) hours ago"
+    else
+        echo "$((diff / 86400)) days ago"
+    fi
+}
+
+show_stats() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}📊 PROXY STATISTICS${RESET}"
+    print_line
+    echo ""
+    
+    # Update stats first
+    python3 "$STATS_COLLECTOR" update > /dev/null 2>&1
+    
+    # Check if stats file exists
+    if [[ ! -f "$STATS_FILE" ]]; then
+        print_warning "No statistics available yet"
+        print_info "Stats are collected every 10 seconds"
+        press_enter
+        return
+    fi
+    
+    # Read stats
+    local stats=$(cat "$STATS_FILE")
+    
+    # Parse JSON with python
+    local start_time=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('start_time', 0))" 2>/dev/null)
+    local total_bytes_in=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_bytes_in', 0))" 2>/dev/null)
+    local total_bytes_out=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_bytes_out', 0))" 2>/dev/null)
+    local current_conns=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('current_connections', 0))" 2>/dev/null)
+    local total_conns=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_connections', 0))" 2>/dev/null)
+    
+    # Calculate uptime
+    local now=$(date +%s)
+    local uptime_secs=$((now - ${start_time%.*}))
+    
+    # Also get systemd uptime as fallback
+    local service_uptime=$(systemctl show -p ActiveEnterTimestamp "$SERVICE_NAME" 2>/dev/null | cut -d'=' -f2)
+    if [[ -n "$service_uptime" && "$service_uptime" != "" ]]; then
+        local service_start=$(date -d "$service_uptime" +%s 2>/dev/null || echo "")
+        if [[ -n "$service_start" ]]; then
+            uptime_secs=$((now - service_start))
+        fi
+    fi
+    
+    # Display overview
+    echo -e "  ${BOLD}${CYAN}═══ Overview ═══${RESET}"
+    echo ""
+    echo -e "  ${WHITE}Uptime:${RESET}              $(format_duration $uptime_secs)"
+    echo -e "  ${WHITE}Active Connections:${RESET}  ${GREEN}${current_conns:-0}${RESET}"
+    echo -e "  ${WHITE}Total Connections:${RESET}   ${total_conns:-0}"
+    echo ""
+    echo -e "  ${WHITE}Data Received:${RESET}       $(format_bytes ${total_bytes_in:-0})"
+    echo -e "  ${WHITE}Data Sent:${RESET}           $(format_bytes ${total_bytes_out:-0})"
+    echo -e "  ${WHITE}Total Transfer:${RESET}      $(format_bytes $((${total_bytes_in:-0} + ${total_bytes_out:-0})))"
+    echo ""
+    
+    # Per-user stats
+    echo -e "  ${BOLD}${CYAN}═══ User Statistics ═══${RESET}"
+    echo ""
+    
+    # Get user list
+    local users=$(echo "$stats" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+users = d.get('users', {})
+for name, data in users.items():
+    bytes_in = data.get('bytes_in', 0)
+    bytes_out = data.get('bytes_out', 0)
+    total_conns = data.get('total_connections', 0)
+    current_conns = data.get('current_connections', 0)
+    last_seen = data.get('last_seen', '')
+    first_seen = data.get('first_seen', '')
+    print(f'{name}|{bytes_in}|{bytes_out}|{total_conns}|{current_conns}|{last_seen}|{first_seen}')
+" 2>/dev/null)
+    
+    if [[ -z "$users" ]]; then
+        echo -e "  ${GRAY}No user activity recorded yet${RESET}"
+    else
+        printf "  ${WHITE}%-12s %-8s %-12s %-12s %-16s${RESET}\n" "USER" "ACTIVE" "DOWNLOAD" "UPLOAD" "LAST SEEN"
+        echo -e "  ${GRAY}────────────────────────────────────────────────────────────────${RESET}"
+        
+        while IFS='|' read -r name bytes_in bytes_out total_conns current_conns last_seen first_seen; do
+            if [[ -n "$name" ]]; then
+                local active_indicator="${GRAY}○${RESET}"
+                if [[ "$current_conns" -gt 0 ]]; then
+                    active_indicator="${GREEN}●${RESET}"
+                fi
+                
+                local last_seen_str=$(time_ago "$last_seen")
+                
+                printf "  %-12s ${active_indicator} %-6s %-12s %-12s %-16s\n" \
+                    "$name" \
+                    "$current_conns" \
+                    "$(format_bytes ${bytes_in:-0})" \
+                    "$(format_bytes ${bytes_out:-0})" \
+                    "$last_seen_str"
+            fi
+        done <<< "$users"
+    fi
+    
+    echo ""
+    print_line
+    echo ""
+    echo -e "  ${GRAY}Stats update every 10 seconds${RESET}"
+    echo ""
+    
+    press_enter
+}
+
+show_live_stats() {
+    # Live updating stats display
+    while true; do
+        clear
+        print_banner
+        echo -e "  ${BOLD}${WHITE}📊 LIVE STATISTICS${RESET} ${GRAY}(Press Ctrl+C to exit)${RESET}"
+        print_line
+        echo ""
+        
+        # Update stats
+        python3 "$STATS_COLLECTOR" update > /dev/null 2>&1
+        
+        if [[ -f "$STATS_FILE" ]]; then
+            local stats=$(cat "$STATS_FILE")
+            
+            local current_conns=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('current_connections', 0))" 2>/dev/null)
+            local total_bytes_in=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_bytes_in', 0))" 2>/dev/null)
+            local total_bytes_out=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_bytes_out', 0))" 2>/dev/null)
+            
+            # Get systemd uptime
+            local now=$(date +%s)
+            local service_uptime=$(systemctl show -p ActiveEnterTimestamp "$SERVICE_NAME" 2>/dev/null | cut -d'=' -f2)
+            local uptime_secs=0
+            if [[ -n "$service_uptime" && "$service_uptime" != "" ]]; then
+                local service_start=$(date -d "$service_uptime" +%s 2>/dev/null || echo "")
+                if [[ -n "$service_start" ]]; then
+                    uptime_secs=$((now - service_start))
+                fi
+            fi
+            
+            echo -e "  ┌─────────────────────────────────────────────┐"
+            echo -e "  │  ${WHITE}Uptime:${RESET}    $(printf '%-30s' "$(format_duration $uptime_secs)") │"
+            echo -e "  │  ${WHITE}Active:${RESET}    ${GREEN}$(printf '%-30s' "${current_conns:-0} connections")${RESET} │"
+            echo -e "  │  ${WHITE}Download:${RESET}  $(printf '%-30s' "$(format_bytes ${total_bytes_in:-0})") │"
+            echo -e "  │  ${WHITE}Upload:${RESET}    $(printf '%-30s' "$(format_bytes ${total_bytes_out:-0})") │"
+            echo -e "  └─────────────────────────────────────────────┘"
+            echo ""
+            
+            # Show active users
+            echo -e "  ${BOLD}${CYAN}Active Users:${RESET}"
+            echo ""
+            
+            local users=$(echo "$stats" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+users = d.get('users', {})
+for name, data in users.items():
+    if data.get('current_connections', 0) > 0:
+        print(f\"{name}: {data.get('current_connections', 0)} conn\")
+" 2>/dev/null)
+            
+            if [[ -z "$users" ]]; then
+                echo -e "  ${GRAY}No active connections${RESET}"
+            else
+                while read -r line; do
+                    echo -e "  ${GREEN}●${RESET} $line"
+                done <<< "$users"
+            fi
+        else
+            echo -e "  ${GRAY}Waiting for stats...${RESET}"
+        fi
+        
+        sleep 3
+    done
+}
+
 # ============== INSTALLATION ==============
 
 install_dependencies() {
@@ -837,6 +1280,10 @@ TLS_DOMAIN = "$tls_domain"
 # Performance settings
 PREFER_IPV6 = False
 FAST_MODE = True
+
+# Stats - enable Prometheus metrics on localhost
+STATS_HOST = "127.0.0.1"
+STATS_PORT = $STATS_PORT
 EOF
 
     print_success "Configuration created"
@@ -1323,12 +1770,14 @@ install_proxy() {
     install_dependencies
     clone_mtprotoproxy
     configure_network_keepalive
+    create_stats_collector
     
     local PROXY_MODE="tls"
     local RANDOM_PADDING="yes"
     
     create_config "$PROXY_PORT" "$TLS_DOMAIN" "$PROXY_MODE" "$RANDOM_PADDING" "${USERS[@]}"
     create_service
+    create_stats_service
     save_proxy_data "$PUBLIC_IP" "$PROXY_DOMAIN" "$PROXY_PORT" "$PROXY_MODE" "$TLS_DOMAIN" "$RANDOM_PADDING" "${USERS[@]}"
     
     if start_service; then
@@ -1540,13 +1989,18 @@ uninstall_proxy() {
     
     echo -e "  ${YELLOW}This will remove:${RESET}"
     echo -e "  • Proxy service"
+    echo -e "  • Stats collector service"
     echo -e "  • All configuration"
-    echo -e "  • All user data"
+    echo -e "  • All user data and statistics"
     echo ""
     
     if confirm "Are you sure you want to uninstall?"; then
         echo ""
-        print_step "Stopping service..."
+        print_step "Stopping services..."
+        systemctl stop telegram-proxy-stats 2>/dev/null || true
+        systemctl disable telegram-proxy-stats 2>/dev/null || true
+        rm -f /etc/systemd/system/telegram-proxy-stats.service 2>/dev/null || true
+        
         systemctl stop "$SERVICE_NAME" 2>/dev/null || true
         systemctl disable "$SERVICE_NAME" 2>/dev/null || true
         
@@ -1556,6 +2010,7 @@ uninstall_proxy() {
         print_step "Removing files..."
         rm -f "$SERVICE_FILE"
         rm -rf "$INSTALL_DIR"
+        rm -f /etc/sysctl.d/99-telegram-proxy.conf 2>/dev/null || true
         
         systemctl daemon-reload
         
@@ -1612,10 +2067,11 @@ main_menu() {
         
         if is_installed; then
             echo -e "  ${CYAN}1)${RESET} Proxy Links & Users"
-            echo -e "  ${CYAN}2)${RESET} Status & Restart"
-            echo -e "  ${CYAN}3)${RESET} View Logs"
-            echo -e "  ${CYAN}4)${RESET} Update IP"
-            echo -e "  ${RED}5)${RESET} Uninstall"
+            echo -e "  ${CYAN}2)${RESET} Statistics & Monitoring"
+            echo -e "  ${CYAN}3)${RESET} Status & Restart"
+            echo -e "  ${CYAN}4)${RESET} View Logs"
+            echo -e "  ${CYAN}5)${RESET} Update IP"
+            echo -e "  ${RED}6)${RESET} Uninstall"
         else
             echo -e "  ${CYAN}1)${RESET} Install Proxy"
         fi
@@ -1628,10 +2084,11 @@ main_menu() {
         if is_installed; then
             case $choice in
                 1) manage_users ;;
-                2) status_menu ;;
-                3) view_logs ;;
-                4) update_ip ;;
-                5) uninstall_proxy ;;
+                2) stats_menu ;;
+                3) status_menu ;;
+                4) view_logs ;;
+                5) update_ip ;;
+                6) uninstall_proxy ;;
                 0) echo ""; exit 0 ;;
                 *) print_error "Invalid option" ;;
             esac
@@ -1737,6 +2194,143 @@ add_user_simple() {
     systemctl restart "$SERVICE_NAME"
     print_success "User '$username' added"
     sleep 1
+}
+
+# Statistics menu
+stats_menu() {
+    while true; do
+        print_banner
+        echo -e "  ${BOLD}${WHITE}📊 STATISTICS & MONITORING${RESET}"
+        print_line
+        echo ""
+        
+        # Quick stats preview
+        if [[ -f "$STATS_FILE" ]]; then
+            local stats=$(cat "$STATS_FILE" 2>/dev/null)
+            local current_conns=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('current_connections', 0))" 2>/dev/null || echo "0")
+            local total_bytes=$(echo "$stats" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_bytes_in', 0) + d.get('total_bytes_out', 0))" 2>/dev/null || echo "0")
+            
+            echo -e "  Active Connections: ${GREEN}${current_conns}${RESET}"
+            echo -e "  Total Transfer: $(format_bytes ${total_bytes})"
+            echo ""
+        fi
+        
+        print_line
+        echo ""
+        echo -e "  ${CYAN}1)${RESET} View Full Statistics"
+        echo -e "  ${CYAN}2)${RESET} Live Monitor (auto-refresh)"
+        echo -e "  ${CYAN}3)${RESET} User Statistics"
+        echo -e "  ${CYAN}4)${RESET} Reset Statistics"
+        echo -e "  ${CYAN}0)${RESET} Back"
+        echo ""
+        
+        get_input "Select" "" choice
+        
+        case $choice in
+            1) show_stats ;;
+            2) show_live_stats ;;
+            3) show_user_stats ;;
+            4) reset_stats ;;
+            0) return ;;
+            *) print_error "Invalid option" ;;
+        esac
+    done
+}
+
+# Detailed user statistics
+show_user_stats() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}👥 USER STATISTICS${RESET}"
+    print_line
+    echo ""
+    
+    # Update stats first
+    python3 "$STATS_COLLECTOR" update > /dev/null 2>&1
+    
+    if [[ ! -f "$STATS_FILE" ]]; then
+        print_warning "No statistics available yet"
+        press_enter
+        return
+    fi
+    
+    local stats=$(cat "$STATS_FILE")
+    
+    # Get detailed user list
+    echo "$stats" | python3 -c "
+import sys, json
+from datetime import datetime
+
+d = json.load(sys.stdin)
+users = d.get('users', {})
+
+if not users:
+    print('  No user data available yet')
+else:
+    for name, data in sorted(users.items()):
+        bytes_in = data.get('bytes_in', 0)
+        bytes_out = data.get('bytes_out', 0)
+        total_conns = data.get('total_connections', 0)
+        current_conns = data.get('current_connections', 0)
+        last_seen = data.get('last_seen')
+        first_seen = data.get('first_seen')
+        
+        def format_bytes(b):
+            if b >= 1073741824:
+                return f'{b/1073741824:.2f} GB'
+            elif b >= 1048576:
+                return f'{b/1048576:.2f} MB'
+            elif b >= 1024:
+                return f'{b/1024:.2f} KB'
+            return f'{b} B'
+        
+        def format_time(ts):
+            if not ts:
+                return 'Never'
+            try:
+                return datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                return 'Unknown'
+        
+        status = '🟢 Online' if current_conns > 0 else '⚪ Offline'
+        
+        print(f'  ┌─────────────────────────────────────────────┐')
+        print(f'  │  User: {name:<36} │')
+        print(f'  ├─────────────────────────────────────────────┤')
+        print(f'  │  Status:      {status:<28} │')
+        print(f'  │  Active Conn: {current_conns:<28} │')
+        print(f'  │  Total Conn:  {total_conns:<28} │')
+        print(f'  │  Downloaded:  {format_bytes(bytes_in):<28} │')
+        print(f'  │  Uploaded:    {format_bytes(bytes_out):<28} │')
+        print(f'  │  Total:       {format_bytes(bytes_in + bytes_out):<28} │')
+        print(f'  │  First Seen:  {format_time(first_seen):<28} │')
+        print(f'  │  Last Active: {format_time(last_seen):<28} │')
+        print(f'  └─────────────────────────────────────────────┘')
+        print()
+" 2>/dev/null
+    
+    press_enter
+}
+
+# Reset statistics
+reset_stats() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}🗑️  RESET STATISTICS${RESET}"
+    print_line
+    echo ""
+    
+    print_warning "This will reset all connection and usage statistics."
+    print_info "Proxy links and configuration will NOT be affected."
+    echo ""
+    
+    if confirm "Reset all statistics?" "n"; then
+        rm -f "$STATS_FILE" 2>/dev/null
+        systemctl restart telegram-proxy-stats 2>/dev/null || true
+        print_success "Statistics reset"
+    else
+        print_info "Cancelled"
+    fi
+    
+    press_enter
 }
 
 # Status submenu
@@ -1872,6 +2466,25 @@ EOF
         print_error "Failed to start proxy"
         echo ""
         journalctl -u "$SERVICE_NAME" -n 10 --no-pager
+    fi
+    
+    # Also setup stats if not already done
+    if [[ ! -f "$STATS_COLLECTOR" ]]; then
+        echo ""
+        print_step "Setting up statistics collector..."
+        create_stats_collector
+        create_stats_service
+        
+        # Update config to enable stats
+        if ! grep -q "STATS_PORT" "$CONFIG_FILE" 2>/dev/null; then
+            echo "" >> "$CONFIG_FILE"
+            echo "# Stats - enable Prometheus metrics on localhost" >> "$CONFIG_FILE"
+            echo "STATS_HOST = \"127.0.0.1\"" >> "$CONFIG_FILE"
+            echo "STATS_PORT = $STATS_PORT" >> "$CONFIG_FILE"
+            systemctl restart "$SERVICE_NAME"
+        fi
+        
+        echo -e "  ${GREEN}✓${RESET} Statistics collector enabled"
     fi
     
     press_enter
