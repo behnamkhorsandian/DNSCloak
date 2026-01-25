@@ -306,9 +306,9 @@ EOF
     local server_ip
     server_ip=$(cloud_get_public_ip)
     
-    json_set ".server.ip" "$server_ip"
-    json_set ".server.ws_domain" "$domain"
-    json_set ".server.ws_path" "$ws_path"
+    server_set "ip" "$server_ip"
+    server_set "ws_domain" "$domain"
+    server_set "ws_path" "$ws_path"
     
     # Add user
     user_add "$first_user" "ws" "uuid" "$uuid"
@@ -441,8 +441,8 @@ show_ws_user_links() {
     
     local uuid domain ws_path
     uuid=$(user_get "$username" "ws" "uuid")
-    domain=$(json_get ".server.ws_domain")
-    ws_path=$(json_get ".server.ws_path")
+    domain=$(server_get "ws_domain")
+    ws_path=$(server_get "ws_path")
     
     # Build VLESS link
     # vless://UUID@HOST:PORT?type=ws&security=tls&path=PATH&host=HOST&sni=HOST#NAME
@@ -548,8 +548,8 @@ uninstall_ws() {
     fi
     
     # Clear WS config from server
-    json_set ".server.ws_domain" "null"
-    json_set ".server.ws_path" "null"
+    server_set "ws_domain" "null"
+    server_set "ws_path" "null"
     
     # Ask about certs
     if confirm "Remove TLS certificates?"; then
@@ -573,7 +573,7 @@ change_ws_domain() {
     print_line
     
     local current_domain
-    current_domain=$(json_get ".server.ws_domain")
+    current_domain=$(server_get "ws_domain")
     echo ""
     echo -e "  Current domain: ${CYAN}$current_domain${RESET}"
     echo ""
@@ -610,7 +610,7 @@ change_ws_domain() {
     # Update Xray config
     local cert_path="$CERT_DIR/$new_domain"
     local ws_path
-    ws_path=$(json_get ".server.ws_path")
+    ws_path=$(server_get "ws_path")
     
     # We need to update the inbound config
     # Simplest approach: regenerate the inbound
@@ -659,7 +659,7 @@ EOF
     xray_add_inbound "$inbound_config"
     
     # Update users.json
-    json_set ".server.ws_domain" "$new_domain"
+    server_set "ws_domain" "$new_domain"
     
     # Reload Xray
     systemctl reload xray 2>/dev/null || systemctl restart xray
@@ -688,7 +688,7 @@ show_ws_status() {
     
     # Domain
     local domain
-    domain=$(json_get ".server.ws_domain")
+    domain=$(server_get "ws_domain")
     echo -e "  Domain:    ${CYAN}$domain${RESET}"
     
     # Certificate
@@ -757,7 +757,7 @@ show_ws_menu() {
             7) show_ws_status ;;
             8)
                 local domain
-                domain=$(json_get ".server.ws_domain")
+                domain=$(server_get "ws_domain")
                 generate_self_signed_cert "$domain"
                 systemctl reload xray 2>/dev/null || true
                 ;;
