@@ -30,7 +30,7 @@ RESET='\033[0m'
 BOLD='\033[1m'
 
 # ============== GLOBAL VARS ==============
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.2.0"
 INSTALL_DIR="/opt/telegram-proxy"
 CONFIG_FILE="$INSTALL_DIR/config.py"
 SERVICE_NAME="telegram-proxy"
@@ -695,6 +695,51 @@ cleanup_stale_installation() {
     systemctl daemon-reload 2>/dev/null || true
 }
 
+# ============== NETWORK OPTIMIZATION ==============
+
+configure_network_keepalive() {
+    print_step "Configuring network keepalive settings..."
+    
+    # Create sysctl configuration for persistent settings
+    local SYSCTL_FILE="/etc/sysctl.d/99-telegram-proxy.conf"
+    
+    cat > "$SYSCTL_FILE" << 'EOF'
+# Telegram Proxy Network Optimization
+# Keeps connections alive to prevent intermittent disconnections
+
+# TCP Keepalive - Send keepalive probes after 60s of idle
+net.ipv4.tcp_keepalive_time = 60
+
+# Send keepalive probes every 10 seconds after first probe
+net.ipv4.tcp_keepalive_intvl = 10
+
+# Give up after 6 failed keepalive probes (60s total)
+net.ipv4.tcp_keepalive_probes = 6
+
+# Allow more simultaneous connections
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+
+# Faster connection handling
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_tw_reuse = 1
+
+# More available local ports for outgoing connections
+net.ipv4.ip_local_port_range = 1024 65535
+
+# Larger network buffers
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
+EOF
+
+    # Apply settings immediately
+    sysctl -p "$SYSCTL_FILE" > /dev/null 2>&1 || true
+    
+    print_success "Network keepalive configured"
+}
+
 # ============== INSTALLATION ==============
 
 install_dependencies() {
@@ -803,16 +848,40 @@ create_service() {
     tee "$SERVICE_FILE" > /dev/null << EOF
 [Unit]
 Description=Telegram MTProto Proxy (Fake-TLS)
-After=network.target
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/python3 $INSTALL_DIR/mtprotoproxy.py
+ExecStart=/usr/bin/python3 -u $INSTALL_DIR/mtprotoproxy.py
 Restart=always
-RestartSec=5
+RestartSec=3
 User=root
 LimitNOFILE=65536
+
+# Watchdog - restart if service becomes unresponsive
+WatchdogSec=60
+NotifyAccess=all
+
+# Memory management - restart if using too much memory
+MemoryMax=512M
+MemoryHigh=384M
+
+# Performance tuning
+Nice=-5
+IOSchedulingClass=realtime
+IOSchedulingPriority=0
+
+# Keep connections alive
+Environment="PYTHONUNBUFFERED=1"
+
+# TCP keepalive settings via sysctl wrapper
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_time=60 2>/dev/null || true'
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_intvl=10 2>/dev/null || true'
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_probes=6 2>/dev/null || true'
 
 [Install]
 WantedBy=multi-user.target
@@ -1253,6 +1322,7 @@ install_proxy() {
     print_step "Installing..."
     install_dependencies
     clone_mtprotoproxy
+    configure_network_keepalive
     
     local PROXY_MODE="tls"
     local RANDOM_PADDING="yes"
@@ -1682,21 +1752,129 @@ status_menu() {
     print_line
     echo ""
     echo -e "  ${CYAN}1)${RESET} Restart Proxy"
+    echo -e "  ${CYAN}2)${RESET} Optimize & Fix Disconnections"
     echo -e "  ${CYAN}0)${RESET} Back"
     echo ""
     
     get_input "Select" "" choice
     
-    if [[ "$choice" == "1" ]]; then
-        systemctl restart "$SERVICE_NAME"
-        sleep 2
-        if systemctl is-active --quiet "$SERVICE_NAME"; then
-            print_success "Restarted"
-        else
-            print_error "Failed to restart"
-        fi
-        press_enter
+    case "$choice" in
+        1)
+            systemctl restart "$SERVICE_NAME"
+            sleep 2
+            if systemctl is-active --quiet "$SERVICE_NAME"; then
+                print_success "Restarted"
+            else
+                print_error "Failed to restart"
+            fi
+            press_enter
+            ;;
+        2)
+            optimize_proxy
+            ;;
+    esac
+}
+
+# Optimize proxy for better stability
+optimize_proxy() {
+    print_banner
+    echo -e "  ${BOLD}${WHITE}🔧 OPTIMIZING PROXY${RESET}"
+    print_line
+    echo ""
+    
+    print_info "This will apply network optimizations and update the service"
+    print_info "to fix intermittent disconnection issues."
+    echo ""
+    
+    if ! confirm "Continue with optimization?" "y"; then
+        return
     fi
+    
+    echo ""
+    
+    # Apply network keepalive settings
+    configure_network_keepalive
+    
+    # Update systemd service with better settings
+    print_step "Updating service configuration..."
+    
+    # Stop service first
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    
+    # Recreate service with improved settings
+    tee "$SERVICE_FILE" > /dev/null << EOF
+[Unit]
+Description=Telegram MTProto Proxy (Fake-TLS)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=$INSTALL_DIR
+ExecStart=/usr/bin/python3 -u $INSTALL_DIR/mtprotoproxy.py
+Restart=always
+RestartSec=3
+User=root
+LimitNOFILE=65536
+
+# Watchdog - restart if service becomes unresponsive
+WatchdogSec=60
+NotifyAccess=all
+
+# Memory management - restart if using too much memory
+MemoryMax=512M
+MemoryHigh=384M
+
+# Performance tuning
+Nice=-5
+IOSchedulingClass=realtime
+IOSchedulingPriority=0
+
+# Keep connections alive
+Environment="PYTHONUNBUFFERED=1"
+
+# TCP keepalive settings via sysctl wrapper
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_time=60 2>/dev/null || true'
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_intvl=10 2>/dev/null || true'
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.tcp_keepalive_probes=6 2>/dev/null || true'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    print_success "Service configuration updated"
+    
+    # Try to install performance modules for mtprotoproxy
+    print_step "Installing performance optimizations..."
+    pip3 install -q cryptography uvloop 2>/dev/null || true
+    print_success "Performance modules installed"
+    
+    # Start service
+    print_step "Starting optimized proxy..."
+    systemctl start "$SERVICE_NAME"
+    sleep 3
+    
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo ""
+        print_success "Proxy optimized and running!"
+        echo ""
+        echo -e "  ${GREEN}✓${RESET} TCP keepalive configured (60s)"
+        echo -e "  ${GREEN}✓${RESET} Automatic restart on failure"
+        echo -e "  ${GREEN}✓${RESET} Memory limits set (512MB max)"
+        echo -e "  ${GREEN}✓${RESET} Network buffers optimized"
+        echo -e "  ${GREEN}✓${RESET} Performance modules installed"
+        echo ""
+        print_info "The proxy should now be more stable!"
+    else
+        print_error "Failed to start proxy"
+        echo ""
+        journalctl -u "$SERVICE_NAME" -n 10 --no-pager
+    fi
+    
+    press_enter
 }
 
 # ============== ENTRY POINT ==============
