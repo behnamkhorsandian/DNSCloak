@@ -10,7 +10,8 @@
 #                           PROXY SETUP SCRIPT
 #
 #   MTProto Proxy with Fake-TLS Support
-#   https://github.com/behnamkhorsandian/TelegramProxy
+#   https://github.com/behnamkhorsandian/DNSCloak
+#   https://dnscloak.net
 #
 #===============================================================================
 
@@ -236,7 +237,7 @@ EOF
 create_service() {
     print_step "Creating systemd service..."
     
-    cat > "$SERVICE_FILE" << EOF
+    tee "$SERVICE_FILE" > /dev/null << EOF
 [Unit]
 Description=Telegram MTProto Proxy (Fake-TLS)
 After=network.target

@@ -1,0 +1,61 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Secrets and keys
+*.pem
+*.key
+*.crt
+*.p12
+id_rsa*
+*.secret
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# Node (if any)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.tar.gz
+*.zip
+
+# Local test configs
+test-config.py
+local-config.py
