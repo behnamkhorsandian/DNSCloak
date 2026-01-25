@@ -193,13 +193,14 @@ check_os() {
     fi
 }
 
+# Get architecture for Xray downloads (uses different naming)
 get_arch() {
     local arch
     arch=$(uname -m)
     case "$arch" in
-        x86_64)  echo "amd64" ;;
-        aarch64) echo "arm64" ;;
-        armv7l)  echo "arm" ;;
+        x86_64)  echo "64" ;;      # Xray uses "64" not "amd64"
+        aarch64) echo "arm64-v8a" ;;
+        armv7l)  echo "arm32-v7a" ;;
         *)       echo "$arch" ;;
     esac
 }
