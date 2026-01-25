@@ -26,12 +26,14 @@ detect_aws() {
         "http://169.254.169.254/latest/api/token" \
         -H "X-aws-ec2-metadata-token-ttl-seconds: 60" 2>/dev/null)
     
-    if [[ -n "$token" ]]; then
+    # Token must be non-empty and NOT contain HTML
+    if [[ -n "$token" && "$token" != *"<"* && "$token" != *"html"* ]]; then
         local check
         check=$(curl -s --max-time "$METADATA_TIMEOUT" \
             -H "X-aws-ec2-metadata-token: $token" \
             "http://169.254.169.254/latest/meta-data/instance-id" 2>/dev/null)
-        if [[ -n "$check" && "$check" != *"404"* ]]; then
+        # Instance ID should start with i-
+        if [[ "$check" =~ ^i- ]]; then
             CLOUD_PROVIDER="aws"
             CLOUD_INSTANCE_ID="$check"
             CLOUD_REGION=$(curl -s --max-time "$METADATA_TIMEOUT" \
@@ -223,15 +225,30 @@ cloud_get_public_ip() {
             ;;
     esac
     
-    # Fallback to external services
-    if [[ -z "$ip" || "$ip" == "null" ]]; then
-        ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null) || \
-        ip=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null) || \
-        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null)
+    # Validate IP - must not contain HTML and must look like an IP
+    if [[ -n "$ip" && "$ip" != *"<"* && "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        PUBLIC_IP="$ip"
+        echo "$ip"
+        return 0
     fi
     
-    PUBLIC_IP="$ip"
-    echo "$ip"
+    # Fallback to external services
+    ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null)
+    if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        ip=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null)
+    fi
+    if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null | tr -d '\n')
+    fi
+    
+    # Final validation
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        PUBLIC_IP="$ip"
+        echo "$ip"
+    else
+        PUBLIC_IP=""
+        echo ""
+    fi
 }
 
 #-------------------------------------------------------------------------------

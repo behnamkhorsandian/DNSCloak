@@ -257,19 +257,26 @@ setup_cloud() {
     
     cloud_detect
     
-    if [[ "$CLOUD_PROVIDER" != "unknown" ]]; then
-        print_success "Detected: $CLOUD_PROVIDER ($CLOUD_REGION)"
+    if [[ "$CLOUD_PROVIDER" != "unknown" && -n "$CLOUD_PROVIDER" ]]; then
+        local region_info=""
+        [[ -n "$CLOUD_REGION" ]] && region_info=" ($CLOUD_REGION)"
+        print_success "Detected: $CLOUD_PROVIDER$region_info"
     else
+        CLOUD_PROVIDER="unknown"
         print_info "Unknown provider, using local firewall"
     fi
     
     # Get and store public IP
     local ip
     ip=$(cloud_get_public_ip)
-    if [[ -n "$ip" ]]; then
+    
+    # Validate IP before storing
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         server_set "ip" "$ip"
         server_set "provider" "$CLOUD_PROVIDER"
         print_success "Public IP: $ip"
+    else
+        print_warning "Could not determine public IP"
     fi
     
     # Configure firewall
