@@ -33,6 +33,7 @@ The script will:
 - VPS with Ubuntu 20.04+ or Debian 11+
 - Root access (sudo)
 - 512MB RAM minimum
+- Domain (optional but recommended for some services)
 
 ## User Management
 
@@ -60,6 +61,7 @@ dnscloak uninstall reality      # Remove Reality service
 
 ## Documentation
 
+- [Self-Hosting Guide](docs/self-hosting.md) - Host your own DNSCloak platform
 - [Firewall Setup](docs/firewall.md) - Cloud provider firewall configuration
 - [DNS Setup](docs/dns.md) - Domain and DNS record configuration
 - [Workers Deployment](docs/workers.md) - Cloudflare Workers setup

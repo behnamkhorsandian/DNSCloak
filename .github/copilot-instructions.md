@@ -6,14 +6,14 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 
 ## Implementation Checklist
 
-### Phase 1: Core Libraries
-- [ ] `lib/cloud.sh` - Cloud provider detection and firewall auto-config
-- [ ] `lib/bootstrap.sh` - VM setup, prerequisites, Xray-core install
-- [ ] `lib/common.sh` - Shared utilities, colors, user CRUD on users.json
-- [ ] `lib/xray.sh` - Multi-inbound config manager for shared Xray instance
-- [ ] `lib/selector.sh` - Domain detection and service recommendation
+### Phase 1: Core Libraries [COMPLETE - v2.0.0-alpha]
+- [x] `lib/cloud.sh` - Cloud provider detection and firewall auto-config
+- [x] `lib/bootstrap.sh` - VM setup, prerequisites, Xray-core install
+- [x] `lib/common.sh` - Shared utilities, colors, user CRUD on users.json
+- [x] `lib/xray.sh` - Multi-inbound config manager for shared Xray instance
+- [x] `lib/selector.sh` - Domain detection and service recommendation
 
-### Phase 2: Services
+### Phase 2: Services [IN PROGRESS]
 - [ ] `services/reality/install.sh` - VLESS+REALITY (no domain needed)
 - [ ] `services/wg/install.sh` - WireGuard VPN
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto

@@ -1,14 +1,13 @@
-name = "dnscloak-mtp"
+name = "dnscloak"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
-# Route to your custom domain
+# Routes for all services
 routes = [
-  { pattern = "mtp.dnscloak.net", custom_domain = true }
+  { pattern = "mtp.dnscloak.net", custom_domain = true },
+  { pattern = "reality.dnscloak.net", custom_domain = true },
+  { pattern = "wg.dnscloak.net", custom_domain = true },
+  { pattern = "vray.dnscloak.net", custom_domain = true },
+  { pattern = "ws.dnscloak.net", custom_domain = true },
+  { pattern = "dnstt.dnscloak.net", custom_domain = true }
 ]
-
-# Optional: Add more routes
-# routes = [
-#   { pattern = "api.dnscloak.net", custom_domain = true },
-#   { pattern = "dnscloak.net", custom_domain = true }
-# ]
