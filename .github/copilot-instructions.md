@@ -210,6 +210,74 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - Web dashboard - Browser-based management
 - Telegram bot - User self-service
 
+## SOS Roadmap (Emergency Chat)
+
+### Current State (v1.0 - Testing)
+- Cloudflare Worker serves install script at `sos.dnscloak.net`
+- TUI client downloads via curl, then connects to relay via DNSTT
+- **Limitation**: Initial download CAN be blocked (uses Cloudflare HTTPS)
+
+### Vision: Fully Unblockable SOS
+The goal is for SOS to work even during TOTAL internet blackouts:
+1. **VPS Owner** runs `--server` to become a relay provider over DNSTT
+2. **Users** access via curl OR browser, served THROUGH DNSTT tunnel
+3. Even if main website is blocked, SOS subdomain works via DNS queries
+
+### Phase 1: Offline Executables [NEXT]
+Pre-compiled binaries users download BEFORE blackout:
+- [ ] `sos-linux-amd64` - Linux binary
+- [ ] `sos-linux-arm64` - Linux ARM (Raspberry Pi)
+- [ ] `sos-darwin-amd64` - macOS Intel
+- [ ] `sos-darwin-arm64` - macOS Apple Silicon  
+- [ ] `sos-windows-amd64.exe` - Windows binary
+
+Build using PyInstaller or Nuitka from `src/sos/`.
+Distribute via GitHub Releases + mirror on DNSTT.
+
+### Phase 2: Web Mode via DNSTT [FUTURE]
+Browser-based chat served entirely through DNSTT tunnel:
+- [ ] `hotline.dnscloak.net` - New subdomain for web chat
+- [ ] Relay daemon serves static HTML/JS at `/web`
+- [ ] User configures browser SOCKS5 proxy → DNSTT client
+- [ ] Navigate to `http://localhost:8080/web` or relay IP through tunnel
+- [ ] Real-time WebSocket chat (through DNSTT SOCKS5)
+
+Architecture for Phase 2:
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     PHASE 2: WEB MODE VIA DNSTT                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   USER'S BROWSER                                                             │
+│   ┌──────────────────────────────────────────────────────────────┐           │
+│   │ http://relay:8080/web  (through SOCKS5 proxy)                │           │
+│   └──────────────────────────────────────────────────────────────┘           │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌──────────────────────────────────────────────────────────────┐           │
+│   │         DNSTT Client (SOCKS5 proxy on localhost:10800)       │           │
+│   └──────────────────────────────────────────────────────────────┘           │
+│                              │                                               │
+│                              │ DNS Queries (unblockable)                     │
+│                              ▼                                               │
+│   ┌──────────────────────────────────────────────────────────────┐           │
+│   │                    DNSTT SERVER (VM)                          │           │
+│   │  ┌─────────────────────────────────────────────────────────┐ │           │
+│   │  │           SOS Relay Daemon (relay.py:8080)              │ │           │
+│   │  │  GET /web          → Serves chat HTML/JS                │ │           │
+│   │  │  WS  /ws           → WebSocket for real-time chat       │ │           │
+│   │  │  POST /api/room    → Room create/join API               │ │           │
+│   │  └─────────────────────────────────────────────────────────┘ │           │
+│   └──────────────────────────────────────────────────────────────┘           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Matters
+- **Phase 1** (Offline binaries): Users pre-download, run during blackout
+- **Phase 2** (Web via DNSTT): Zero pre-download needed, browser-only access
+- Both phases: Chat traffic goes through DNSTT, unblockable by DPI/IP blocks
+
 ## Current Session Context (Updated 2026-01-26)
 
 ### What's Working
