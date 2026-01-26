@@ -9,5 +9,6 @@ routes = [
   { pattern = "wg.dnscloak.net", custom_domain = true },
   { pattern = "vray.dnscloak.net", custom_domain = true },
   { pattern = "ws.dnscloak.net", custom_domain = true },
-  { pattern = "dnstt.dnscloak.net", custom_domain = true }
+  { pattern = "dnstt.dnscloak.net", custom_domain = true },
+  { pattern = "conduit.dnscloak.net", custom_domain = true }
 ]

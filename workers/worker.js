@@ -69,6 +69,15 @@ const SERVICES = {
       download: 'https://www.bamsoftware.com/software/dnstt/',
     },
   },
+  conduit: {
+    name: 'Conduit (Psiphon Relay)',
+    description: 'Volunteer relay node for Psiphon network. Help users in censored regions.',
+    script: 'services/conduit/install.sh',
+    clientApps: {
+      note: 'No client needed. Users connect via Psiphon apps.',
+      psiphon: 'https://psiphon.ca/download.html',
+    },
+  },
 };
 
 // Service aliases (legacy subdomains)

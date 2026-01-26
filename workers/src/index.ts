@@ -77,6 +77,15 @@ const SERVICES: Record<string, ServiceConfig> = {
       setup: 'https://dnstt.dnscloak.net/client',
     },
   },
+  conduit: {
+    name: 'Conduit (Psiphon Relay)',
+    description: 'Volunteer relay node for Psiphon network. Help users in censored regions.',
+    script: 'services/conduit/install.sh',
+    clientApps: {
+      note: 'No client needed. Users connect via Psiphon apps.',
+      psiphon: 'https://psiphon.ca/download.html',
+    },
+  },
 };
 
 export default {
