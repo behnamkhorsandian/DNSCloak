@@ -32,6 +32,12 @@
       --accent-orange: #d59719;
       --accent-red: #a25138;
       --border: #466242;
+      
+      /* SOS Emergency Colors */
+      --sos-red: #ff4444;
+      --sos-red-dark: #cc0000;
+      --sos-red-glow: rgba(255, 68, 68, 0.4);
+      --sos-bg: #1a0a0a;
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -425,6 +431,189 @@
     .cursor { animation: blink 1s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
     
+    /* ===== SOS EMERGENCY SECTION ===== */
+    .sos-section {
+      background: linear-gradient(135deg, var(--sos-bg) 0%, #0d0505 100%);
+      border: 2px solid var(--sos-red);
+      padding: 30px 20px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px var(--sos-red-glow), inset 0 0 60px rgba(255, 68, 68, 0.05);
+    }
+    
+    .sos-section::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, var(--sos-red), transparent, var(--sos-red), transparent, var(--sos-red));
+      background-size: 400% 400%;
+      z-index: -1;
+      animation: sos-border-glow 3s ease infinite;
+      filter: blur(3px);
+      opacity: 0.5;
+    }
+    
+    @keyframes sos-border-glow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .sos-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .sos-icon {
+      font-size: 32px;
+      color: var(--sos-red);
+      animation: sos-pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes sos-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+    
+    .sos-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--sos-red);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      animation: sos-text-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes sos-text-glow {
+      0%, 100% { text-shadow: 0 0 10px var(--sos-red-glow), 0 0 20px var(--sos-red-glow); }
+      50% { text-shadow: 0 0 20px var(--sos-red-glow), 0 0 40px var(--sos-red-glow), 0 0 60px var(--sos-red-glow); }
+    }
+    
+    .sos-subtitle {
+      text-align: center;
+      color: #ff9999;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .sos-cmd-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--sos-red);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    
+    .sos-cmd-box code {
+      color: var(--sos-red);
+      font-size: 14px;
+      flex: 1;
+    }
+    
+    .sos-cmd-box .prompt {
+      color: #ff6666;
+    }
+    
+    .sos-copy-btn {
+      background: transparent;
+      border: 1px solid var(--sos-red);
+      color: var(--sos-red);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+    
+    .sos-copy-btn:hover {
+      background: var(--sos-red);
+      color: #000;
+    }
+    
+    .sos-features {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+      font-size: 12px;
+      color: #cc9999;
+    }
+    
+    .sos-feature {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .sos-feature .material-symbols-outlined {
+      font-size: 16px;
+      color: var(--sos-red);
+    }
+    
+    .sos-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .sos-btn-web {
+      background: var(--sos-red);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      animation: sos-btn-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes sos-btn-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 var(--sos-red-glow); }
+      50% { box-shadow: 0 0 0 10px transparent; }
+    }
+    
+    .sos-btn-web:hover {
+      background: #ff6666;
+      transform: scale(1.05);
+    }
+    
+    .sos-btn-web .material-symbols-outlined {
+      font-size: 18px;
+    }
+    
+    .sos-note {
+      text-align: center;
+      color: #996666;
+      font-size: 11px;
+      margin-top: 15px;
+    }
+    
+    @media (max-width: 768px) {
+      .sos-title { font-size: 18px; letter-spacing: 2px; }
+      .sos-cmd-box { flex-direction: column; }
+      .sos-cmd-box code { margin-right: 0; margin-bottom: 10px; font-size: 12px; }
+      .sos-copy-btn { width: 100%; }
+      .sos-features { gap: 15px; }
+    }
+    
     /* ===== DOCS PAGE STYLES ===== */
     #docs-page { display: none; }
     #docs-page.active { display: block; }
@@ -654,6 +843,37 @@
             Minimum setup tools to bypass internet censorship.
             Help people around the world access the open internet with just one command.
           </p>
+          
+          <!-- SOS Emergency Section -->
+          <div class="sos-section">
+            <div class="sos-header">
+              <span class="sos-icon material-symbols-outlined">emergency</span>
+              <span class="sos-title">SOS Emergency Chat</span>
+              <span class="sos-icon material-symbols-outlined">emergency</span>
+            </div>
+            <p class="sos-subtitle">Encrypted chat rooms over DNS tunnel. Works during total blackouts. Auto-wipes after 1 hour.</p>
+            
+            <div class="sos-cmd-box">
+              <code><span class="prompt">$ </span>curl -sSL sos.dnscloak.net | sudo bash</code>
+              <button class="sos-copy-btn" onclick="copyCommand('curl -sSL sos.dnscloak.net | sudo bash')">[ COPY ]</button>
+            </div>
+            
+            <div class="sos-features">
+              <span class="sos-feature"><span class="material-symbols-outlined">emoji_symbols</span> 6-Emoji Room ID</span>
+              <span class="sos-feature"><span class="material-symbols-outlined">key</span> Rotating PIN (15s)</span>
+              <span class="sos-feature"><span class="material-symbols-outlined">lock</span> E2E Encrypted</span>
+              <span class="sos-feature"><span class="material-symbols-outlined">timer</span> 1-Hour TTL</span>
+            </div>
+            
+            <div class="sos-actions">
+              <a href="https://textual-web.io/dnscloak/sos" target="_blank" rel="noopener noreferrer" class="sos-btn-web">
+                <span class="material-symbols-outlined">open_in_new</span>
+                Open Web Version (No Install)
+              </a>
+            </div>
+            
+            <p class="sos-note">For emergencies in Iran, China, Russia during internet blackouts. Share room ID + PIN verbally.</p>
+          </div>
           
           <div class="setup-steps">
             <div class="step-item">
