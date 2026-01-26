@@ -18,6 +18,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (Cloudflare) ✅ TESTED
 - [x] `services/dnstt/install.sh` - DNS tunnel (emergency backup) ✅ TESTED
 - [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
+- [x] `services/conduit/install.sh` - Psiphon relay node ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 
@@ -39,6 +40,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `docs/protocols/vray.md` - V2Ray state machine
 - [x] `docs/protocols/ws.md` - WebSocket+CDN state machine
 - [x] `docs/protocols/dnstt.md` - DNStt state machine
+- [x] `docs/protocols/conduit.md` - Conduit Psiphon relay
 
 ## Architecture
 
@@ -57,6 +59,7 @@ services/
   vray/install.sh
   ws/install.sh
   dnstt/install.sh
+  conduit/install.sh
 cli/
   dnscloak.sh       # Unified CLI
 workers/

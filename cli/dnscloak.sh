@@ -101,7 +101,7 @@ require_root() {
 
 validate_service() {
     local service="$1"
-    local valid_services="reality ws wg dnstt mtp vray"
+    local valid_services="reality ws wg dnstt mtp vray conduit"
     
     if [[ ! " $valid_services " =~ " $service " ]]; then
         error "Unknown service: $service. Valid services: $valid_services"
@@ -136,6 +136,9 @@ is_service_installed() {
         mtp)
             [[ -f "$DNSCLOAK_DIR/mtp/config.py" ]] || systemctl is-active --quiet mtprotoproxy 2>/dev/null
             ;;
+        conduit)
+            [[ -f "/usr/local/bin/conduit" ]] && systemctl is-enabled --quiet conduit 2>/dev/null
+            ;;
         *)
             return 1
             ;;
@@ -144,7 +147,7 @@ is_service_installed() {
 
 get_installed_services() {
     local installed=""
-    for svc in reality ws wg dnstt mtp vray; do
+    for svc in reality ws wg dnstt mtp vray conduit; do
         if is_service_installed "$svc"; then
             installed="$installed $svc"
         fi
@@ -160,6 +163,13 @@ get_installed_services() {
 add_user() {
     local service="$1"
     local username="$2"
+    
+    # Conduit doesn't support per-user management
+    if [[ "$service" == "conduit" ]]; then
+        error "Conduit is a relay node and doesn't support per-user management.
+       Users connect through Psiphon apps, not directly to your server.
+       Use 'dnscloak status conduit' to check relay status."
+    fi
     
     if [[ -z "$username" ]]; then
         error "Username required. Usage: dnscloak add $service <username>"
@@ -192,6 +202,12 @@ add_user() {
 remove_user() {
     local service="$1"
     local username="$2"
+    
+    # Conduit doesn't support per-user management
+    if [[ "$service" == "conduit" ]]; then
+        error "Conduit is a relay node and doesn't support per-user management.
+       Use 'dnscloak status conduit' to check relay status."
+    fi
     
     if [[ -z "$username" ]]; then
         error "Username required. Usage: dnscloak remove $service <username>"
@@ -652,7 +668,7 @@ show_status() {
         echo -e "${BOLD}DNSCloak Services Status${RESET}"
         echo "================================================"
         echo ""
-        for svc in reality ws wg dnstt mtp vray; do
+        for svc in reality ws wg dnstt mtp vray conduit; do
             local status_icon status_text
             if is_service_installed "$svc"; then
                 status_icon="${GREEN}[+]${RESET}"
@@ -680,11 +696,21 @@ show_status() {
                             status_text="running"
                         fi
                         ;;
+                    conduit)
+                        if systemctl is-active --quiet conduit 2>/dev/null; then
+                            status_text="running"
+                        fi
+                        ;;
                 esac
                 
-                local user_count
-                user_count=$(user_list "$svc" | wc -l | tr -d ' ')
-                echo -e "  $status_icon $svc: $status_text ($user_count users)"
+                # Conduit doesn't have per-user management
+                if [[ "$svc" == "conduit" ]]; then
+                    echo -e "  $status_icon $svc: $status_text (relay node)"
+                else
+                    local user_count
+                    user_count=$(user_list "$svc" | wc -l | tr -d ' ')
+                    echo -e "  $status_icon $svc: $status_text ($user_count users)"
+                fi
             else
                 echo -e "  ${GRAY}[-]${RESET} $svc: not installed"
             fi
@@ -729,6 +755,21 @@ show_service_status() {
             echo "  Service: mtprotoproxy"
             echo "  Status: $(systemctl is-active mtprotoproxy 2>/dev/null || echo 'unknown')"
             ;;
+        conduit)
+            echo "  Service: conduit"
+            echo "  Status: $(systemctl is-active conduit 2>/dev/null || echo 'unknown')"
+            local max_clients bandwidth
+            source_libs
+            max_clients=$(server_get "conduit_max_clients")
+            bandwidth=$(server_get "conduit_bandwidth")
+            echo "  Max Clients: ${max_clients:-200}"
+            echo "  Bandwidth: ${bandwidth:-5} Mbps"
+            if [[ -f "$DNSCLOAK_DIR/conduit/stats.json" ]] && command -v jq &>/dev/null; then
+                local connected
+                connected=$(jq -r '.connectedClients // 0' "$DNSCLOAK_DIR/conduit/stats.json" 2>/dev/null)
+                echo "  Connected Clients: $connected"
+            fi
+            ;;
     esac
 }
 
@@ -761,6 +802,10 @@ restart_service() {
         mtp)
             systemctl restart mtprotoproxy
             success "MTProto restarted"
+            ;;
+        conduit)
+            systemctl restart conduit
+            success "Conduit restarted"
             ;;
     esac
 }
@@ -832,6 +877,7 @@ show_help() {
     dnstt     DNS Tunnel (emergency, slow)
     mtp       MTProto Proxy (Telegram)
     vray      VLESS + TLS (requires domain)
+    conduit   Psiphon relay node (volunteer proxy)
 
   EXAMPLES:
     dnscloak add reality alice        # Add Alice to Reality
@@ -841,6 +887,7 @@ show_help() {
     dnscloak list wg                  # List WireGuard users
     dnscloak status                   # All services status
     dnscloak restart wg               # Restart WireGuard
+    dnscloak status conduit           # Check Conduit relay status
 
 EOF
 }
