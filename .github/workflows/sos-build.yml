@@ -6,6 +6,9 @@ on:
       - 'sos-v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-dnstt:
     name: Build DNSTT Client
