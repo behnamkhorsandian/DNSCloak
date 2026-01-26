@@ -43,9 +43,13 @@ print_info() { echo -e "  ${CYAN}[*]${RESET} $1"; }
 
 # Mode detection
 SERVER_MODE=false
-if [[ "$1" == "--server" ]] || [[ "$1" == "-s" ]]; then
-    SERVER_MODE=true
-fi
+UPDATE_MODE=false
+for arg in "$@"; do
+    case "$arg" in
+        --server|-s) SERVER_MODE=true ;;
+        --update|-u) UPDATE_MODE=true; SERVER_MODE=true ;;
+    esac
+done
 
 # Paths
 if $SERVER_MODE; then
@@ -54,7 +58,10 @@ else
     SOS_DIR="/tmp/sos-chat"
 fi
 
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+# Use jsDelivr CDN (auto-purges on new commits, more reliable than raw.githubusercontent)
+# Add timestamp for cache busting
+CACHE_BUST="?t=$(date +%s)"
+GITHUB_RAW="https://cdn.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main"
 PYTHON_MIN_VERSION="3.8"
 
 # Relay server configuration
@@ -214,18 +221,18 @@ download_client() {
     
     mkdir -p "$SOS_DIR/sos"
     
-    # Download all client files
+    # Download all client files (with cache busting)
     local files=("app.py" "room.py" "transport.py" "crypto.py" "__init__.py")
     
     for file in "${files[@]}"; do
-        if ! curl -sfL "$GITHUB_RAW/src/sos/$file" -o "$SOS_DIR/sos/$file"; then
+        if ! curl -sfL "${GITHUB_RAW}/src/sos/${file}${CACHE_BUST}" -o "$SOS_DIR/sos/$file"; then
             print_error "Failed to download $file"
             exit 1
         fi
     done
     
     # Download CSS
-    curl -sfL "$GITHUB_RAW/src/sos/app.tcss" -o "$SOS_DIR/sos/app.tcss" 2>/dev/null || true
+    curl -sfL "${GITHUB_RAW}/src/sos/app.tcss${CACHE_BUST}" -o "$SOS_DIR/sos/app.tcss" 2>/dev/null || true
     
     print_success "Client downloaded"
 }
@@ -398,31 +405,114 @@ download_relay() {
     mkdir -p "$SOS_DIR"
     mkdir -p "$SOS_DIR/www"
     
-    # Download relay and crypto module
-    curl -sfL "$GITHUB_RAW/src/sos/relay.py" -o "$SOS_DIR/relay.py" || {
+    # Download relay and crypto module (with cache busting)
+    curl -sfL "${GITHUB_RAW}/src/sos/relay.py${CACHE_BUST}" -o "$SOS_DIR/relay.py" || {
         print_error "Failed to download relay.py"
         exit 1
     }
-    curl -sfL "$GITHUB_RAW/src/sos/crypto.py" -o "$SOS_DIR/crypto.py" || {
+    curl -sfL "${GITHUB_RAW}/src/sos/crypto.py${CACHE_BUST}" -o "$SOS_DIR/crypto.py" || {
         print_error "Failed to download crypto.py"
         exit 1
     }
     
     print_success "Relay downloaded"
     
-    # Download web client
+    # Download web client (with cache busting)
     print_step "Downloading web client..."
     
-    curl -sfL "$GITHUB_RAW/src/sos/www/index.html" -o "$SOS_DIR/www/index.html" || {
+    curl -sfL "${GITHUB_RAW}/src/sos/www/index.html${CACHE_BUST}" -o "$SOS_DIR/www/index.html" || {
         print_error "Failed to download index.html"
         exit 1
     }
-    curl -sfL "$GITHUB_RAW/src/sos/www/app.js" -o "$SOS_DIR/www/app.js" || {
+    curl -sfL "${GITHUB_RAW}/src/sos/www/app.js${CACHE_BUST}" -o "$SOS_DIR/www/app.js" || {
         print_error "Failed to download app.js"
         exit 1
     }
     
     print_success "Web client downloaded"
+}
+
+create_update_script() {
+    print_step "Creating update script..."
+    
+    cat > "$SOS_DIR/update.sh" << 'UPDATEEOF'
+#!/bin/bash
+# SOS Relay Auto-Update Script
+# Downloads latest files from CDN and restarts only if changed
+
+set -e
+
+SOS_DIR="/opt/dnscloak/sos"
+CDN="https://cdn.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main"
+BUST="?t=$(date +%s)"
+LOG_FILE="/var/log/sos-update.log"
+CHANGED=false
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
+
+download_if_changed() {
+    local url="$1"
+    local dest="$2"
+    local tmp="/tmp/sos-update-$$-$(basename "$dest")"
+    
+    if curl -sfL "${url}${BUST}" -o "$tmp" 2>/dev/null; then
+        if [[ -f "$dest" ]]; then
+            # Compare checksums
+            local old_sum new_sum
+            old_sum=$(md5sum "$dest" 2>/dev/null | cut -d' ' -f1)
+            new_sum=$(md5sum "$tmp" 2>/dev/null | cut -d' ' -f1)
+            
+            if [[ "$old_sum" != "$new_sum" ]]; then
+                mv "$tmp" "$dest"
+                log "Updated: $dest"
+                CHANGED=true
+            else
+                rm -f "$tmp"
+            fi
+        else
+            mv "$tmp" "$dest"
+            log "Created: $dest"
+            CHANGED=true
+        fi
+    else
+        rm -f "$tmp"
+        log "Failed to download: $url"
+    fi
+}
+
+# Update files
+download_if_changed "${CDN}/src/sos/relay.py" "$SOS_DIR/relay.py"
+download_if_changed "${CDN}/src/sos/crypto.py" "$SOS_DIR/crypto.py"
+download_if_changed "${CDN}/src/sos/www/index.html" "$SOS_DIR/www/index.html"
+download_if_changed "${CDN}/src/sos/www/app.js" "$SOS_DIR/www/app.js"
+
+# Restart only if relay.py or crypto.py changed (web files don't need restart)
+if [[ "$CHANGED" == "true" ]] && grep -q "relay.py\|crypto.py" "$LOG_FILE" 2>/dev/null; then
+    log "Restarting sos-relay service..."
+    systemctl restart sos-relay
+    log "Service restarted"
+fi
+
+log "Update check completed (changed=$CHANGED)"
+UPDATEEOF
+    
+    chmod +x "$SOS_DIR/update.sh"
+    print_success "Update script created: $SOS_DIR/update.sh"
+}
+
+setup_auto_update() {
+    print_step "Setting up hourly auto-update..."
+    
+    # Create cron job for hourly updates
+    local cron_file="/etc/cron.d/sos-update"
+    cat > "$cron_file" << EOF
+# SOS Relay Auto-Update - runs hourly
+# Downloads latest files from CDN, restarts only if changed
+0 * * * * root $SOS_DIR/update.sh >/dev/null 2>&1
+EOF
+    
+    chmod 644 "$cron_file"
+    print_success "Auto-update cron job installed (hourly)"
 }
 
 create_systemd_service() {
@@ -486,6 +576,12 @@ show_server_status() {
     echo "    systemctl restart sos-relay  # Restart"
     echo "    journalctl -u sos-relay -f   # View logs"
     echo ""
+    echo -e "  ${CYAN}=== AUTO-UPDATE ===${RESET}"
+    echo ""
+    echo "    $SOS_DIR/update.sh           # Manual update"
+    echo "    cat /var/log/sos-update.log  # Update logs"
+    echo "    # Auto-updates hourly via cron"
+    echo ""
 }
 
 main() {
@@ -497,6 +593,21 @@ main() {
         if [[ $EUID -ne 0 ]]; then
             print_error "Server mode requires root. Run with sudo."
             exit 1
+        fi
+        
+        # Update mode - just run the update script
+        if $UPDATE_MODE; then
+            if [[ -x "$SOS_DIR/update.sh" ]]; then
+                print_step "Running update..."
+                "$SOS_DIR/update.sh"
+                print_success "Update complete"
+                echo ""
+                cat /var/log/sos-update.log | tail -10
+                exit 0
+            else
+                print_error "Update script not found. Run full install first."
+                exit 1
+            fi
         fi
         
         # Check/install Python
@@ -519,6 +630,10 @@ main() {
         
         # Configure firewall (auto-detect cloud provider)
         configure_firewall
+        
+        # Create update script and cron job
+        create_update_script
+        setup_auto_update
         
         # Create and start service
         create_systemd_service

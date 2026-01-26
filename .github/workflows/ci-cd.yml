@@ -113,6 +113,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Purge jsDelivr CDN Cache
+        run: |
+          echo "Purging jsDelivr CDN cache for SOS files..."
+          
+          # Purge SOS web client files
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/www/app.js" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/www/index.html" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/relay.py" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/crypto.py" || true
+          
+          # Purge install scripts
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/services/sos/install.sh" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/setup.sh" || true
+          
+          echo "✓ CDN cache purged"
+
   # ============================================
   # Deploy - Runs only on -lit tags
   # ============================================
