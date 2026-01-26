@@ -122,7 +122,19 @@ function generatePin() {
  */
 async function sha256(data) {
   const encoder = new TextEncoder();
-  const dataBytes = typeof data === 'string' ? encoder.encode(data) : data;
+  
+  // Convert input to Uint8Array
+  let dataBytes;
+  if (data instanceof Uint8Array) {
+    dataBytes = data;
+  } else if (typeof data === 'string') {
+    dataBytes = encoder.encode(data);
+  } else if (Array.isArray(data)) {
+    // Handle array of strings (e.g., emoji array)
+    dataBytes = encoder.encode(data.join(''));
+  } else {
+    dataBytes = encoder.encode(String(data));
+  }
   
   // Try Web Crypto API first (only works in HTTPS/localhost)
   if (typeof crypto !== 'undefined' && crypto.subtle) {
