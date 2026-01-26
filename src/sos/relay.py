@@ -6,9 +6,12 @@ Manages ephemeral chat rooms with:
 - Redis storage with 1-hour TTL auto-expiration
 - Exponential rate limiting per IP
 - Message caching for reconnection
+- Web client serving (GET /, /app.js)
 
 Install: Part of DNSTT service with --with-sos flag
 Run: systemctl start sos-relay
+
+Web Access: Browse to http://<relay-ip>:8899/ through DNSTT SOCKS5 proxy
 """
 
 import os
@@ -17,10 +20,15 @@ import json
 import uuid
 import hashlib
 import asyncio
+from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass, field, asdict
 
 from aiohttp import web
+
+
+# Static file paths
+WWW_DIR = Path(__file__).parent / "www"
 
 
 # Configuration
@@ -120,6 +128,8 @@ class SOSRelay:
     SOS Chat Relay Server
     
     HTTP API endpoints:
+    - GET  / - Web client (index.html)
+    - GET  /app.js - Web client JavaScript
     - POST /room - Create room
     - POST /room/<hash>/join - Join room
     - POST /room/<hash>/send - Send message
@@ -135,6 +145,44 @@ class SOSRelay:
         self._cleanup_task: Optional[asyncio.Task] = None
         self._redis = None  # Optional Redis connection
     
+    @staticmethod
+    @web.middleware
+    async def cors_middleware(request: web.Request, handler):
+        """Add CORS headers to all responses for browser access"""
+        # Handle preflight OPTIONS requests
+        if request.method == 'OPTIONS':
+            response = web.Response()
+        else:
+            response = await handler(request)
+        
+        # Add CORS headers
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        
+        return response
+    
+    async def handle_index(self, request: web.Request) -> web.Response:
+        """Serve web client index.html"""
+        index_path = WWW_DIR / "index.html"
+        if index_path.exists():
+            return web.Response(
+                text=index_path.read_text(encoding='utf-8'),
+                content_type='text/html'
+            )
+        return web.Response(text="SOS Relay - Web client not installed", status=404)
+    
+    async def handle_app_js(self, request: web.Request) -> web.Response:
+        """Serve web client JavaScript"""
+        js_path = WWW_DIR / "app.js"
+        if js_path.exists():
+            return web.Response(
+                text=js_path.read_text(encoding='utf-8'),
+                content_type='application/javascript'
+            )
+        return web.Response(text="// app.js not found", content_type='application/javascript', status=404)
+    
     async def start(self):
         """Start the relay server"""
         # Try to connect to Redis
@@ -149,8 +197,14 @@ class SOSRelay:
         # Start cleanup task
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         
-        # Create web app
-        app = web.Application()
+        # Create web app with CORS middleware
+        app = web.Application(middlewares=[self.cors_middleware])
+        
+        # Static web client routes
+        app.router.add_get("/", self.handle_index)
+        app.router.add_get("/app.js", self.handle_app_js)
+        
+        # API routes
         app.router.add_get("/health", self.handle_health)
         app.router.add_post("/room", self.handle_create_room)
         app.router.add_post("/room/{room_hash}/join", self.handle_join_room)
@@ -159,13 +213,21 @@ class SOSRelay:
         app.router.add_post("/room/{room_hash}/leave", self.handle_leave)
         app.router.add_get("/room/{room_hash}/info", self.handle_info)
         
+        # OPTIONS handler for CORS preflight
+        app.router.add_route('OPTIONS', '/{path:.*}', self._handle_options)
+        
         # Start server
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, HOST, PORT)
         await site.start()
         
-        print(f"SOS Relay running on http://{HOST}:{PORT}")
+        # Log web client availability
+        if WWW_DIR.exists():
+            print(f"SOS Relay running on http://{HOST}:{PORT}")
+            print(f"Web client: http://{HOST}:{PORT}/")
+        else:
+            print(f"SOS Relay running on http://{HOST}:{PORT} (API only, www/ not found)")
         
         # Keep running
         while True:
@@ -453,6 +515,10 @@ class SOSRelay:
             "message_count": len(room.messages),
             "time_remaining": max(0, int(room.expires_at - time.time()))
         })
+    
+    async def _handle_options(self, request: web.Request) -> web.Response:
+        """Handle CORS preflight OPTIONS requests"""
+        return web.Response()
 
 
 async def main():

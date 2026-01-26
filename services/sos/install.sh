@@ -396,6 +396,7 @@ download_relay() {
     print_step "Downloading SOS relay..."
     
     mkdir -p "$SOS_DIR"
+    mkdir -p "$SOS_DIR/www"
     
     # Download relay and crypto module
     curl -sfL "$GITHUB_RAW/src/sos/relay.py" -o "$SOS_DIR/relay.py" || {
@@ -408,6 +409,20 @@ download_relay() {
     }
     
     print_success "Relay downloaded"
+    
+    # Download web client
+    print_step "Downloading web client..."
+    
+    curl -sfL "$GITHUB_RAW/src/sos/www/index.html" -o "$SOS_DIR/www/index.html" || {
+        print_error "Failed to download index.html"
+        exit 1
+    }
+    curl -sfL "$GITHUB_RAW/src/sos/www/app.js" -o "$SOS_DIR/www/app.js" || {
+        print_error "Failed to download app.js"
+        exit 1
+    }
+    
+    print_success "Web client downloaded"
 }
 
 create_systemd_service() {
@@ -440,15 +455,33 @@ EOF
 }
 
 show_server_status() {
+    # Get public IP
+    local public_ip
+    public_ip=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "YOUR_SERVER_IP")
+    
     echo ""
     print_step "SOS Relay Status"
     echo ""
     systemctl status sos-relay --no-pager -l || true
     echo ""
     print_success "SOS Relay is running on port $SOS_RELAY_PORT"
-    print_info "Users can now create rooms via DNSTT tunnel"
     echo ""
-    print_info "Commands:"
+    
+    echo -e "  ${CYAN}=== ACCESS METHODS ===${RESET}"
+    echo ""
+    echo -e "  ${GREEN}1. Web Client (via DNSTT tunnel)${RESET}"
+    echo "     Configure browser SOCKS5 proxy -> 127.0.0.1:10800"
+    echo "     Then browse to: http://${public_ip}:${SOS_RELAY_PORT}/"
+    echo ""
+    echo -e "  ${GREEN}2. TUI Client${RESET}"
+    echo "     curl -sSL sos.dnscloak.net | bash"
+    echo ""
+    echo -e "  ${GREEN}3. Direct (no censorship bypass)${RESET}"
+    echo "     http://${public_ip}:${SOS_RELAY_PORT}/"
+    echo ""
+    
+    echo -e "  ${CYAN}=== MANAGEMENT ===${RESET}"
+    echo ""
     echo "    systemctl status sos-relay   # Check status"
     echo "    systemctl restart sos-relay  # Restart"
     echo "    journalctl -u sos-relay -f   # View logs"

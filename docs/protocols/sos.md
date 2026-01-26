@@ -4,9 +4,38 @@
 
 ---
 
-## Two Ways to Use SOS
+## Three Ways to Use SOS
 
-### Option 1: Download Standalone Binary (Recommended)
+### Option 1: Web Client via DNSTT (Most Uncensorable) 🌐
+
+Access chat through your browser via DNSTT tunnel. **Works even when the internet is blocked.**
+
+**Step 1**: Start DNSTT client (creates SOCKS5 proxy)
+```bash
+# macOS/Linux
+./dnstt-client -doh https://cloudflare-dns.com/dns-query \
+  -pubkey-file server.pub t.dnscloak.net 127.0.0.1:10800
+
+# Or use the DNSTT setup script
+curl -sSL dnstt.dnscloak.net/client | bash
+```
+
+**Step 2**: Configure browser SOCKS5 proxy
+- Firefox: Settings → Network → Manual proxy → SOCKS Host: `127.0.0.1`, Port: `10800`
+- Chrome: Use extension like SwitchyOmega
+
+**Step 3**: Navigate to relay
+```
+http://relay.dnscloak.net:8899/
+```
+
+The web client:
+- **Single-page app** - No downloads, works in any browser
+- **Fully encrypted** - TweetNaCl.js for client-side E2E encryption
+- **TUI compatible** - Same rooms work with TUI and web clients!
+- **Offline-ready** - All dependencies inlined (~100KB total)
+
+### Option 2: Download Standalone Binary (Recommended for Offline)
 
 Download from [GitHub Releases](https://github.com/behnamkhorsandian/DNSCloak/releases):
 
@@ -27,7 +56,7 @@ The binary:
 - **Auto-falls back** to direct connection if DNSTT tunnel unavailable
 - **Bundles DNSTT client** for maximum censorship resistance
 
-### Option 2: Install via curl (Development)
+### Option 3: Install via curl (Development/Testing)
 
 ```bash
 curl -sSL sos.dnscloak.net | bash
@@ -37,25 +66,34 @@ This downloads the Python TUI client. Best for:
 - Testing the system
 - Development
 
-### Option 2: Run Your Own Relay (For Communities)
+---
 
-If you have a DNSTT server and want to host a relay for your community:
+## Run Your Own Relay (For Communities)
+
+If you have a VPS and want to host a relay for your community:
 
 **Step 1**: Ensure DNSTT is installed on your VM
 ```bash
 curl -sSL dnstt.dnscloak.net | sudo bash
 ```
 
-**Step 2**: Install SOS relay daemon
+**Step 2**: Install SOS relay daemon (includes web client)
 ```bash
 curl -sSL sos.dnscloak.net | sudo bash -s -- --server
 ```
 
-**Step 3**: Tell users how to connect
-```bash
-# Users connect by setting your relay address:
-SOS_RELAY_HOST=your-server.com curl -sSL sos.dnscloak.net | bash
-```
+This installs:
+- Relay daemon at `/opt/dnscloak/sos/relay.py`
+- Web client at `/opt/dnscloak/sos/www/`
+- Systemd service `sos-relay`
+
+**Step 3**: Access methods for your users
+
+| Method | URL | Notes |
+|--------|-----|-------|
+| **Web (via DNSTT)** | `http://YOUR_IP:8899/` | Through SOCKS5 proxy |
+| **Web (direct)** | `http://YOUR_IP:8899/` | No tunnel (less private) |
+| **TUI** | `SOS_RELAY_HOST=YOUR_IP curl -sSL sos.dnscloak.net \| bash` | Terminal client |
 
 ---
 
@@ -66,28 +104,47 @@ SOS_RELAY_HOST=your-server.com curl -sSL sos.dnscloak.net | bash
 │                              SOS ARCHITECTURE                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   USER A (Creator)                            USER B (Joiner)                │
+│   USER A (TUI Client)                         USER B (Web Client)            │
 │   ┌──────────────┐                           ┌──────────────┐                │
-│   │   SOS TUI    │                           │   SOS TUI    │                │
-│   │   (Client)   │                           │   (Client)   │                │
+│   │   SOS TUI    │                           │   Browser    │                │
+│   │   (Python)   │                           │   (app.js)   │                │
 │   └──────┬───────┘                           └───────┬──────┘                │
 │          │                                           │                       │
-│          │  DNS Queries (DNSTT tunnel)               │                       │
-│          │  abc123.t.dnscloak.net                    │                       │
+│          │  DNSTT Tunnel (SOCKS5 :10800)             │                       │
+│          │  DNS queries to t.dnscloak.net            │                       │
 │          ▼                                           ▼                       │
 │   ┌──────────────────────────────────────────────────────────┐               │
 │   │                    DNSTT SERVER (VM)                      │               │
 │   │  ┌─────────────────────────────────────────────────────┐ │               │
-│   │  │              SOS Relay Daemon (relay.py)            │ │               │
-│   │  │  - Creates/manages rooms (1hr TTL)                  │ │               │
-│   │  │  - Stores encrypted messages (max 500)              │ │               │
+│   │  │              SOS Relay Daemon (relay.py:8899)       │ │               │
+│   │  │  GET /            → Web client (index.html)         │ │               │
+│   │  │  POST /room       → Create room API                 │ │               │
+│   │  │  GET /room/X/poll → Poll messages API               │ │               │
+│   │  │  - Rooms auto-expire (1hr TTL)                      │ │               │
+│   │  │  - Encrypted messages (max 500/room)                │ │               │
 │   │  │  - Rate limiting (exponential backoff)              │ │               │
-│   │  │  - Redis or in-memory storage                       │ │               │
 │   │  └─────────────────────────────────────────────────────┘ │               │
 │   └──────────────────────────────────────────────────────────┘               │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## TUI ↔ Web Interoperability
+
+**TUI and Web clients can chat in the same rooms!** Both use identical crypto:
+
+| Specification | TUI (Python) | Web (JavaScript) |
+|---------------|--------------|------------------|
+| Emoji set | 32 emojis in `crypto.py` | Same 32, same order |
+| Room hash | `SHA256(emojis)[:16]` hex | Same formula |
+| Salt | `SHA256("sos-chat-v1:"+emojis+[":"+ts])[:16]` | Same formula |
+| KDF | Argon2id (time=2, mem=64MB) | PBKDF2 fallback* |
+| Encryption | NaCl SecretBox | TweetNaCl.js |
+| Wire format | `Base64(nonce + ciphertext)` | Same format |
+
+> *Web uses PBKDF2 fallback in browsers without WASM support. Full Argon2id compatibility requires loading argon2-browser.
 
 ---
 
@@ -101,6 +158,8 @@ SOS_RELAY_HOST=your-server.com curl -sSL sos.dnscloak.net | bash
 | **Message Cache** | Reconnect and see missed messages (up to 500) |
 | **E2E Encrypted** | NaCl (XSalsa20-Poly1305) + Argon2id key derivation |
 | **DNS Transport** | Works when HTTP/HTTPS is blocked during blackouts |
+| **Web Client** | Browser-based access, no install required |
+| **Multi-Client** | TUI and Web users can chat in the same room |
 
 ---
 

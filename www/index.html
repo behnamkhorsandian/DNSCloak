@@ -350,6 +350,299 @@
       box-shadow: 0 0 20px rgba(164, 146, 255, 0.1); /* Purple glow */
     }
     
+    /* Protocol Themes - SOS Emergency (Pulsing Red) */
+    .protocol-item.theme-sos {
+      background: linear-gradient(135deg, var(--sos-bg) 0%, rgba(13, 5, 5, 0.9) 100%);
+      border: 2px solid var(--sos-red);
+      position: relative;
+      animation: sos-card-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes sos-card-glow {
+      0%, 100% { box-shadow: 0 0 10px var(--sos-red-glow), inset 0 0 20px rgba(255, 68, 68, 0.03); }
+      50% { box-shadow: 0 0 25px var(--sos-red-glow), 0 0 40px rgba(255, 68, 68, 0.15), inset 0 0 30px rgba(255, 68, 68, 0.05); }
+    }
+    
+    .protocol-item.theme-sos .protocol-icon .material-symbols-outlined {
+      color: var(--sos-red);
+      animation: sos-icon-pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes sos-icon-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    
+    .protocol-item.theme-sos .protocol-name { color: var(--sos-red); }
+    .protocol-item.theme-sos .protocol-status { background: var(--sos-red); color: #000; }
+    .protocol-item.theme-sos .protocol-desc { color: #ff9999; }
+    .protocol-item.theme-sos .protocol-cmd { 
+      border-left-color: var(--sos-red);
+      background: rgba(255, 68, 68, 0.05);
+    }
+    .protocol-item.theme-sos .tag { color: var(--sos-red); border-color: rgba(255, 68, 68, 0.4); }
+    
+    .protocol-item.theme-sos:hover { 
+      border-color: #ff6666;
+      transform: translate(-2px, -2px);
+    }
+    
+    .sos-web-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: var(--sos-red);
+      color: #000;
+      border: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      animation: sos-btn-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes sos-btn-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 0 6px transparent; }
+    }
+    
+    .sos-web-btn:hover {
+      background: #ff6666;
+      transform: scale(1.05);
+    }
+    
+    .sos-web-btn .material-symbols-outlined { font-size: 16px; }
+    
+    /* SOCKS5 Tutorial Popup */
+    .socks-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      padding: 20px;
+    }
+    
+    .socks-popup-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .socks-popup {
+      background: var(--bg-primary);
+      border: 2px solid var(--sos-red);
+      max-width: 600px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      transform: scale(0.9);
+      transition: transform 0.3s;
+      box-shadow: 0 0 40px var(--sos-red-glow);
+    }
+    
+    .socks-popup-overlay.active .socks-popup {
+      transform: scale(1);
+    }
+    
+    .socks-popup-header {
+      background: linear-gradient(90deg, var(--sos-red), var(--sos-red-dark));
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .socks-popup-header h3 {
+      margin: 0;
+      color: #000;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .socks-popup-header h3 .material-symbols-outlined {
+      font-size: 20px;
+    }
+    
+    .socks-popup-close {
+      background: rgba(0,0,0,0.2);
+      border: none;
+      color: #000;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    
+    .socks-popup-close:hover {
+      background: rgba(0,0,0,0.4);
+    }
+    
+    .socks-popup-body {
+      padding: 20px;
+    }
+    
+    .socks-popup-intro {
+      color: #ff9999;
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    
+    .socks-step {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      margin-bottom: 15px;
+      padding: 15px;
+    }
+    
+    .socks-step-title {
+      color: var(--sos-red);
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .socks-step-title .step-num {
+      background: var(--sos-red);
+      color: #000;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    
+    .socks-step-content {
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .socks-step-content code {
+      background: var(--bg-primary);
+      color: var(--sos-red);
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+    }
+    
+    .socks-cmd-box {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      padding: 12px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .socks-cmd-box code {
+      color: var(--accent-light-green);
+      font-size: 12px;
+      word-break: break-all;
+    }
+    
+    .socks-copy-btn {
+      background: transparent;
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      padding: 4px 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 10px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .socks-copy-btn:hover {
+      background: var(--accent-green);
+      color: var(--bg-primary);
+    }
+    
+    .socks-browsers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .socks-browser {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .socks-browser strong {
+      display: block;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    
+    .socks-popup-footer {
+      border-top: 1px solid var(--border);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .socks-cancel-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .socks-cancel-btn:hover {
+      border-color: var(--text-primary);
+      color: var(--text-primary);
+    }
+    
+    .socks-continue-btn {
+      background: var(--sos-red);
+      border: none;
+      color: #000;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .socks-continue-btn:hover {
+      background: #ff6666;
+    }
+    }
+    
     .features { padding: 40px 0; border-top: 1px solid var(--border); overflow: hidden; position: relative; }
     
     /* Fade Gradient Overlay */
@@ -1282,6 +1575,26 @@
           <h2 class="section-title">Available Protocols</h2>
           
           <div class="protocol-list">
+            <div class="protocol-item theme-sos">
+              <div class="protocol-header">
+                <span class="protocol-icon"><span class="material-symbols-outlined">emergency</span></span>
+                <span class="protocol-name">SOS Emergency Chat</span>
+                <span class="protocol-status status-ready">READY</span>
+              </div>
+              <p class="protocol-desc">Encrypted chat rooms over DNS tunnel. Works during total blackouts. Auto-wipes after 1 hour. Share room ID + PIN verbally.</p>
+              <div class="protocol-tags">
+                <span class="tag">emergency</span>
+                <span class="tag">encrypted</span>
+                <span class="tag">auto-wipe</span>
+                <span class="tag">dns-tunnel</span>
+              </div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl -sSL sos.dnscloak.net | sudo bash</div>
+              <button class="sos-web-btn" onclick="showSocksPopup()">
+                <span class="material-symbols-outlined">language</span>
+                Open Web Chat
+              </button>
+            </div>
+            
             <div class="protocol-item theme-red">
               <div class="protocol-header">
                 <span class="protocol-icon"><span class="material-symbols-outlined">emergency</span></span>
@@ -2112,7 +2425,134 @@
     
     // Close on Escape key
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeMacosPopup();
+      if (e.key === 'Escape') {
+        closeMacosPopup();
+        closeSocksPopup();
+      }
+    });
+  </script>
+  
+  <!-- SOCKS5 Tutorial Popup for SOS Web Chat -->
+  <div class="socks-popup-overlay" id="socks-popup">
+    <div class="socks-popup">
+      <div class="socks-popup-header">
+        <h3><span class="material-symbols-outlined">emergency</span> SOS Web Chat Setup</h3>
+        <button class="socks-popup-close" onclick="closeSocksPopup()">ESC</button>
+      </div>
+      <div class="socks-popup-body">
+        <p class="socks-popup-intro">
+          The SOS web chat is served through a DNS tunnel and requires a SOCKS5 proxy to access.
+          This makes it <strong>uncensorable</strong> - it works even during total internet blackouts.
+        </p>
+        
+        <div class="socks-step">
+          <div class="socks-step-title">
+            <span class="step-num">1</span>
+            Start DNSTT Client (creates SOCKS5 proxy)
+          </div>
+          <div class="socks-step-content">
+            Run this command on your machine to start the DNS tunnel client:
+            <div class="socks-cmd-box">
+              <code>curl -sSL dnstt.dnscloak.net/setup/$(uname -s | tr A-Z a-z) | bash</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('curl -sSL dnstt.dnscloak.net/setup/$(uname -s | tr A-Z a-z) | bash')">COPY</button>
+            </div>
+            <p style="margin-top: 10px; color: var(--text-dim); font-size: 12px;">
+              Or download directly: 
+              <a href="https://dnstt.dnscloak.net/setup/linux" style="color: var(--accent-blue);">Linux</a> | 
+              <a href="https://dnstt.dnscloak.net/setup/macos" style="color: var(--accent-blue);">macOS</a> | 
+              <a href="https://dnstt.dnscloak.net/setup/windows" style="color: var(--accent-blue);">Windows</a>
+            </p>
+          </div>
+        </div>
+        
+        <div class="socks-step">
+          <div class="socks-step-title">
+            <span class="step-num">2</span>
+            Configure Browser SOCKS5 Proxy
+          </div>
+          <div class="socks-step-content">
+            Set your browser to use SOCKS5 proxy at:
+            <div class="socks-cmd-box">
+              <code>127.0.0.1:10800</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('127.0.0.1:10800')">COPY</button>
+            </div>
+            
+            <div class="socks-browsers">
+              <div class="socks-browser">
+                <strong>Firefox</strong>
+                Settings → Network → Manual Proxy → SOCKS Host
+              </div>
+              <div class="socks-browser">
+                <strong>Chrome</strong>
+                Use extension: Proxy SwitchyOmega
+              </div>
+              <div class="socks-browser">
+                <strong>macOS</strong>
+                System Settings → Network → Proxies → SOCKS
+              </div>
+              <div class="socks-browser">
+                <strong>Windows</strong>
+                Settings → Network → Proxy (use app like Proxifier)
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="socks-step">
+          <div class="socks-step-title">
+            <span class="step-num">3</span>
+            Access Web Chat
+          </div>
+          <div class="socks-step-content">
+            With proxy configured, navigate to the relay server:
+            <div class="socks-cmd-box">
+              <code>http://relay.dnscloak.net:8899/</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('http://relay.dnscloak.net:8899/')">COPY</button>
+            </div>
+            <p style="margin-top: 10px; color: var(--text-dim); font-size: 12px;">
+              The web UI will load entirely through the DNS tunnel. Create a room, share the 6-emoji ID + PIN verbally.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="socks-popup-footer">
+        <button class="socks-cancel-btn" onclick="closeSocksPopup()">Cancel</button>
+        <button class="socks-continue-btn" onclick="openSosWebChat()">
+          <span class="material-symbols-outlined">open_in_new</span>
+          Open Chat (proxy required)
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // SOCKS5 Tutorial Popup
+    function showSocksPopup() {
+      document.getElementById('socks-popup').classList.add('active');
+    }
+    
+    function closeSocksPopup() {
+      document.getElementById('socks-popup').classList.remove('active');
+    }
+    
+    function openSosWebChat() {
+      window.open('http://relay.dnscloak.net:8899/', '_blank');
+      closeSocksPopup();
+    }
+    
+    function copySocksCmd(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        // Visual feedback - find the clicked button
+        event.target.textContent = 'COPIED!';
+        setTimeout(() => {
+          event.target.textContent = 'COPY';
+        }, 1500);
+      });
+    }
+    
+    // Close popup on overlay click
+    document.getElementById('socks-popup').addEventListener('click', function(e) {
+      if (e.target === this) closeSocksPopup();
     });
   </script>
 </body>

@@ -282,13 +282,20 @@ Pre-compiled binaries users download BEFORE blackout:
 - Cross-compile or use GitHub Actions for multi-platform builds
 - Distribute via GitHub Releases
 
-### Phase 2: Web Mode via DNSTT [FUTURE]
+### Phase 2: Web Mode via DNSTT [IMPLEMENTED ✅]
 Browser-based chat served entirely through DNSTT tunnel:
-- [ ] `hotline.dnscloak.net` - New subdomain for web chat
-- [ ] Relay daemon serves static HTML/JS at `/web`
-- [ ] User configures browser SOCKS5 proxy → DNSTT client
-- [ ] Navigate to `http://localhost:8080/web` or relay IP through tunnel
-- [ ] Real-time WebSocket chat (through DNSTT SOCKS5)
+- [x] Relay daemon serves static HTML/JS at `/` (root)
+- [x] Single-page app with inlined TweetNaCl.js + Argon2 (PBKDF2 fallback)
+- [x] User configures browser SOCKS5 proxy → DNSTT client
+- [x] Navigate to `http://relay:8899/` through tunnel
+- [x] Full crypto interop with TUI client (same rooms!)
+- [x] Polling-based messaging (1.5s interval)
+- [ ] **TODO**: WebSocket for real-time chat (future enhancement)
+- [ ] **TODO**: `hotline.dnscloak.net` subdomain setup
+
+**Web Client Files:**
+- `src/sos/www/index.html` - SPA with all CSS inlined (~100KB)
+- `src/sos/www/app.js` - Chat logic + crypto (TweetNaCl + Argon2/PBKDF2)
 
 Architecture for Phase 2:
 ```
@@ -298,7 +305,7 @@ Architecture for Phase 2:
 │                                                                              │
 │   USER'S BROWSER                                                             │
 │   ┌──────────────────────────────────────────────────────────────┐           │
-│   │ http://relay:8080/web  (through SOCKS5 proxy)                │           │
+│   │ http://relay:8899/  (through SOCKS5 proxy)                   │           │
 │   └──────────────────────────────────────────────────────────────┘           │
 │                              │                                               │
 │                              ▼                                               │
@@ -311,15 +318,27 @@ Architecture for Phase 2:
 │   ┌──────────────────────────────────────────────────────────────┐           │
 │   │                    DNSTT SERVER (VM)                          │           │
 │   │  ┌─────────────────────────────────────────────────────────┐ │           │
-│   │  │           SOS Relay Daemon (relay.py:8080)              │ │           │
-│   │  │  GET /web          → Serves chat HTML/JS                │ │           │
-│   │  │  WS  /ws           → WebSocket for real-time chat       │ │           │
-│   │  │  POST /api/room    → Room create/join API               │ │           │
+│   │  │           SOS Relay Daemon (relay.py:8899)              │ │           │
+│   │  │  GET /             → Serves index.html (SPA)            │ │           │
+│   │  │  GET /app.js       → Serves client JavaScript           │ │           │
+│   │  │  POST /room        → Create room API                    │ │           │
+│   │  │  GET /room/{h}/poll → Poll messages API                 │ │           │
 │   │  └─────────────────────────────────────────────────────────┘ │           │
 │   └──────────────────────────────────────────────────────────────┘           │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Crypto Interop (TUI ↔ Web):**
+| Spec | Python (TUI) | JavaScript (Web) |
+|------|--------------|------------------|
+| Emoji set | 32 emojis (crypto.py) | Same 32, same order |
+| Room hash | SHA256(emojis)[:16] hex | Same formula |
+| KDF | Argon2id (time=2, mem=64MB) | PBKDF2 fallback* |
+| Encryption | NaCl SecretBox | TweetNaCl.js |
+| Wire format | Base64(nonce+ciphertext) | Same format |
+
+*Note: Web uses PBKDF2 fallback for Argon2id. For true interop, load full argon2-browser WASM.
 
 ### Why This Matters
 - **Phase 1** (Offline binaries): Users pre-download, run during blackout
@@ -340,6 +359,7 @@ Architecture for Phase 2:
 - **CLI** (`cli/dnscloak.sh`) - Unified management CLI created
 - **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ TESTED
   - TUI client with Textual framework
+  - **Web client** (`src/sos/www/`) - Browser-based SPA served via relay ✅ NEW
   - Standalone binaries (via GitHub Actions CI/CD)
   - Auto-fallback: DNSTT → Direct relay connection
   - Default relay: `relay.dnscloak.net:8899`
@@ -347,6 +367,7 @@ Architecture for Phase 2:
   - E2E encryption (NaCl + Argon2id)
   - Auto-wipe after 1 hour
   - Rate limiting: exponential backoff [0, 10, 30, 60, 180, 300]s
+  - **TUI ↔ Web interop**: Same rooms work across clients
 
 ### Cloudflare Setup
 - **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray, sos)
