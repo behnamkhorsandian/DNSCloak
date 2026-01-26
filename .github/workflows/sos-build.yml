@@ -152,12 +152,11 @@ jobs:
           path: dist/sos-*
       
       - name: Upload Launcher (macOS)
-        if: startsWith(matrix.platform, 'darwin')
+        if: matrix.platform == 'darwin-arm64'
         uses: actions/upload-artifact@v4
         with:
           name: launcher-macos
           path: src/sos/launchers/SOS-Chat.command
-          overwrite: true
       
       - name: Upload Launcher (Windows)
         if: matrix.platform == 'windows-amd64'
@@ -167,12 +166,11 @@ jobs:
           path: src/sos/launchers/SOS-Chat.bat
       
       - name: Upload Launcher (Linux)
-        if: startsWith(matrix.platform, 'linux')
+        if: matrix.platform == 'linux-amd64'
         uses: actions/upload-artifact@v4
         with:
           name: launcher-linux
           path: src/sos/launchers/SOS-Chat.desktop
-          overwrite: true
 
   release:
     name: Create Release
