@@ -595,6 +595,19 @@
       transform: scale(1.05);
     }
     
+    .sos-btn-web.sos-btn-disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+      animation: none;
+      opacity: 0.7;
+    }
+    
+    .sos-btn-web.sos-btn-disabled:hover {
+      background: #555;
+      transform: none;
+    }
+    
     .sos-btn-web .material-symbols-outlined {
       font-size: 18px;
     }
@@ -866,10 +879,10 @@
             </div>
             
             <div class="sos-actions">
-              <a href="https://textual-web.io/dnscloak/sos" target="_blank" rel="noopener noreferrer" class="sos-btn-web">
-                <span class="material-symbols-outlined">open_in_new</span>
-                Open Web Version (No Install)
-              </a>
+              <span class="sos-btn-web sos-btn-disabled" title="Coming soon - requires textual-web hosting">
+                <span class="material-symbols-outlined">hourglass_empty</span>
+                Web Version Coming Soon
+              </span>
             </div>
             
             <p class="sos-note">For emergencies in Iran, China, Russia during internet blackouts. Share room ID + PIN verbally.</p>

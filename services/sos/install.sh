@@ -1,15 +1,24 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - SOS Emergency Secure Chat Installer
+# DNSCloak - SOS Emergency Secure Chat
 # https://github.com/behnamkhorsandian/DNSCloak
 #
-# Usage: curl -sSL sos.dnscloak.net | sudo bash
+# USAGE:
+#   Client (users): curl -sSL sos.dnscloak.net | bash
+#   Server (admin): curl -sSL sos.dnscloak.net | sudo bash -s -- --server
 #
-# Creates encrypted chat rooms over DNS tunnel (DNSTT) that:
-#   - Use 6 emojis as room ID + 6-digit key (rotating or fixed)
+# CLIENT MODE (default):
+#   Launches TUI for creating/joining encrypted chat rooms
+#
+# SERVER MODE (--server):
+#   Installs and runs the SOS relay daemon on your DNSTT server
+#   Required: DNSTT server already installed, Redis (optional)
+#
+# Features:
+#   - 6-emoji room ID + 6-digit key (rotating or fixed)
 #   - Auto-wipe after 1 hour
-#   - Cache messages for reconnection
-#   - Perfect for emergency communication in blackouts
+#   - Message caching for reconnection
+#   - E2E encrypted with NaCl + Argon2id
 #===============================================================================
 
 set -e
@@ -32,13 +41,28 @@ print_info() { echo -e "  ${CYAN}[*]${RESET} $1"; }
 # Configuration
 #-------------------------------------------------------------------------------
 
-SOS_DIR="/tmp/sos-chat"
+# Mode detection
+SERVER_MODE=false
+if [[ "$1" == "--server" ]] || [[ "$1" == "-s" ]]; then
+    SERVER_MODE=true
+fi
+
+# Paths
+if $SERVER_MODE; then
+    SOS_DIR="/opt/dnscloak/sos"
+else
+    SOS_DIR="/tmp/sos-chat"
+fi
+
 GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
 PYTHON_MIN_VERSION="3.8"
 
-# DNSTT relay server configuration
-SOS_RELAY_HOST="${SOS_RELAY_HOST:-relay.dnscloak.net}"
+# Relay server configuration
+SOS_RELAY_HOST="${SOS_RELAY_HOST:-127.0.0.1}"  # Default to localhost for DNSTT tunnel
 SOS_RELAY_PORT="${SOS_RELAY_PORT:-8899}"
+
+# Server mode settings
+SOS_SYSTEMD_SERVICE="/etc/systemd/system/sos-relay.service"
 
 #-------------------------------------------------------------------------------
 # Banner
@@ -58,6 +82,15 @@ show_banner() {
     Encrypted rooms over DNS tunnel
 EOF
     echo -e "${RESET}"
+    
+    if $SERVER_MODE; then
+        echo -e "  ${RED}>>> SERVER MODE <<<${RESET}"
+        echo -e "  Installing SOS Relay Daemon"
+        echo ""
+    else
+        echo -e "  ${GREEN}>>> CLIENT MODE <<<${RESET}"
+        echo ""
+    fi
 }
 
 #-------------------------------------------------------------------------------
@@ -238,41 +271,163 @@ cleanup() {
 # Main
 #-------------------------------------------------------------------------------
 
-main() {
-    # Check if running as root (optional for client)
-    # Not required since we install to /tmp
+#-------------------------------------------------------------------------------
+# Server Mode Functions
+#-------------------------------------------------------------------------------
+
+install_server_dependencies() {
+    local python_cmd="$1"
     
+    print_step "Installing server dependencies..."
+    
+    # Create directory
+    mkdir -p "$SOS_DIR"
+    
+    # Create virtual environment
+    $python_cmd -m venv "$SOS_DIR/venv" 2>/dev/null || {
+        apt-get install -y python3-venv 2>/dev/null || true
+        $python_cmd -m venv "$SOS_DIR/venv"
+    }
+    
+    # Activate and install
+    source "$SOS_DIR/venv/bin/activate"
+    
+    pip install --quiet --upgrade pip
+    pip install --quiet aiohttp pynacl argon2-cffi redis
+    
+    print_success "Server dependencies installed"
+}
+
+download_relay() {
+    print_step "Downloading SOS relay..."
+    
+    mkdir -p "$SOS_DIR"
+    
+    # Download relay and crypto module
+    curl -sfL "$GITHUB_RAW/src/sos/relay.py" -o "$SOS_DIR/relay.py" || {
+        print_error "Failed to download relay.py"
+        exit 1
+    }
+    curl -sfL "$GITHUB_RAW/src/sos/crypto.py" -o "$SOS_DIR/crypto.py" || {
+        print_error "Failed to download crypto.py"
+        exit 1
+    }
+    
+    print_success "Relay downloaded"
+}
+
+create_systemd_service() {
+    print_step "Creating systemd service..."
+    
+    cat > "$SOS_SYSTEMD_SERVICE" << EOF
+[Unit]
+Description=SOS Emergency Chat Relay Daemon
+After=network.target dnstt-server.service
+Wants=dnstt-server.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$SOS_DIR
+Environment="PATH=$SOS_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=$SOS_DIR/venv/bin/python $SOS_DIR/relay.py --host 0.0.0.0 --port $SOS_RELAY_PORT
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    systemctl daemon-reload
+    systemctl enable sos-relay
+    systemctl start sos-relay
+    
+    print_success "Service created and started"
+}
+
+show_server_status() {
+    echo ""
+    print_step "SOS Relay Status"
+    echo ""
+    systemctl status sos-relay --no-pager -l || true
+    echo ""
+    print_success "SOS Relay is running on port $SOS_RELAY_PORT"
+    print_info "Users can now create rooms via DNSTT tunnel"
+    echo ""
+    print_info "Commands:"
+    echo "    systemctl status sos-relay   # Check status"
+    echo "    systemctl restart sos-relay  # Restart"
+    echo "    journalctl -u sos-relay -f   # View logs"
+    echo ""
+}
+
+main() {
     clear
     show_banner
     
-    # Cleanup old installation
-    if [[ -d "$SOS_DIR" ]]; then
-        mv "$SOS_DIR" /tmp/sos-chat-old 2>/dev/null || rm -rf "$SOS_DIR"
-    fi
-    
-    # Check/install Python
-    local python_cmd
-    python_cmd=$(check_python) || {
-        print_info "Python 3.8+ not found"
-        install_python
-        python_cmd=$(check_python) || {
-            print_error "Failed to install Python"
+    if $SERVER_MODE; then
+        # Server mode - requires root
+        if [[ $EUID -ne 0 ]]; then
+            print_error "Server mode requires root. Run with sudo."
             exit 1
+        fi
+        
+        # Check/install Python
+        local python_cmd
+        python_cmd=$(check_python) || {
+            print_info "Python 3.8+ not found"
+            install_python
+            python_cmd=$(check_python) || {
+                print_error "Failed to install Python"
+                exit 1
+            }
         }
-    }
-    print_success "Found Python: $python_cmd"
-    
-    # Install dependencies
-    install_dependencies "$python_cmd"
-    
-    # Download client
-    download_client
-    
-    # Launch TUI
-    launch_tui "$python_cmd"
-    
-    # Cleanup on exit
-    cleanup
+        print_success "Found Python: $python_cmd"
+        
+        # Install server dependencies
+        install_server_dependencies "$python_cmd"
+        
+        # Download relay
+        download_relay
+        
+        # Create and start service
+        create_systemd_service
+        
+        # Show status
+        show_server_status
+        
+    else
+        # Client mode - does not require root
+        
+        # Cleanup old installation
+        if [[ -d "$SOS_DIR" ]]; then
+            mv "$SOS_DIR" /tmp/sos-chat-old 2>/dev/null || rm -rf "$SOS_DIR"
+        fi
+        
+        # Check/install Python
+        local python_cmd
+        python_cmd=$(check_python) || {
+            print_info "Python 3.8+ not found"
+            install_python
+            python_cmd=$(check_python) || {
+                print_error "Failed to install Python"
+                exit 1
+            }
+        }
+        print_success "Found Python: $python_cmd"
+        
+        # Install dependencies
+        install_dependencies "$python_cmd"
+        
+        # Download client
+        download_client
+        
+        # Launch TUI
+        launch_tui "$python_cmd"
+        
+        # Cleanup on exit
+        cleanup
+    fi
 }
 
 # Handle Ctrl+C gracefully

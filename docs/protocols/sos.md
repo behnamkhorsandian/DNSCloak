@@ -1,76 +1,95 @@
 # SOS - Emergency Secure Chat
 
-**One-liner emergency chat over DNS tunnel.**
+**Encrypted chat rooms over DNS tunnel for emergency communication.**
 
+---
+
+## Two Ways to Use SOS
+
+### Option 1: Be a User (Join Public Relay)
+
+Just run:
 ```bash
-curl -sSL sos.dnscloak.net | sudo bash
+curl -sSL sos.dnscloak.net | bash
 ```
 
-## Overview
+This downloads the TUI client and connects to the public DNSCloak relay. Best for:
+- Users who just need to chat during emergencies
+- Testing the system
+- Those who don't have their own server
 
-SOS creates encrypted, ephemeral chat rooms that tunnel through DNS—working even during total internet blackouts when HTTP/HTTPS is blocked. Perfect for emergency communication in countries like Iran, China, and Russia during crackdowns.
+### Option 2: Run Your Own Relay (For Communities)
 
-### Key Features
+If you have a DNSTT server and want to host a relay for your community:
 
-- **6-Emoji Room ID** — Easy to share verbally (e.g., "fire moon star target wave gem")
-- **6-Digit PIN** — Rotating every 15 seconds (secure) or fixed (for emergencies)
-- **1-Hour TTL** — Rooms auto-wipe after 1 hour, no traces left
-- **Message Cache** — Reconnect and see missed messages (up to 500)
-- **E2E Encrypted** — NaCl (XSalsa20-Poly1305) + Argon2id key derivation
-- **DNS Transport** — Works when all else is blocked
-
-## How It Works
-
-```
-┌────────────────────────────────────────────────────┐
-│                  SOS Architecture                  │
-├────────────────────────────────────────────────────┤
-│                                                    │
-│   User A (Creator)              User B (Joiner)    │
-│   ┌──────────────┐              ┌──────────────┐   │
-│   │   TUI App    │              │   TUI App    │   │
-│   │ ────────────▶│──────────────│◀──────────── │   │
-│   │ Create Room  │    Share:    │  Enter Room  │   │
-│   │  🦁🌞🫀🌱🕊️🗝️  │  "lion, sun, │  ID + PIN    │   │
-│   │ PIN: 847291  │   heart..."  │              │   │
-│   └──────┬───────┘              └──────┬───────┘   │
-│          │                             │           │
-│          │        E2E Encrypted        │           │
-│          └──────────────┬──────────────┘           │
-│                         │                          │
-│                         ▼                          │
-│              ┌──────────────────┐                  │
-│              │   DNSTT Client   │                  │
-│              │  (SOCKS5 proxy)  │                  │
-│              └────────┬─────────┘                  │
-│                       │                            │
-│          ┌────────────┼────────────┐               │
-│          │     DNS Queries         │               │
-│          │  abc123.t.dnscloak.net  │               │
-│          └────────────┼────────────┘               │
-│                       │                            │
-│                       ▼                            │
-│     ┌─────────────────────────────────────┐        │
-│     │         DNSTT Server                │        │
-│     │   ┌───────────────────────────┐     │        │
-│     │   │      SOS Relay Daemon     │     │        │
-│     │   │  - Room management        │     │        │
-│     │   │  - Message storage (1hr)  │     │        │
-│     │   │  - Rate limiting          │     │        │
-│     │   └───────────────────────────┘     │        │
-│     └─────────────────────────────────────┘        │
-│                                                    │
-└────────────────────────────────────────────────────┘
+**Step 1**: Ensure DNSTT is installed on your VM
+```bash
+curl -sSL dnstt.dnscloak.net | sudo bash
 ```
 
-## Usage
+**Step 2**: Install SOS relay daemon
+```bash
+curl -sSL sos.dnscloak.net | sudo bash -s -- --server
+```
+
+**Step 3**: Tell users how to connect
+```bash
+# Users connect by setting your relay address:
+SOS_RELAY_HOST=your-server.com curl -sSL sos.dnscloak.net | bash
+```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SOS ARCHITECTURE                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   USER A (Creator)                            USER B (Joiner)                │
+│   ┌──────────────┐                           ┌──────────────┐                │
+│   │   SOS TUI    │                           │   SOS TUI    │                │
+│   │   (Client)   │                           │   (Client)   │                │
+│   └──────┬───────┘                           └───────┬──────┘                │
+│          │                                           │                       │
+│          │  DNS Queries (DNSTT tunnel)               │                       │
+│          │  abc123.t.dnscloak.net                    │                       │
+│          ▼                                           ▼                       │
+│   ┌──────────────────────────────────────────────────────────┐               │
+│   │                    DNSTT SERVER (VM)                      │               │
+│   │  ┌─────────────────────────────────────────────────────┐ │               │
+│   │  │              SOS Relay Daemon (relay.py)            │ │               │
+│   │  │  - Creates/manages rooms (1hr TTL)                  │ │               │
+│   │  │  - Stores encrypted messages (max 500)              │ │               │
+│   │  │  - Rate limiting (exponential backoff)              │ │               │
+│   │  │  - Redis or in-memory storage                       │ │               │
+│   │  └─────────────────────────────────────────────────────┘ │               │
+│   └──────────────────────────────────────────────────────────┘               │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **6-Emoji Room ID** | Easy to share verbally (e.g., "fire moon star target wave gem") |
+| **6-Digit PIN** | Rotating every 15 seconds (secure) or fixed (for delays) |
+| **1-Hour TTL** | Rooms auto-wipe after 1 hour, no traces left |
+| **Message Cache** | Reconnect and see missed messages (up to 500) |
+| **E2E Encrypted** | NaCl (XSalsa20-Poly1305) + Argon2id key derivation |
+| **DNS Transport** | Works when HTTP/HTTPS is blocked during blackouts |
+
+---
+
+## User Guide
 
 ### Creating a Room
 
-1. Run the installer:
-   ```bash
-   curl -sSL sos.dnscloak.net | sudo bash
-   ```
+1. Run: `curl -sSL sos.dnscloak.net | bash`
 
 2. Select **key mode**:
    - **🔄 Rotating** (recommended) — PIN changes every 15 seconds
@@ -79,13 +98,12 @@ SOS creates encrypted, ephemeral chat rooms that tunnel through DNS—working ev
 3. Press **Create Room**
 
 4. Share with your contact:
-   - **Room ID**: 6 emojis (e.g., 🔥🌙⭐🎯🌊💎)
-   - **Phonetic**: "fire moon star target wave gem"
-   - **PIN**: Current 6-digit code (if rotating, read it live)
+   - **Room ID**: 6 emojis (read phonetically)
+   - **PIN**: Current 6-digit code
 
 ### Joining a Room
 
-1. Run the installer (same command)
+1. Run: `curl -sSL sos.dnscloak.net | bash`
 
 2. Press **Join Room**
 
@@ -94,6 +112,8 @@ SOS creates encrypted, ephemeral chat rooms that tunnel through DNS—working ev
 4. Enter the 6-digit PIN
 
 5. Start chatting!
+
+---
 
 ## Emoji Set (32 Emojis)
 
@@ -113,23 +133,82 @@ Use these phonetic names when sharing room IDs verbally:
 **Example verbal share:**
 > "Room is: fire, moon, star, target, wave, gem. PIN is eight-four-seven-two-nine-one."
 
-## Key Modes
+---
 
-### 🔄 Rotating Mode (Default)
+## Key Modes Explained
+
+### 🔄 Rotating Mode (Recommended)
 
 - PIN changes every **15 seconds**
 - Creator reads current PIN to joiner over phone/radio
-- More secure: even if someone intercepts, key rotates
-- Best for: secure communications where you can speak
+- Even if intercepted, key rotates quickly
+- **Best for**: Live communication (phone call, radio)
 
 ### 📌 Fixed Mode
 
 - PIN stays **constant** for room lifetime
-- Creator can share PIN once, joiner enters later
+- Creator shares PIN once, joiner enters later
 - Less secure: if intercepted, room is compromised
-- Best for: situations where live communication isn't possible
+- **Best for**: When live communication isn't possible
 
-**Warning**: Fixed mode should only be used when absolutely necessary. The rotating mode provides significantly better security.
+> ⚠️ **Warning**: Fixed mode should only be used when absolutely necessary.
+
+---
+
+## Server Setup (Relay Operators)
+
+### Prerequisites
+
+- Ubuntu 22.04 VM with public IP
+- DNSTT server already installed
+- Optional: Redis for persistent storage
+
+### Installation
+
+```bash
+# SSH to your server
+ssh root@your-server-ip
+
+# Install SOS relay (requires DNSTT already running)
+curl -sSL sos.dnscloak.net | sudo bash -s -- --server
+```
+
+This installs:
+- `/opt/dnscloak/sos/relay.py` - Relay daemon
+- `/etc/systemd/system/sos-relay.service` - Systemd service
+- Dependencies: aiohttp, pynacl, argon2-cffi, redis
+
+### Managing the Service
+
+```bash
+# Check status
+systemctl status sos-relay
+
+# View logs
+journalctl -u sos-relay -f
+
+# Restart
+systemctl restart sos-relay
+
+# Stop
+systemctl stop sos-relay
+```
+
+### Telling Users Your Relay Address
+
+Users connect to your relay by setting environment variables:
+
+```bash
+# Method 1: Environment variable
+export SOS_RELAY_HOST="your-dnstt-domain.com"
+export SOS_RELAY_PORT="8899"
+curl -sSL sos.dnscloak.net | bash
+
+# Method 2: One-liner
+SOS_RELAY_HOST=your-domain.com curl -sSL sos.dnscloak.net | bash
+```
+
+---
 
 ## Security Model
 
@@ -146,22 +225,20 @@ Use these phonetic names when sharing room IDs verbally:
 
 3. **Room ID Hash**: `SHA256(emoji_string)[:16]`
    - Server never sees actual emoji sequence
-   - Can't reverse room ID from hash
 
 ### What the Server Sees
 
-- ❌ Room emoji IDs (only hash)
-- ❌ Message contents (E2E encrypted)
-- ❌ PIN values
-- ✅ Room hash, member count, message timestamps
-- ✅ Client IP addresses (through DNSTT)
+| Data | Visible? |
+|------|----------|
+| Room emoji IDs | ❌ (only hash) |
+| Message contents | ❌ (E2E encrypted) |
+| PIN values | ❌ |
+| Room hash | ✅ |
+| Member count | ✅ |
+| Message timestamps | ✅ |
+| Client IPs (via DNSTT) | ✅ |
 
-### Limitations
-
-- If attacker knows room ID + has PIN, they can decrypt
-- DNSTT provides transport security, not anonymity
-- Messages cached for 1 hour (then wiped)
-- 500 message limit per room
+---
 
 ## Rate Limiting
 
@@ -176,122 +253,78 @@ To prevent abuse, room creation is rate-limited per IP:
 | 5th | 3 minutes |
 | 6th+ | 5 minutes each |
 
-Rate limit resets after **30 minutes** of no attempts.
-Successful room **join** resets rate limit immediately.
+- Rate limit resets after **30 minutes** of inactivity
+- Successful room **join** resets rate limit immediately
 
-## Server Setup (Optional)
-
-SOS uses the public DNSTT infrastructure by default. To run your own:
-
-### 1. Install DNSTT with SOS Support
-
-```bash
-curl -sSL dnstt.dnscloak.net | sudo bash -- --with-sos
-```
-
-### 2. Manual SOS Relay Setup
-
-If you already have DNSTT:
-
-```bash
-# Install Redis
-apt install redis-server
-
-# Install Python dependencies
-pip3 install aiohttp aioredis
-
-# Copy relay daemon
-cp /path/to/relay.py /opt/dnscloak/sos/relay.py
-
-# Create systemd service
-cat > /etc/systemd/system/sos-relay.service << 'EOF'
-[Unit]
-Description=SOS Emergency Chat Relay
-After=network.target redis.service
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/python3 /opt/dnscloak/sos/relay.py
-Restart=always
-RestartSec=5
-Environment=REDIS_URL=redis://localhost:6379
-Environment=SOS_HOST=127.0.0.1
-Environment=SOS_PORT=8899
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl enable --now sos-relay
-```
-
-### 3. Configure Client
-
-Set environment variables before running:
-
-```bash
-export SOS_RELAY_HOST="your-server.com"
-export SOS_RELAY_PORT="8899"
-curl -sSL sos.dnscloak.net | sudo bash
-```
+---
 
 ## Troubleshooting
 
+### "Could not resolve host: sos.dnscloak.net"
+
+DNS might be blocked. Try:
+```bash
+# Use Google DNS
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+```
+
 ### "Failed to connect to relay"
 
-1. Check if DNSTT tunnel is working:
+1. Check if DNSTT is working:
    ```bash
    curl --socks5 127.0.0.1:10800 http://ifconfig.me
    ```
 
-2. Verify relay is accessible through tunnel
-
-3. Try running in offline mode (local-only chat)
+2. Verify relay service is running:
+   ```bash
+   systemctl status sos-relay
+   ```
 
 ### "Could not decrypt message"
 
-- **Rotating mode**: Make sure both parties entered PIN within same 15-second window
+- **Rotating mode**: Both parties must enter PIN within same 15-second window
 - **Fixed mode**: Verify PIN matches exactly
-- Check both parties selected same key mode
-
-### "Rate limited"
-
-Wait for the cooldown period. Successful joins reset the limit.
+- Check both selected same key mode
 
 ### TUI doesn't launch
 
-1. Check Python version: `python3 --version` (need 3.8+)
-2. Check Textual installed: `pip3 show textual`
-3. Try manual install:
-   ```bash
-   pip3 install textual pynacl httpx argon2-cffi
-   python3 -m sos.app
-   ```
+```bash
+# Check Python version (need 3.8+)
+python3 --version
 
-## Emergency Scenarios
+# Manual install
+pip3 install textual pynacl httpx argon2-cffi
+python3 -c "from sos.app import SOSApp; SOSApp().run()"
+```
 
-### Total Internet Blackout
+---
 
-SOS works because DNS queries often remain functional when HTTP/HTTPS is blocked:
+## Emergency Checklist
 
-1. ISP blocks ports 80/443 → DNSTT uses port 53 (DNS)
-2. Deep Packet Inspection → DNS queries look legitimate
-3. IP blocking → DNS uses distributed resolution
+### For Total Internet Blackouts
 
-### Quick Setup Checklist
+SOS works because DNS often remains functional when HTTP/HTTPS is blocked:
 
-- [ ] DNSTT server running somewhere outside censored region
+- [ ] ISP blocks ports 80/443 → DNSTT uses port 53 (DNS)
+- [ ] DPI enabled → DNS queries look legitimate
+- [ ] IP blocking → DNS uses distributed resolution
+
+### Quick Setup
+
+- [ ] DNSTT server running outside censored region
 - [ ] DNS records configured (NS + A record)
-- [ ] Both parties can resolve DNS (test: `nslookup google.com`)
-- [ ] Share room ID + PIN through a second channel (phone, radio, in-person)
+- [ ] Both parties can resolve DNS (`nslookup google.com`)
+- [ ] Share room ID + PIN through second channel (phone, radio, in-person)
+
+---
 
 ## Contributing
 
 SOS is part of the DNSCloak project:
 
-- Repository: https://github.com/behnamkhorsandian/DNSCloak
-- Issues: Report bugs or request features
-- Pull requests welcome!
+- **Repository**: https://github.com/behnamkhorsandian/DNSCloak
+- **Issues**: Report bugs or request features
+- **Pull requests**: Welcome!
 
 ## License
 
