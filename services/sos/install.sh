@@ -275,6 +275,100 @@ cleanup() {
 # Server Mode Functions
 #-------------------------------------------------------------------------------
 
+# Cloud provider detection for firewall
+detect_cloud_provider() {
+    # AWS
+    if curl -s -m 2 http://169.254.169.254/latest/meta-data/ &>/dev/null; then
+        echo "aws"
+        return
+    fi
+    # GCP
+    if curl -s -m 2 -H "Metadata-Flavor: Google" http://metadata.google.internal/ &>/dev/null; then
+        echo "gcp"
+        return
+    fi
+    # Azure
+    if curl -s -m 2 -H "Metadata: true" "http://169.254.169.254/metadata/instance?api-version=2021-02-01" &>/dev/null; then
+        echo "azure"
+        return
+    fi
+    # DigitalOcean
+    if curl -s -m 2 http://169.254.169.254/metadata/v1/ &>/dev/null; then
+        echo "digitalocean"
+        return
+    fi
+    # Oracle Cloud
+    if curl -s -m 2 http://169.254.169.254/opc/v1/instance/ &>/dev/null; then
+        echo "oracle"
+        return
+    fi
+    echo "unknown"
+}
+
+configure_firewall() {
+    print_step "Configuring firewall for port $SOS_RELAY_PORT..."
+    
+    local provider
+    provider=$(detect_cloud_provider)
+    
+    case "$provider" in
+        gcp)
+            if command -v gcloud &>/dev/null; then
+                gcloud compute firewall-rules create dnscloak-sos-relay \
+                    --allow="tcp:${SOS_RELAY_PORT}" \
+                    --source-ranges=0.0.0.0/0 \
+                    --description="SOS Relay for DNSCloak" \
+                    --quiet 2>/dev/null && print_success "GCP firewall rule created" || print_info "GCP firewall rule may already exist"
+            else
+                print_info "gcloud not found, using local firewall"
+                _configure_local_firewall
+            fi
+            ;;
+        aws)
+            # AWS security groups require more context, use local firewall
+            print_info "AWS detected - configure Security Group manually or using local firewall"
+            _configure_local_firewall
+            ;;
+        oracle)
+            # Oracle Cloud - iptables + cloud console
+            print_info "Oracle Cloud detected - also add ingress rule in Cloud Console"
+            _configure_local_firewall
+            ;;
+        *)
+            _configure_local_firewall
+            ;;
+    esac
+}
+
+_configure_local_firewall() {
+    # Try ufw first (Ubuntu/Debian)
+    if command -v ufw &>/dev/null; then
+        ufw allow "$SOS_RELAY_PORT/tcp" 2>/dev/null && print_success "UFW: Port $SOS_RELAY_PORT opened" || true
+        return
+    fi
+    
+    # Try firewalld (CentOS/RHEL/Fedora)
+    if command -v firewall-cmd &>/dev/null; then
+        firewall-cmd --permanent --add-port="${SOS_RELAY_PORT}/tcp" 2>/dev/null || true
+        firewall-cmd --reload 2>/dev/null || true
+        print_success "firewalld: Port $SOS_RELAY_PORT opened"
+        return
+    fi
+    
+    # Fall back to iptables
+    if command -v iptables &>/dev/null; then
+        iptables -I INPUT -p tcp --dport "$SOS_RELAY_PORT" -j ACCEPT 2>/dev/null || true
+        # Try to save rules
+        if command -v iptables-save &>/dev/null; then
+            iptables-save > /etc/iptables.rules 2>/dev/null || true
+        fi
+        print_success "iptables: Port $SOS_RELAY_PORT opened"
+        return
+    fi
+    
+    print_info "No firewall tool found - port may already be open"
+}
+
 install_server_dependencies() {
     local python_cmd="$1"
     
@@ -389,6 +483,9 @@ main() {
         
         # Download relay
         download_relay
+        
+        # Configure firewall (auto-detect cloud provider)
+        configure_firewall
         
         # Create and start service
         create_systemd_service

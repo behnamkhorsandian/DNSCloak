@@ -338,8 +338,11 @@ Architecture for Phase 2:
 - **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
 - **WireGuard** (`services/wg/install.sh`) - Created, ready for testing
 - **CLI** (`cli/dnscloak.sh`) - Unified management CLI created
-- **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ CREATED
+- **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ TESTED
   - TUI client with Textual framework
+  - Standalone binaries (via GitHub Actions CI/CD)
+  - Auto-fallback: DNSTT → Direct relay connection
+  - Default relay: `relay.dnscloak.net:8899`
   - 6-emoji room IDs + 6-digit rotating/fixed PIN
   - E2E encryption (NaCl + Argon2id)
   - Auto-wipe after 1 hour
@@ -359,6 +362,7 @@ Architecture for Phase 2:
   - `ws-origin.dnscloak.net` - WS origin server (Proxied, SSL Flexible)
   - `ns1.dnscloak.net` - DNSTT nameserver (DNS only, NOT proxied)
   - `t.dnscloak.net` - NS record pointing to ns1.dnscloak.net
+  - `relay.dnscloak.net` - SOS relay server (DNS only, NOT proxied) → 34.185.221.241
 
 ### Key Technical Decisions
 1. **WS+CDN uses port 80 (HTTP) on origin** - Cloudflare handles TLS at edge, SSL mode must be "Flexible"

@@ -105,27 +105,39 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x bin/${{ matrix.dnstt }}
       
-      - name: Inject DNSTT Public Key
+      - name: Inject Secrets (DNSTT Key & Relay Host)
         env:
           DNSTT_PUBKEY: ${{ secrets.DNSTT_PUBKEY }}
+          SOS_RELAY_HOST: ${{ secrets.SOS_RELAY_HOST }}
         shell: bash
         run: |
-          # Replace placeholder with actual pubkey
-          if [ -n "$DNSTT_PUBKEY" ]; then
-            # Use Python for reliable cross-platform sed
-            python -c "
+          python << 'EOF'
+          import os
           import re
+          
+          pubkey = os.environ.get('DNSTT_PUBKEY', '')
+          relay_host = os.environ.get('SOS_RELAY_HOST', 'relay.dnscloak.net:8899')
+          
+          # Update main.py
           with open('src/sos/main.py', 'r') as f:
               content = f.read()
-          content = re.sub(
-              r'DNSTT_PUBKEY = os\.environ\.get\(\"DNSTT_PUBKEY\", \"\"\)',
-              'DNSTT_PUBKEY = \"$DNSTT_PUBKEY\"',
-              content
-          )
+          
+          # Inject DNSTT pubkey
+          if pubkey:
+              content = re.sub(
+                  r'DNSTT_PUBKEY = os\.environ\.get\("DNSTT_PUBKEY", ""\)',
+                  f'DNSTT_PUBKEY = "{pubkey}"',
+                  content
+              )
+          
+          # Inject relay host
+          content = content.replace('__SOS_RELAY_DEFAULT__', relay_host)
+          
           with open('src/sos/main.py', 'w') as f:
               f.write(content)
-          "
-          fi
+          
+          print(f'Injected: DNSTT_PUBKEY={bool(pubkey)}, SOS_RELAY_HOST={relay_host}')
+          EOF
       
       - name: Build SOS
         env:

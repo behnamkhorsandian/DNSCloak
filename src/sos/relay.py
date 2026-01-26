@@ -25,7 +25,7 @@ from aiohttp import web
 
 # Configuration
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
-HOST = os.environ.get("SOS_HOST", "127.0.0.1")
+HOST = os.environ.get("SOS_HOST", "0.0.0.0")
 PORT = int(os.environ.get("SOS_PORT", "8899"))
 ROOM_TTL = 3600  # 1 hour
 MAX_MESSAGES = 500  # Max messages per room
@@ -457,6 +457,20 @@ class SOSRelay:
 
 async def main():
     """Entry point"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="SOS Relay Server")
+    parser.add_argument("--host", default=os.environ.get("SOS_HOST", "0.0.0.0"), 
+                        help="Host to bind to (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("SOS_PORT", "8899")),
+                        help="Port to listen on (default: 8899)")
+    args = parser.parse_args()
+    
+    # Override globals with CLI args
+    global HOST, PORT
+    HOST = args.host
+    PORT = args.port
+    
     relay = SOSRelay()
     await relay.start()
 

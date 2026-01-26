@@ -6,17 +6,36 @@
 
 ## Two Ways to Use SOS
 
-### Option 1: Be a User (Join Public Relay)
+### Option 1: Download Standalone Binary (Recommended)
 
-Just run:
+Download from [GitHub Releases](https://github.com/behnamkhorsandian/DNSCloak/releases):
+
+| Platform | Download |
+|----------|----------|
+| **macOS** (Apple Silicon) | `sos-darwin-arm64` |
+| **macOS** (Intel) | `sos-darwin-amd64` |
+| **Linux** (64-bit) | `sos-linux-amd64` |
+| **Windows** (64-bit) | `sos-windows-amd64.exe` |
+
+**macOS Users**: Run this to bypass Gatekeeper:
+```bash
+cd ~/Downloads && xattr -d com.apple.quarantine sos-darwin-arm64 && chmod +x sos-darwin-arm64 && ./sos-darwin-arm64
+```
+
+The binary:
+- **Auto-connects** to `relay.dnscloak.net:8899`
+- **Auto-falls back** to direct connection if DNSTT tunnel unavailable
+- **Bundles DNSTT client** for maximum censorship resistance
+
+### Option 2: Install via curl (Development)
+
 ```bash
 curl -sSL sos.dnscloak.net | bash
 ```
 
-This downloads the TUI client and connects to the public DNSCloak relay. Best for:
-- Users who just need to chat during emergencies
+This downloads the Python TUI client. Best for:
 - Testing the system
-- Those who don't have their own server
+- Development
 
 ### Option 2: Run Your Own Relay (For Communities)
 
@@ -277,42 +296,40 @@ echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
 
 ### "Failed to connect to relay" / TUI Keeps Beeping
 
-This means the client can't reach the relay. The SOS client expects to connect via DNSTT tunnel:
+The standalone binary now **auto-falls back** to direct connection:
 
-**How it works:**
+1. **If DNSTT pubkey is embedded** (production build) → tries DNSTT tunnel first
+2. **If DNSTT fails or unavailable** → falls back to direct `relay.dnscloak.net:8899`
+3. **If no pubkey** (dev build) → uses direct connection immediately
+
+**Connection flow:**
 ```
-Your Laptop                           Your VM
-┌──────────────┐                  ┌───────────────────┐
-│  SOS TUI     │ ──SOCKS5───────▶ │  DNSTT Server     │
-│  Client      │    :10800        │       ↓           │
-│              │                  │  SOS Relay :8899  │
-└──────────────┘                  └───────────────────┘
-          ↑
-    DNSTT Client must be running!
+Binary Start
+     │
+     ▼
+┌─────────────────────┐
+│ DNSTT pubkey set?   │──No──▶ Direct to relay.dnscloak.net:8899
+└─────────────────────┘
+     │ Yes
+     ▼
+┌─────────────────────┐
+│ Start DNSTT tunnel  │──Fail──▶ Fallback to direct connection
+└─────────────────────┘
+     │ Success
+     ▼
+  Use SOCKS5 proxy (:10800)
 ```
 
-**For testing WITHOUT DNSTT tunnel** (direct connection):
+**To override relay address:**
 ```bash
-# Point client directly to your VM's relay
-SOS_RELAY_HOST=34.185.221.241 curl -sSL sos.dnscloak.net | bash
+# Use a custom relay
+SOS_RELAY_HOST=your-relay.com:8899 ./sos-darwin-arm64
 ```
 
-**For production WITH DNSTT tunnel:**
-1. Start DNSTT client on your laptop:
-   ```bash
-   dnstt-client -doh https://cloudflare-dns.com/dns-query \
-     t.dnscloak.net 127.0.0.1:10800
-   ```
-
-2. Run SOS client (will use SOCKS5 proxy automatically):
-   ```bash
-   curl -sSL sos.dnscloak.net | bash
-   ```
-
-3. Verify relay service is running on VM:
-   ```bash
-   systemctl status sos-relay
-   ```
+**Verify relay service on server:**
+```bash
+systemctl status sos-relay
+```
 
 ### "Could not decrypt message"
 

@@ -684,6 +684,255 @@
       font-size: 11px;
       margin-top: 15px;
     }
+    
+    /* macOS Gatekeeper Warning Popup */
+    .macos-popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .macos-popup-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+    
+    .macos-popup {
+      background: var(--bg-secondary);
+      border: 1px solid rgba(255, 170, 0, 0.4);
+      max-width: 520px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 170, 0, 0.1);
+      transform: scale(0.95) translateY(-10px);
+      transition: transform 0.2s ease;
+    }
+    
+    .macos-popup-overlay.active .macos-popup {
+      transform: scale(1) translateY(0);
+    }
+    
+    .macos-popup-header {
+      background: linear-gradient(135deg, rgba(255, 170, 0, 0.12) 0%, rgba(255, 136, 0, 0.08) 100%);
+      border-bottom: 1px solid rgba(255, 170, 0, 0.25);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .macos-popup-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffaa00;
+      margin: 0;
+    }
+    
+    .macos-popup-header h3 .material-symbols-outlined {
+      font-size: 20px;
+    }
+    
+    .macos-popup-close {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    
+    .macos-popup-close:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: var(--text-primary);
+    }
+    
+    .macos-popup-body {
+      padding: 22px;
+    }
+    
+    .macos-popup-intro {
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .macos-method {
+      margin-bottom: 18px;
+    }
+    
+    .macos-method:last-child {
+      margin-bottom: 0;
+    }
+    
+    .macos-method-title {
+      color: var(--accent-green);
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .macos-method-title .material-symbols-outlined {
+      font-size: 16px;
+    }
+    
+    .macos-cmd-wrapper {
+      position: relative;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .macos-cmd {
+      padding: 14px 50px 14px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-yellow);
+      overflow-x: auto;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .macos-cmd .macos-filename {
+      color: var(--accent-light-green);
+    }
+    
+    .macos-copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .macos-copy-btn:hover {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #000;
+    }
+    
+    .macos-copy-btn.copied {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #000;
+    }
+    
+    .macos-copy-btn .material-symbols-outlined {
+      font-size: 12px;
+    }
+    
+    .macos-divider {
+      border: none;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      margin: 18px 0;
+    }
+    
+    .macos-steps {
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1.9;
+      padding-left: 18px;
+      margin: 0;
+    }
+    
+    .macos-steps li {
+      margin-bottom: 4px;
+      padding-left: 4px;
+    }
+    
+    .macos-steps li::marker {
+      color: var(--text-dim);
+    }
+    
+    .macos-steps strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    
+    .macos-steps .macos-arrow {
+      color: var(--text-dim);
+      margin: 0 2px;
+    }
+    
+    .macos-popup-footer {
+      padding: 14px 22px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    .macos-cancel-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .macos-cancel-btn:hover {
+      border-color: var(--text-dim);
+      color: var(--text-primary);
+    }
+    
+    .macos-continue-btn {
+      background: var(--accent-green);
+      border: none;
+      color: #000;
+      padding: 10px 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .macos-continue-btn:hover {
+      background: var(--accent-light-green);
+      transform: translateY(-1px);
+    }
+    
+    .macos-continue-btn .material-symbols-outlined {
+      font-size: 14px;
+    }
 
     @media (max-width: 768px) {
       .sos-title { font-size: 18px; letter-spacing: 2px; }
@@ -926,7 +1175,7 @@
           </p>
           
           <!-- SOS Emergency Section -->
-          <div class="sos-section">
+          <!-- <div class="sos-section">
             <div class="sos-header">
               <span class="sos-icon material-symbols-outlined">emergency</span>
               <span class="sos-title">SOS Emergency Chat</span>
@@ -957,12 +1206,12 @@
                   <span class="sos-dl-name">Windows</span>
                   <span class="sos-dl-info">10/11 (64-bit)</span>
                 </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" class="sos-download-btn">
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" class="sos-download-btn" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
                   <span class="material-symbols-outlined">keyboard_command_key</span>
                   <span class="sos-dl-name">macOS</span>
                   <span class="sos-dl-info">Apple Silicon (M-series)</span>
                 </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" class="sos-download-btn">
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" class="sos-download-btn" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
                   <span class="material-symbols-outlined">keyboard_command_key</span>
                   <span class="sos-dl-name">macOS</span>
                   <span class="sos-dl-info">Intel (10.13+)</span>
@@ -981,7 +1230,7 @@
             </div>
             
             <p class="sos-note">For emergencies in Iran, China, Russia during internet blackouts. Share room ID + PIN verbally.</p>
-          </div>
+          </div> -->
           
           <div class="setup-steps">
             <div class="step-item">
@@ -1755,6 +2004,116 @@
       currentIndex %= asciis.length;
       AsciiMorph.morph(asciis[currentIndex]);
     }, 5000); // Morph every 4 seconds
+  </script>
+  
+  <!-- macOS Gatekeeper Warning Popup -->
+  <div class="macos-popup-overlay" id="macos-popup">
+    <div class="macos-popup">
+      <div class="macos-popup-header">
+        <h3><span class="material-symbols-outlined">gpp_maybe</span> macOS Security Notice</h3>
+        <button class="macos-popup-close" onclick="closeMacosPopup()">ESC</button>
+      </div>
+      <div class="macos-popup-body">
+        <p class="macos-popup-intro">
+          This app isn't signed with an Apple Developer certificate, so macOS Gatekeeper will block it. 
+          Choose one of these methods to allow execution:
+        </p>
+        
+        <div class="macos-method">
+          <div class="macos-method-title">
+            <span class="material-symbols-outlined">terminal</span>
+            Terminal (One Command)
+          </div>
+          <div class="macos-cmd-wrapper">
+            <div class="macos-cmd">cd ~/Downloads && xattr -d com.apple.quarantine <span class="macos-filename" id="macos-filename">sos-darwin-arm64</span> && chmod +x <span class="macos-filename" id="macos-filename2">sos-darwin-arm64</span> && ./<span class="macos-filename" id="macos-filename3">sos-darwin-arm64</span></div>
+            <button class="macos-copy-btn" onclick="copyMacosCmd()">
+              <span class="material-symbols-outlined">content_copy</span>
+              <span class="macos-copy-text">COPY</span>
+            </button>
+          </div>
+        </div>
+        
+        <hr class="macos-divider">
+        
+        <div class="macos-method">
+          <div class="macos-method-title">
+            <span class="material-symbols-outlined">mouse</span>
+            GUI Alternative
+          </div>
+          <ol class="macos-steps">
+            <li><strong>Right-click</strong> the file <span class="macos-arrow">→</span> <strong>Open</strong></li>
+            <li>Click <strong>Open</strong> in the warning dialog</li>
+            <li>Or: <strong>System Settings</strong> <span class="macos-arrow">→</span> <strong>Privacy & Security</strong> <span class="macos-arrow">→</span> <strong>Open Anyway</strong></li>
+          </ol>
+        </div>
+      </div>
+      <div class="macos-popup-footer">
+        <button class="macos-cancel-btn" onclick="closeMacosPopup()">Cancel</button>
+        <button class="macos-continue-btn" onclick="continueMacosDownload()">
+          <span class="material-symbols-outlined">download</span>
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // macOS Gatekeeper popup
+    let pendingMacosDownload = null;
+    let currentMacosFilename = 'sos-darwin-arm64';
+    
+    function showMacosPopup(event, filename) {
+      event.preventDefault();
+      pendingMacosDownload = event.target.closest('a').href;
+      currentMacosFilename = filename;
+      
+      // Update filename in the command
+      document.querySelectorAll('.macos-filename').forEach(el => {
+        el.textContent = filename;
+      });
+      
+      // Reset copy button
+      const copyBtn = document.querySelector('.macos-copy-btn');
+      copyBtn.classList.remove('copied');
+      copyBtn.querySelector('.macos-copy-text').textContent = 'COPY';
+      
+      document.getElementById('macos-popup').classList.add('active');
+    }
+    
+    function closeMacosPopup() {
+      document.getElementById('macos-popup').classList.remove('active');
+      pendingMacosDownload = null;
+    }
+    
+    function continueMacosDownload() {
+      if (pendingMacosDownload) {
+        window.location.href = pendingMacosDownload;
+      }
+      closeMacosPopup();
+    }
+    
+    function copyMacosCmd() {
+      const cmd = `cd ~/Downloads && xattr -d com.apple.quarantine ${currentMacosFilename} && chmod +x ${currentMacosFilename} && ./${currentMacosFilename}`;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const copyBtn = document.querySelector('.macos-copy-btn');
+        copyBtn.classList.add('copied');
+        copyBtn.querySelector('.macos-copy-text').textContent = 'COPIED!';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.querySelector('.macos-copy-text').textContent = 'COPY';
+        }, 2000);
+      });
+    }
+    
+    // Close popup on overlay click
+    document.getElementById('macos-popup').addEventListener('click', function(e) {
+      if (e.target === this) closeMacosPopup();
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeMacosPopup();
+    });
   </script>
 </body>
 </html>

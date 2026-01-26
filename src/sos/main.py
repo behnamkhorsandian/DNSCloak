@@ -34,6 +34,13 @@ DNSTT_PUBKEY = os.environ.get("DNSTT_PUBKEY", "")
 DNSTT_SOCKS_PORT = 10800
 PROXY_TIMEOUT_HOURS = 1
 
+# Default public relay (injected at build time via CI/CD, or use env var)
+# Format: "host:port" or just "host" (defaults to port 8899)
+# CI/CD replaces __SOS_RELAY_DEFAULT__ with actual value from secrets
+DEFAULT_RELAY = os.environ.get("SOS_RELAY_HOST", "__SOS_RELAY_DEFAULT__")
+if DEFAULT_RELAY == "__SOS_RELAY_DEFAULT__":
+    DEFAULT_RELAY = "relay.dnscloak.net:8899"  # Fallback if not injected
+
 # Global process reference for cleanup
 _dnstt_process: Optional[subprocess.Popen] = None
 _dnstt_binary_path: Optional[Path] = None
@@ -239,20 +246,26 @@ def run_proxy_mode():
 def run_tui_mode():
     """
     Run TUI chat mode.
-    Starts DNSTT, launches TUI, cleans up on exit.
+    Tries DNSTT first, falls back to direct relay connection.
     """
-    print("\n  [*] Starting DNSTT tunnel...")
+    dnstt_available = False
     
-    if not start_dnstt():
-        # For development without DNSTT, allow running with direct relay
-        relay_host = os.environ.get('SOS_RELAY_HOST')
-        if relay_host:
-            print(f"  [*] Using direct relay connection to {relay_host}")
+    # Check if DNSTT is configured (pubkey embedded at build time)
+    if DNSTT_PUBKEY:
+        print("\n  [*] Starting DNSTT tunnel...")
+        if start_dnstt():
+            print(f"  [+] DNSTT tunnel ready (SOCKS5 on :{DNSTT_SOCKS_PORT})")
+            dnstt_available = True
         else:
-            print("  [!] Set SOS_RELAY_HOST for direct connection (dev mode)")
-            return 1
+            print("  [!] DNSTT failed, using direct connection")
     else:
-        print(f"  [+] DNSTT tunnel ready (SOCKS5 on :{DNSTT_SOCKS_PORT})")
+        print("\n  [*] Connecting to SOS relay...")
+    
+    # Set relay host for transport layer
+    if not dnstt_available:
+        relay_host = os.environ.get('SOS_RELAY_HOST', DEFAULT_RELAY)
+        os.environ['SOS_RELAY_HOST'] = relay_host
+        os.environ['SOS_USE_DIRECT'] = '1'  # Signal transport to skip SOCKS
     
     print("  [*] Launching SOS Chat...\n")
     time.sleep(1)

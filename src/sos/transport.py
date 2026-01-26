@@ -73,8 +73,15 @@ class SOSTransport:
     """
     
     # Relay server configuration
-    RELAY_HOST = os.environ.get("SOS_RELAY_HOST", "127.0.0.1")
-    RELAY_PORT = int(os.environ.get("SOS_RELAY_PORT", "8899"))
+    # Default: public relay domain (direct connection when DNSTT unavailable)
+    DEFAULT_RELAY = "relay.dnscloak.net:8899"
+    _relay_env = os.environ.get("SOS_RELAY_HOST", DEFAULT_RELAY)
+    if ":" in _relay_env:
+        RELAY_HOST, _port = _relay_env.rsplit(":", 1)
+        RELAY_PORT = int(_port)
+    else:
+        RELAY_HOST = _relay_env
+        RELAY_PORT = int(os.environ.get("SOS_RELAY_PORT", "8899"))
     
     # DNSTT SOCKS5 proxy (local)
     SOCKS_HOST = "127.0.0.1"
@@ -117,22 +124,24 @@ class SOSTransport:
     
     async def _create_client(self) -> httpx.AsyncClient:
         """Create HTTP client, with SOCKS5 proxy if available"""
-        # Try SOCKS5 proxy first (DNSTT tunnel)
-        socks_url = f"socks5://{self.SOCKS_HOST}:{self.SOCKS_PORT}"
+        # Check if direct mode is forced (DNSTT not available)
+        use_direct = os.environ.get('SOS_USE_DIRECT', '') == '1'
         
-        try:
-            # Test SOCKS connection
-            client = httpx.AsyncClient(
-                proxy=socks_url,
-                timeout=httpx.Timeout(10.0, connect=5.0)
-            )
-            # Quick test
-            await client.get(f"{self.base_url}/health", timeout=3.0)
-            return client
-        except Exception:
-            pass
+        if not use_direct:
+            # Try SOCKS5 proxy first (DNSTT tunnel)
+            socks_url = f"socks5://{self.SOCKS_HOST}:{self.SOCKS_PORT}"
+            
+            try:
+                client = httpx.AsyncClient(
+                    proxy=socks_url,
+                    timeout=httpx.Timeout(10.0, connect=5.0)
+                )
+                await client.get(f"{self.base_url}/health", timeout=3.0)
+                return client
+            except Exception:
+                pass
         
-        # Fallback to direct connection
+        # Direct connection (no SOCKS proxy)
         return httpx.AsyncClient(
             timeout=httpx.Timeout(10.0, connect=5.0)
         )
