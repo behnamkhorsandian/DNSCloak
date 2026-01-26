@@ -560,12 +560,17 @@ class SOSApp(App):
     }
     """
     
+    # Disable mouse support to avoid escape code issues in some terminals
+    ENABLE_COMMAND_PALETTE = False
+    
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit", show=False),
         Binding("ctrl+q", "quit", "Quit", show=False),
     ]
     
     def on_mount(self):
+        # Disable mouse tracking to prevent escape code issues
+        self.mouse_over = None
         self.push_screen(WelcomeScreen())
     
     def action_quit(self):

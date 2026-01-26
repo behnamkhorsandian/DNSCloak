@@ -262,20 +262,54 @@ To prevent abuse, room creation is rate-limited per IP:
 
 ### "Could not resolve host: sos.dnscloak.net"
 
-DNS might be blocked. Try:
+Your local DNS may be slow to update. Try these workarounds:
+
 ```bash
-# Use Google DNS
+# Option 1: Flush DNS cache (macOS)
+sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+
+# Option 2: Force resolve via curl
+curl -sSL --resolve sos.dnscloak.net:443:188.114.97.6 https://sos.dnscloak.net | bash
+
+# Option 3: Use Google DNS
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
 ```
 
-### "Failed to connect to relay"
+### "Failed to connect to relay" / TUI Keeps Beeping
 
-1. Check if DNSTT is working:
+This means the client can't reach the relay. The SOS client expects to connect via DNSTT tunnel:
+
+**How it works:**
+```
+Your Laptop                           Your VM
+┌──────────────┐                  ┌───────────────────┐
+│  SOS TUI     │ ──SOCKS5───────▶ │  DNSTT Server     │
+│  Client      │    :10800        │       ↓           │
+│              │                  │  SOS Relay :8899  │
+└──────────────┘                  └───────────────────┘
+          ↑
+    DNSTT Client must be running!
+```
+
+**For testing WITHOUT DNSTT tunnel** (direct connection):
+```bash
+# Point client directly to your VM's relay
+SOS_RELAY_HOST=34.185.221.241 curl -sSL sos.dnscloak.net | bash
+```
+
+**For production WITH DNSTT tunnel:**
+1. Start DNSTT client on your laptop:
    ```bash
-   curl --socks5 127.0.0.1:10800 http://ifconfig.me
+   dnstt-client -doh https://cloudflare-dns.com/dns-query \
+     t.dnscloak.net 127.0.0.1:10800
    ```
 
-2. Verify relay service is running:
+2. Run SOS client (will use SOCKS5 proxy automatically):
+   ```bash
+   curl -sSL sos.dnscloak.net | bash
+   ```
+
+3. Verify relay service is running on VM:
    ```bash
    systemctl status sos-relay
    ```

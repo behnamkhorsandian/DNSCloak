@@ -278,6 +278,10 @@ Architecture for Phase 2:
 - **Phase 2** (Web via DNSTT): Zero pre-download needed, browser-only access
 - Both phases: Chat traffic goes through DNSTT, unblockable by DPI/IP blocks
 
+### TLDR:
+1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'sos.dnscloak.net'
+2) as user i have two option, either use this url via curl on terminal, or just out it in my browser. and since its served over dnstt, it can never be blocked (even if the main website don't work, this subdomain always loads the instant chatroom.
+
 ## Current Session Context (Updated 2026-01-26)
 
 ### What's Working

@@ -69,7 +69,7 @@ SOS_SYSTEMD_SERVICE="/etc/systemd/system/sos-relay.service"
 #-------------------------------------------------------------------------------
 
 show_banner() {
-    echo -e "${CYAN}"
+    echo -e "${RED}"
     cat << 'EOF'
       ▒▒▒▒▒▒▒╗ ▒▒▒▒▒▒╗ ▒▒▒▒▒▒▒╗
       ▒▒╔════╝▒▒╔═══▒▒╗▒▒╔════╝
