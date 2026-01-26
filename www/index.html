@@ -612,19 +612,90 @@
       font-size: 18px;
     }
     
+    .sos-downloads {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid rgba(255, 77, 77, 0.3);
+      background: rgba(255, 77, 77, 0.05);
+    }
+    
+    .sos-downloads-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--sos-red);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+    
+    .sos-downloads-title .material-symbols-outlined {
+      font-size: 18px;
+    }
+    
+    .sos-download-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .sos-download-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(255, 77, 77, 0.1);
+      border: 1px solid rgba(255, 77, 77, 0.3);
+      color: #ccc;
+      text-decoration: none;
+      transition: all 0.2s;
+      min-width: 130px;
+    }
+    
+    .sos-download-btn:hover {
+      background: rgba(255, 77, 77, 0.2);
+      border-color: var(--sos-red);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    
+    .sos-download-btn .material-symbols-outlined {
+      font-size: 24px;
+      color: var(--sos-red);
+      margin-bottom: 5px;
+    }
+    
+    .sos-dl-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    
+    .sos-dl-info {
+      font-size: 10px;
+      color: #888;
+      text-align: center;
+      margin-top: 3px;
+    }
+    
     .sos-note {
       text-align: center;
       color: #996666;
       font-size: 11px;
       margin-top: 15px;
     }
-    
+
     @media (max-width: 768px) {
       .sos-title { font-size: 18px; letter-spacing: 2px; }
       .sos-cmd-box { flex-direction: column; }
       .sos-cmd-box code { margin-right: 0; margin-bottom: 10px; font-size: 12px; }
       .sos-copy-btn { width: 100%; }
       .sos-features { gap: 15px; }
+      .sos-download-btn { min-width: 110px; padding: 10px 12px; }
+      .sos-dl-info { font-size: 9px; }
     }
     
     /* ===== DOCS PAGE STYLES ===== */
@@ -858,7 +929,7 @@
           </p>
           
           <!-- SOS Emergency Section -->
-          <!-- <div class="sos-section">
+          <div class="sos-section">
             <div class="sos-header">
               <span class="sos-icon material-symbols-outlined">emergency</span>
               <span class="sos-title">SOS Emergency Chat</span>
@@ -878,15 +949,42 @@
               <span class="sos-feature"><span class="material-symbols-outlined">timer</span> 1-Hour TTL</span>
             </div>
             
-            <div class="sos-actions">
-              <span class="sos-btn-web sos-btn-disabled" title="Coming soon - requires textual-web hosting">
-                <span class="material-symbols-outlined">hourglass_empty</span>
-                Web Version Coming Soon
-              </span>
+            <div class="sos-downloads">
+              <div class="sos-downloads-title">
+                <span class="material-symbols-outlined">download</span>
+                Offline Binaries (Pre-download before blackout)
+              </div>
+              <div class="sos-download-grid">
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-windows-amd64.exe" class="sos-download-btn">
+                  <span class="material-symbols-outlined">desktop_windows</span>
+                  <span class="sos-dl-name">Windows</span>
+                  <span class="sos-dl-info">10/11 (64-bit)</span>
+                </a>
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" class="sos-download-btn">
+                  <span class="material-symbols-outlined">laptop_mac</span>
+                  <span class="sos-dl-name">macOS</span>
+                  <span class="sos-dl-info">Apple Silicon (M1/M2/M3)</span>
+                </a>
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" class="sos-download-btn">
+                  <span class="material-symbols-outlined">laptop_mac</span>
+                  <span class="sos-dl-name">macOS</span>
+                  <span class="sos-dl-info">Intel (10.13+)</span>
+                </a>
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-amd64" class="sos-download-btn">
+                  <span class="material-symbols-outlined">terminal</span>
+                  <span class="sos-dl-name">Linux</span>
+                  <span class="sos-dl-info">x64 (Ubuntu, Debian, etc.)</span>
+                </a>
+                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-arm64" class="sos-download-btn">
+                  <span class="material-symbols-outlined">terminal</span>
+                  <span class="sos-dl-name">Linux</span>
+                  <span class="sos-dl-info">ARM64 (Raspberry Pi, etc.)</span>
+                </a>
+              </div>
             </div>
             
             <p class="sos-note">For emergencies in Iran, China, Russia during internet blackouts. Share room ID + PIN verbally.</p>
-          </div> -->
+          </div>
           
           <div class="setup-steps">
             <div class="step-item">
