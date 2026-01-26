@@ -49,7 +49,7 @@ jobs:
           go build -ldflags="-s -w" -o ${{ matrix.output }} .
       
       - name: Upload DNSTT Binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dnstt-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dnstt/dnstt-client/${{ matrix.output }}
@@ -92,7 +92,7 @@ jobs:
           pip install pyinstaller textual pynacl httpx[socks] argon2-cffi
       
       - name: Download DNSTT Binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dnstt-${{ matrix.platform }}
           path: bin/
@@ -128,31 +128,33 @@ jobs:
           pyinstaller --clean --noconfirm src/sos/sos.spec
       
       - name: Upload SOS Binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sos-${{ matrix.platform }}
           path: dist/sos-*
       
       - name: Upload Launcher (macOS)
         if: startsWith(matrix.platform, 'darwin')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: launcher-macos
           path: src/sos/launchers/SOS-Chat.command
+          overwrite: true
       
       - name: Upload Launcher (Windows)
         if: matrix.platform == 'windows-amd64'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: launcher-windows
           path: src/sos/launchers/SOS-Chat.bat
       
       - name: Upload Launcher (Linux)
         if: startsWith(matrix.platform, 'linux')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: launcher-linux
           path: src/sos/launchers/SOS-Chat.desktop
+          overwrite: true
 
   release:
     name: Create Release
@@ -162,7 +164,7 @@ jobs:
     
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts/
       
