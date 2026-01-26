@@ -3,7 +3,13 @@
 # PyInstaller spec file for building standalone SOS executables
 
 # -*- mode: python ; coding: utf-8 -*-
+import os
 import platform
+from pathlib import Path
+
+# Get the spec file directory and project root
+SPEC_DIR = os.path.dirname(os.path.abspath(SPECPATH)) if 'SPECPATH' in dir() else os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = str(Path(SPEC_DIR).parent.parent)
 
 # Platform-specific DNSTT binary
 system = platform.system().lower()

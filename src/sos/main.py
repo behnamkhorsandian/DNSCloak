@@ -29,7 +29,8 @@ from typing import Optional
 # DNSTT Configuration
 DNSTT_DOH_URL = "https://cloudflare-dns.com/dns-query"
 DNSTT_DOMAIN = "t.dnscloak.net"
-DNSTT_PUBKEY = ""  # Will be embedded at build time
+# Pubkey: Embedded at build time via GitHub Actions, or read from env for dev
+DNSTT_PUBKEY = os.environ.get("DNSTT_PUBKEY", "")
 DNSTT_SOCKS_PORT = 10800
 PROXY_TIMEOUT_HOURS = 1
 

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SOS Emergency Chat
+Comment=Encrypted chat over DNS tunnel
+Exec=bash -c 'cd "$(dirname "%k")" && ./sos-linux-amd64 || (echo "Press Enter to close..." && read)'
+Icon=utilities-terminal
+Terminal=true
+Categories=Network;Chat;Security;

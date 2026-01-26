@@ -101,6 +101,28 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x bin/${{ matrix.dnstt }}
       
+      - name: Inject DNSTT Public Key
+        env:
+          DNSTT_PUBKEY: ${{ secrets.DNSTT_PUBKEY }}
+        shell: bash
+        run: |
+          # Replace placeholder with actual pubkey
+          if [ -n "$DNSTT_PUBKEY" ]; then
+            # Use Python for reliable cross-platform sed
+            python -c "
+          import re
+          with open('src/sos/main.py', 'r') as f:
+              content = f.read()
+          content = re.sub(
+              r'DNSTT_PUBKEY = os\.environ\.get\(\"DNSTT_PUBKEY\", \"\"\)',
+              'DNSTT_PUBKEY = \"$DNSTT_PUBKEY\"',
+              content
+          )
+          with open('src/sos/main.py', 'w') as f:
+              f.write(content)
+          "
+          fi
+      
       - name: Build SOS
         run: |
           pyinstaller --clean --noconfirm src/sos/sos.spec
@@ -110,6 +132,27 @@ jobs:
         with:
           name: sos-${{ matrix.platform }}
           path: dist/sos-*
+      
+      - name: Upload Launcher (macOS)
+        if: startsWith(matrix.platform, 'darwin')
+        uses: actions/upload-artifact@v3
+        with:
+          name: launcher-macos
+          path: src/sos/launchers/SOS-Chat.command
+      
+      - name: Upload Launcher (Windows)
+        if: matrix.platform == 'windows-amd64'
+        uses: actions/upload-artifact@v3
+        with:
+          name: launcher-windows
+          path: src/sos/launchers/SOS-Chat.bat
+      
+      - name: Upload Launcher (Linux)
+        if: startsWith(matrix.platform, 'linux')
+        uses: actions/upload-artifact@v3
+        with:
+          name: launcher-linux
+          path: src/sos/launchers/SOS-Chat.desktop
 
   release:
     name: Create Release
@@ -123,10 +166,21 @@ jobs:
         with:
           path: artifacts/
       
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          # Copy binaries
+          cp artifacts/sos-*/* release/ 2>/dev/null || true
+          # Copy launchers
+          cp artifacts/launcher-macos/* release/ 2>/dev/null || true
+          cp artifacts/launcher-windows/* release/ 2>/dev/null || true
+          cp artifacts/launcher-linux/* release/ 2>/dev/null || true
+          ls -la release/
+      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/sos-*/*
+          files: release/*
           draft: false
           prerelease: false
           generate_release_notes: true
