@@ -13,13 +13,13 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `lib/xray.sh` - Multi-inbound config manager for shared Xray instance
 - [x] `lib/selector.sh` - Domain detection and service recommendation
 
-### Phase 2: Services [IN PROGRESS]
+### Phase 2: Services [COMPLETE]
 - [x] `services/reality/install.sh` - VLESS+REALITY (no domain needed) ✅ TESTED
 - [x] `services/ws/install.sh` - VLESS+WebSocket+CDN (Cloudflare) ✅ TESTED
 - [x] `services/dnstt/install.sh` - DNS tunnel (emergency backup) ✅ TESTED
 - [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
 - [x] `services/conduit/install.sh` - Psiphon relay node ✅ CREATED
-- [x] `services/sos/install.sh` - Emergency secure chat over DNSTT ✅ CREATED
+- [x] `services/sos/install.sh` - Emergency secure chat over DNSTT ✅ TESTED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 
