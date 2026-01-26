@@ -171,16 +171,18 @@ function sha256Fallback(message) {
   const bitLen = msgLen * 8;
   
   // Message needs to be padded to 512-bit blocks (64 bytes)
-  // Padding: 1 bit, then 0s, then 64-bit length
-  const padLen = ((msgLen + 8) % 64 === 0) ? 64 : 64 - ((msgLen + 8) % 64);
-  const paddedLen = msgLen + 1 + padLen + 8;
+  // Total length = message + 1 (0x80) + padding + 8 (length)
+  // Must be multiple of 64
+  const paddedLen = Math.ceil((msgLen + 9) / 64) * 64;
   const padded = new Uint8Array(paddedLen);
   
   padded.set(message);
   padded[msgLen] = 0x80;
   
-  // Append length in bits as 64-bit big-endian
+  // Append length in bits as 64-bit big-endian (last 8 bytes)
   const view = new DataView(padded.buffer);
+  // For messages < 512MB, high 32 bits are 0
+  view.setUint32(paddedLen - 8, 0, false);
   view.setUint32(paddedLen - 4, bitLen, false);
 
   // Process each 512-bit block

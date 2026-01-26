@@ -777,11 +777,11 @@
     const gamma0 = x => rotr(x, 7) ^ rotr(x, 18) ^ (x >>> 3);
     const gamma1 = x => rotr(x, 17) ^ rotr(x, 19) ^ (x >>> 10);
     const msgLen = message.length, bitLen = msgLen * 8;
-    const padLen = ((msgLen + 8) % 64 === 0) ? 64 : 64 - ((msgLen + 8) % 64);
-    const paddedLen = msgLen + 1 + padLen + 8;
+    const paddedLen = Math.ceil((msgLen + 9) / 64) * 64;
     const padded = new Uint8Array(paddedLen);
     padded.set(message); padded[msgLen] = 0x80;
     const view = new DataView(padded.buffer);
+    view.setUint32(paddedLen - 8, 0, false);
     view.setUint32(paddedLen - 4, bitLen, false);
     const W = new Uint32Array(64);
     for (let offset = 0; offset < paddedLen; offset += 64) {
