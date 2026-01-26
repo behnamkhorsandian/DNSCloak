@@ -37,7 +37,7 @@ jobs:
       
       - name: Clone DNSTT
         run: |
-          git clone --depth 1 https://www.bamsoftware.com/git/dnstt.git
+          git clone https://www.bamsoftware.com/git/dnstt.git
       
       - name: Build DNSTT Client
         env:
