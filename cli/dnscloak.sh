@@ -764,11 +764,6 @@ show_service_status() {
             bandwidth=$(server_get "conduit_bandwidth")
             echo "  Max Clients: ${max_clients:-200}"
             echo "  Bandwidth: ${bandwidth:-5} Mbps"
-            if [[ -f "$DNSCLOAK_DIR/conduit/stats.json" ]] && command -v jq &>/dev/null; then
-                local connected
-                connected=$(jq -r '.connectedClients // 0' "$DNSCLOAK_DIR/conduit/stats.json" 2>/dev/null)
-                echo "  Connected Clients: $connected"
-            fi
             ;;
     esac
 }

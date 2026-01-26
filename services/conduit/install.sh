@@ -42,7 +42,6 @@ SERVICE_NAME="conduit"
 CONDUIT_DIR="$DNSCLOAK_DIR/conduit"
 CONDUIT_BIN="/usr/local/bin/conduit"
 CONDUIT_DATA="$CONDUIT_DIR/data"
-CONDUIT_STATS="$CONDUIT_DIR/stats.json"
 
 # Default settings
 DEFAULT_MAX_CLIENTS=200
@@ -194,7 +193,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-ExecStart=${CONDUIT_BIN} start --data-dir ${CONDUIT_DATA} --max-clients ${CONDUIT_MAX_CLIENTS} ${bandwidth_arg} --stats-file ${CONDUIT_STATS}
+ExecStart=${CONDUIT_BIN} start --data-dir ${CONDUIT_DATA} --max-clients ${CONDUIT_MAX_CLIENTS} ${bandwidth_arg}
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
@@ -259,27 +258,6 @@ show_status() {
     echo "  Max Clients: ${max_clients:-$DEFAULT_MAX_CLIENTS}"
     echo "  Bandwidth:   ${bandwidth:-$DEFAULT_BANDWIDTH} Mbps"
     echo "  Data Dir:    $CONDUIT_DATA"
-    echo ""
-    
-    # Show stats if available
-    if [[ -f "$CONDUIT_STATS" ]]; then
-        echo -e "  ${CYAN}Recent Statistics:${RESET}"
-        if command -v jq &>/dev/null; then
-            local connecting connected bytes_up bytes_down
-            connecting=$(jq -r '.connectingClients // 0' "$CONDUIT_STATS" 2>/dev/null)
-            connected=$(jq -r '.connectedClients // 0' "$CONDUIT_STATS" 2>/dev/null)
-            bytes_up=$(jq -r '.totalBytesUp // 0' "$CONDUIT_STATS" 2>/dev/null)
-            bytes_down=$(jq -r '.totalBytesDown // 0' "$CONDUIT_STATS" 2>/dev/null)
-            
-            echo "  - Connecting clients: $connecting"
-            echo "  - Connected clients:  $connected"
-            echo "  - Data uploaded:      $(numfmt --to=iec-i --suffix=B "$bytes_up" 2>/dev/null || echo "$bytes_up bytes")"
-            echo "  - Data downloaded:    $(numfmt --to=iec-i --suffix=B "$bytes_down" 2>/dev/null || echo "$bytes_down bytes")"
-        else
-            cat "$CONDUIT_STATS" | sed 's/^/  /'
-        fi
-    fi
-    
     echo ""
     
     # Show conduit key info if available
