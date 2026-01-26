@@ -350,71 +350,184 @@
       box-shadow: 0 0 20px rgba(164, 146, 255, 0.1); /* Purple glow */
     }
     
-    /* Protocol Themes - SOS Emergency (Pulsing Red) */
-    .protocol-item.theme-sos {
-      background: linear-gradient(135deg, var(--sos-bg) 0%, rgba(13, 5, 5, 0.9) 100%);
-      border: 2px solid var(--sos-red);
+    /* Protocol Themes - SOS Emergency (Subtle) */
+    .protocol-item.theme-sos-subtle .protocol-icon { color: var(--accent-red); }
+    .protocol-item.theme-sos-subtle .protocol-cmd { 
+      border-left-color: var(--accent-red); 
+      background: rgba(162, 81, 56, 0.05);
+    }
+    .protocol-item.theme-sos-subtle .tag { color: #d4765d; border-color: rgba(162, 81, 56, 0.4); }
+    .protocol-item.theme-sos-subtle:hover { 
+      border-color: var(--accent-red);
+      box-shadow: 0 0 15px rgba(162, 81, 56, 0.15);
+    }
+    
+    /* SOS Download Dropdown */
+    .sos-download-dropdown {
       position: relative;
-      animation: sos-card-glow 2s ease-in-out infinite;
+      width: 100%;
+      margin-top: 10px;
     }
     
-    @keyframes sos-card-glow {
-      0%, 100% { box-shadow: 0 0 10px var(--sos-red-glow), inset 0 0 20px rgba(255, 68, 68, 0.03); }
-      50% { box-shadow: 0 0 25px var(--sos-red-glow), 0 0 40px rgba(255, 68, 68, 0.15), inset 0 0 30px rgba(255, 68, 68, 0.05); }
+    .sos-dropdown-btn {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-red);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
     }
     
-    .protocol-item.theme-sos .protocol-icon .material-symbols-outlined {
-      color: var(--sos-red);
-      animation: sos-icon-pulse 1.5s ease-in-out infinite;
+    .sos-dropdown-btn:hover {
+      border-color: var(--accent-red);
+      color: var(--text-primary);
     }
     
-    @keyframes sos-icon-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
+    .sos-dropdown-btn .material-symbols-outlined {
+      font-size: 16px;
+      transition: transform 0.2s;
     }
     
-    .protocol-item.theme-sos .protocol-name { color: var(--sos-red); }
-    .protocol-item.theme-sos .protocol-status { background: var(--sos-red); color: #000; }
-    .protocol-item.theme-sos .protocol-desc { color: #ff9999; }
-    .protocol-item.theme-sos .protocol-cmd { 
-      border-left-color: var(--sos-red);
-      background: rgba(255, 68, 68, 0.05);
-    }
-    .protocol-item.theme-sos .tag { color: var(--sos-red); border-color: rgba(255, 68, 68, 0.4); }
-    
-    .protocol-item.theme-sos:hover { 
-      border-color: #ff6666;
-      transform: translate(-2px, -2px);
+    .sos-download-dropdown.open .sos-dropdown-btn .material-symbols-outlined {
+      transform: rotate(180deg);
     }
     
-    .sos-web-btn {
+    .sos-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-top: none;
+      z-index: 50;
+      display: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .sos-download-dropdown.open .sos-dropdown-menu {
+      display: block;
+    }
+    
+    .sos-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 11px;
+      transition: all 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .sos-dropdown-item:last-child { border-bottom: none; }
+    
+    .sos-dropdown-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .sos-dropdown-item .material-symbols-outlined {
+      font-size: 16px;
+      color: var(--accent-red);
+    }
+    
+    .sos-dropdown-item .dl-info {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+    
+    /* Fixed SOS CTA Button */
+    .sos-cta-fixed {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      padding: 0;
+      background: var(--bg-secondary);
+      border: 2px solid #e53935;
+      border-radius: 50%;
+      color: #e53935;
+      cursor: pointer;
+      transition: all 0.2s;
+      animation: sos-cta-pulse 2.5s ease-in-out infinite;
+    }
+    
+    @keyframes sos-cta-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.5); }
+      50% { box-shadow: 0 0 0 10px transparent; }
+    }
+    
+    .sos-cta-fixed:hover {
+      background: #e53935;
+      color: #fff;
+      transform: scale(1.1);
+      border-color: #e53935;
+    }
+    
+    .sos-cta-fixed .material-symbols-outlined {
+      font-size: 28px;
+    }
+    
+    .sos-cta-fixed .tooltip {
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 400;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+    
+    .sos-cta-fixed:hover .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .sos-web-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       margin-top: 10px;
-      padding: 8px 16px;
-      background: var(--sos-red);
-      color: #000;
-      border: none;
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
       font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
       cursor: pointer;
       transition: all 0.2s;
-      animation: sos-btn-glow 2s ease-in-out infinite;
     }
     
-    @keyframes sos-btn-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 0 6px transparent; }
+    .sos-web-link:hover {
+      border-color: var(--accent-red);
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
     }
     
-    .sos-web-btn:hover {
-      background: #ff6666;
-      transform: scale(1.05);
-    }
-    
-    .sos-web-btn .material-symbols-outlined { font-size: 16px; }
+    .sos-web-link .material-symbols-outlined { font-size: 14px; }
     
     /* SOCKS5 Tutorial Popup */
     .socks-popup-overlay {
@@ -641,7 +754,7 @@
     .socks-continue-btn:hover {
       background: #ff6666;
     }
-    }
+    
     
     .features { padding: 40px 0; border-top: 1px solid var(--border); overflow: hidden; position: relative; }
     
@@ -723,260 +836,6 @@
     
     .cursor { animation: blink 1s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
-    
-    /* ===== SOS EMERGENCY SECTION ===== */
-    .sos-section {
-      background: linear-gradient(135deg, var(--sos-bg) 0%, #0d0505 100%);
-      border: 2px solid var(--sos-red);
-      padding: 30px 20px;
-      margin-bottom: 40px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 0 30px var(--sos-red-glow), inset 0 0 60px rgba(255, 68, 68, 0.05);
-    }
-    
-    .sos-section::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: linear-gradient(45deg, var(--sos-red), transparent, var(--sos-red), transparent, var(--sos-red));
-      background-size: 400% 400%;
-      z-index: -1;
-      animation: sos-border-glow 3s ease infinite;
-      filter: blur(3px);
-      opacity: 0.5;
-    }
-    
-    @keyframes sos-border-glow {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    
-    .sos-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-    
-    .sos-icon {
-      font-size: 32px;
-      color: var(--sos-red);
-      animation: sos-pulse 1.5s ease-in-out infinite;
-    }
-    
-    @keyframes sos-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.1); }
-    }
-    
-    .sos-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--sos-red);
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      animation: sos-text-glow 2s ease-in-out infinite;
-    }
-    
-    @keyframes sos-text-glow {
-      0%, 100% { text-shadow: 0 0 10px var(--sos-red-glow), 0 0 20px var(--sos-red-glow); }
-      50% { text-shadow: 0 0 20px var(--sos-red-glow), 0 0 40px var(--sos-red-glow), 0 0 60px var(--sos-red-glow); }
-    }
-    
-    .sos-subtitle {
-      text-align: center;
-      color: #ff9999;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    
-    .sos-cmd-box {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--sos-red);
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 20px;
-      position: relative;
-    }
-    
-    .sos-cmd-box code {
-      color: var(--sos-red);
-      font-size: 14px;
-      flex: 1;
-    }
-    
-    .sos-cmd-box .prompt {
-      color: #ff6666;
-    }
-    
-    .sos-copy-btn {
-      background: transparent;
-      border: 1px solid var(--sos-red);
-      color: var(--sos-red);
-      padding: 6px 12px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 11px;
-      transition: all 0.2s;
-    }
-    
-    .sos-copy-btn:hover {
-      background: var(--sos-red);
-      color: #000;
-    }
-    
-    .sos-features {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      flex-wrap: wrap;
-      margin-bottom: 25px;
-      font-size: 12px;
-      color: #cc9999;
-    }
-    
-    .sos-feature {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .sos-feature .material-symbols-outlined {
-      font-size: 16px;
-      color: var(--sos-red);
-    }
-    
-    .sos-actions {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-    
-    .sos-btn-web {
-      background: var(--sos-red);
-      color: #000;
-      border: none;
-      padding: 12px 24px;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-      animation: sos-btn-pulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes sos-btn-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 var(--sos-red-glow); }
-      50% { box-shadow: 0 0 0 10px transparent; }
-    }
-    
-    .sos-btn-web:hover {
-      background: #ff6666;
-      transform: scale(1.05);
-    }
-    
-    .sos-btn-web.sos-btn-disabled {
-      background: #555;
-      color: #888;
-      cursor: not-allowed;
-      animation: none;
-      opacity: 0.7;
-    }
-    
-    .sos-btn-web.sos-btn-disabled:hover {
-      background: #555;
-      transform: none;
-    }
-    
-    .sos-btn-web .material-symbols-outlined {
-      font-size: 18px;
-    }
-    
-    .sos-downloads {
-      margin-top: 20px;
-      padding: 15px;
-      border: 1px solid rgba(255, 77, 77, 0.3);
-      background: rgba(255, 77, 77, 0.05);
-    }
-    
-    .sos-downloads-title {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      color: var(--sos-red);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 15px;
-    }
-    
-    .sos-downloads-title .material-symbols-outlined {
-      font-size: 18px;
-    }
-    
-    .sos-download-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-    }
-    
-    .sos-download-btn {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      padding: 6px 12px;
-      background: rgba(255, 77, 77, 0.1);
-      border: 1px solid rgba(255, 77, 77, 0.3);
-      color: #ccc;
-      text-decoration: none;
-      transition: all 0.2s;
-      gap: 8px;
-    }
-    
-    .sos-download-btn:hover {
-      background: rgba(255, 77, 77, 0.2);
-      border-color: var(--sos-red);
-      color: #fff;
-      transform: translateY(-1px);
-    }
-    
-    .sos-download-btn .material-symbols-outlined {
-      font-size: 16px;
-      color: var(--sos-red);
-    }
-    
-    .sos-dl-name {
-      font-weight: 600;
-      font-size: 11px;
-    }
-    
-    .sos-dl-info {
-      font-size: 9px;
-      color: #888;
-    }
-    
-    .sos-note {
-      text-align: center;
-      color: #996666;
-      font-size: 11px;
-      margin-top: 15px;
-    }
     
     /* macOS Gatekeeper Warning Popup */
     .macos-popup-overlay {
@@ -1227,15 +1086,7 @@
       font-size: 14px;
     }
 
-    @media (max-width: 768px) {
-      .sos-title { font-size: 18px; letter-spacing: 2px; }
-      .sos-cmd-box { flex-direction: column; }
-      .sos-cmd-box code { margin-right: 0; margin-bottom: 10px; font-size: 12px; }
-      .sos-copy-btn { width: 100%; }
-      .sos-features { gap: 15px; }
-      .sos-download-btn { padding: 5px 10px; }
-      .sos-dl-info { font-size: 8px; }
-    }
+
     
     /* ===== DOCS PAGE STYLES ===== */
     #docs-page { display: none; }
@@ -1398,10 +1249,12 @@
     .markdown-content blockquote { border-left: 3px solid var(--accent-purple); background: var(--bg-secondary); padding: 15px 20px; margin: 15px 0; color: var(--text-secondary); }
     .markdown-content blockquote p { margin-bottom: 0; }
     .markdown-content hr { border: none; border-top: 1px solid var(--border); margin: 30px 0; }
-    .markdown-content table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
-    .markdown-content th { background: var(--bg-secondary); color: var(--accent-green); text-align: left; padding: 10px 15px; border: 1px solid var(--border); font-weight: 600; }
+    .markdown-content .table-wrapper { overflow-x: auto; margin: 15px 0; -webkit-overflow-scrolling: touch; }
+    .markdown-content table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 400px; }
+    .markdown-content th { background: var(--bg-secondary); color: var(--accent-green); text-align: left; padding: 10px 15px; border: 1px solid var(--border); font-weight: 600; white-space: nowrap; }
     .markdown-content td { padding: 10px 15px; border: 1px solid var(--border); color: var(--text-secondary); }
     .markdown-content tr:nth-child(even) { background: var(--bg-secondary); }
+    .markdown-content code { word-break: break-word; }
     
     .mobile-menu-btn {
       display: none;
@@ -1425,20 +1278,105 @@
     .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
     .mobile-overlay.open { display: block; }
     
-    /* Responsive */
-    @media (max-width: 768px) {
-      .ascii-logo { font-size: 6px; }
-      .hero-title { font-size: 20px; }
-      .install-cmd { flex-direction: column; align-items: flex-start; }
-      .copy-btn { width: 100%; margin-top: 10px; }
-      .protocol-desc, .protocol-tags, .protocol-cmd { padding-left: 0; margin-left: 0; }
-    }
-    
+    /* Responsive - Tablet */
     @media (max-width: 900px) {
       .sidebar { transform: translateX(-100%); transition: transform 0.3s; z-index: 100; }
       .sidebar.open { transform: translateX(0); }
       .docs-main { margin-left: 0; padding: 20px; }
       .mobile-menu-btn { display: flex !important; }
+      .setup-steps { gap: 15px; }
+      .step-item { min-width: 200px; }
+    }
+    
+    /* Responsive - Mobile */
+    @media (max-width: 768px) {
+      body { font-size: 14px; }
+      .container { padding: 0 15px; }
+      
+      /* Header */
+      .morph-section { font-size: 5px !important; height: 100px !important; }
+      .ascii-logo { font-size: 5px; }
+      .header-info { font-size: 11px; }
+      
+      /* Hero */
+      .hero { padding: 25px 0; }
+      .hero-title { font-size: 18px; }
+      .hero-subtitle { font-size: 13px; margin-bottom: 20px; }
+      
+      /* Setup Steps */
+      .setup-steps { flex-direction: column; gap: 15px; }
+      .step-item { min-width: 100%; padding: 15px; }
+      .step-header { gap: 8px; }
+      .step-title { font-size: 12px; }
+      .step-desc { font-size: 11px; }
+      
+      /* Install Command */
+      .install-cmd { flex-direction: column; align-items: stretch; padding: 12px; }
+      .install-cmd code { font-size: 11px; word-break: break-all; margin-right: 0; margin-bottom: 10px; }
+      .copy-btn { position: static; transform: none; width: 100%; padding: 8px; }
+      .copy-btn:hover { transform: none; }
+      .copy-btn:active { transform: translate(1px, 1px); }
+      .install-note { font-size: 11px; }
+      
+      /* TUI Window */
+      .tui-window { margin: 0 -15px; }
+      .tui-body { padding: 10px; }
+      .tui-controls { font-size: 10px; gap: 6px; }
+      .tui-controls span { padding: 3px 8px; }
+      
+      /* Protocol Cards */
+      .protocols { padding: 25px 0; }
+      .section-title { font-size: 14px; }
+      .protocol-list { grid-template-columns: 1fr; gap: 15px; }
+      .protocol-item { padding: 15px; }
+      .protocol-header { margin-bottom: 10px; }
+      .protocol-icon { font-size: 20px; width: 28px; }
+      .protocol-name { font-size: 13px; }
+      .protocol-desc { font-size: 11px; margin-bottom: 10px; }
+      .protocol-tags { gap: 4px; margin-bottom: 10px; }
+      .tag { font-size: 9px; padding: 2px 5px; }
+      .protocol-cmd { font-size: 10px; padding: 8px; }
+      
+      /* SOS Dropdown */
+      .sos-dropdown-btn { font-size: 10px; padding: 8px 12px; }
+      .sos-dropdown-menu { font-size: 11px; }
+      .sos-dropdown-item { padding: 8px 12px; }
+      .sos-web-link { font-size: 10px; padding: 8px 12px; }
+      
+      /* SOS CTA Button */
+      .sos-cta-fixed { bottom: 15px; right: 15px; width: 50px; height: 50px; }
+      .sos-cta-fixed .material-symbols-outlined { font-size: 24px; }
+      .sos-cta-fixed .tooltip { display: none; }
+      
+      /* Footer */
+      footer { padding: 20px 0; font-size: 11px; }
+      
+      /* Docs Page */
+      .docs-main { padding: 15px; }
+      .markdown-content h1 { font-size: 22px; }
+      .markdown-content h2 { font-size: 17px; }
+      .markdown-content h3 { font-size: 14px; }
+      .markdown-content p { font-size: 13px; }
+      .markdown-content code { font-size: 12px; }
+      .markdown-content pre { padding: 12px; font-size: 11px; }
+      .markdown-content table { font-size: 11px; }
+      .markdown-content th, .markdown-content td { padding: 6px 8px; }
+      
+      /* Docs Navbar */
+      .docs-navbar { flex-wrap: wrap; gap: 5px; padding: 8px; }
+      .docs-nav-link { padding: 6px 10px; font-size: 10px; }
+    }
+    
+    /* Responsive - Small Mobile */
+    @media (max-width: 480px) {
+      .morph-section { font-size: 4px !important; height: 80px !important; }
+      .hero-title { font-size: 16px; }
+      .hero-subtitle { font-size: 12px; }
+      .install-cmd code { font-size: 10px; }
+      .protocol-cmd { font-size: 9px; overflow-x: auto; }
+      .step-number { width: 20px; height: 20px; font-size: 10px; top: -8px; right: -8px; }
+      .sos-cta-fixed { width: 44px; height: 44px; bottom: 12px; right: 12px; }
+      .sos-cta-fixed .material-symbols-outlined { font-size: 22px; }
     }
   </style>
 </head>
@@ -1461,69 +1399,10 @@
     <main>
       <section class="hero">
         <div class="container">
-          <h1 class="hero-title">Your beacon in the darkness</h1>
+          <h1 class="hero-title">Let's keep people connected!</h1>
           <p class="hero-subtitle">
-            Minimum setup tools to bypass internet censorship.
-            Help people around the world access the open internet with just one command.
+            Internet censorship bypass tools, with easy setup for volunteers and activists to host their own proxy servers.
           </p>
-          
-          <!-- SOS Emergency Section -->
-          <div class="sos-section">
-            <div class="sos-header">
-              <span class="sos-icon material-symbols-outlined">emergency</span>
-              <span class="sos-title">SOS Emergency Chat</span>
-              <span class="sos-icon material-symbols-outlined">emergency</span>
-            </div>
-            <p class="sos-subtitle">Encrypted chat rooms over DNS tunnel. Works during total blackouts. Auto-wipes after 1 hour.</p>
-            
-            <div class="sos-cmd-box">
-              <code><span class="prompt">$ </span>curl -sSL sos.dnscloak.net | sudo bash</code>
-              <button class="sos-copy-btn" onclick="copyCommand('curl -sSL sos.dnscloak.net | sudo bash')">[ COPY ]</button>
-            </div>
-            
-            <div class="sos-features">
-              <span class="sos-feature"><span class="material-symbols-outlined">emoji_symbols</span> 6-Emoji Room ID</span>
-              <span class="sos-feature"><span class="material-symbols-outlined">key</span> Rotating PIN (15s)</span>
-              <span class="sos-feature"><span class="material-symbols-outlined">lock</span> E2E Encrypted</span>
-              <span class="sos-feature"><span class="material-symbols-outlined">timer</span> 1-Hour TTL</span>
-            </div>
-            
-            <div class="sos-downloads">
-              <div class="sos-downloads-title">
-                <span class="material-symbols-outlined">download</span>
-                Offline Binaries (Pre-download before blackout)
-              </div>
-              <div class="sos-download-grid">
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-windows-amd64.exe" class="sos-download-btn">
-                  <span class="material-symbols-outlined">desktop_windows</span>
-                  <span class="sos-dl-name">Windows</span>
-                  <span class="sos-dl-info">10/11 (64-bit)</span>
-                </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" class="sos-download-btn" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
-                  <span class="material-symbols-outlined">keyboard_command_key</span>
-                  <span class="sos-dl-name">macOS</span>
-                  <span class="sos-dl-info">Apple Silicon (M-series)</span>
-                </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" class="sos-download-btn" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
-                  <span class="material-symbols-outlined">keyboard_command_key</span>
-                  <span class="sos-dl-name">macOS</span>
-                  <span class="sos-dl-info">Intel (10.13+)</span>
-                </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-amd64" class="sos-download-btn">
-                  <span class="material-symbols-outlined">terminal</span>
-                  <span class="sos-dl-name">Linux</span>
-                  <span class="sos-dl-info">x64 (Ubuntu, Debian, etc.)</span>
-                </a>
-                <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-arm64" class="sos-download-btn">
-                  <span class="material-symbols-outlined">terminal</span>
-                  <span class="sos-dl-name">Linux</span>
-                  <span class="sos-dl-info">ARM64 (Raspberry Pi, etc.)</span>
-                </a>
-              </div>
-            </div>
-            
-            <p class="sos-note">For emergencies in Iran, China, Russia during internet blackouts. Share room ID + PIN verbally.</p>
-          </div>
           
           <div class="setup-steps">
             <div class="step-item">
@@ -1532,7 +1411,7 @@
                 <span class="step-icon material-symbols-outlined">dns</span>
                 <span class="step-title">Get Server</span>
               </div>
-              <div class="step-desc">Purchase a VPS (Ubuntu 22.04) from any cloud provider. A domain is optional for most protocols.</div>
+              <div class="step-desc">Purchase a small VPS (Linux) from your favorite cloud provider. A domain is optional for most protocols.</div>
             </div>
             
             <div class="step-item">
@@ -1541,7 +1420,7 @@
                 <span class="step-icon material-symbols-outlined">terminal</span>
                 <span class="step-title">Connect (SSH)</span>
               </div>
-              <div class="step-desc">Open your terminal and login to your server: <code>ssh root@your-ip</code></div>
+              <div class="step-desc">Open your terminal and login to your server: <code>ssh root@your-ip</code> or using remote desktop tools.</div>
             </div>
             
             <div class="step-item">
@@ -1550,7 +1429,7 @@
                 <span class="step-icon material-symbols-outlined">bolt</span>
                 <span class="step-title">Run Command</span>
               </div>
-              <div class="step-desc">Paste the install command below. Follow the interactive prompts to finish setup.</div>
+              <div class="step-desc">Copy paste the install command you want, then follow the interactive prompts to finish setup.</div>
             </div>
           </div>
           
@@ -1575,26 +1454,6 @@
           <h2 class="section-title">Available Protocols</h2>
           
           <div class="protocol-list">
-            <div class="protocol-item theme-sos">
-              <div class="protocol-header">
-                <span class="protocol-icon"><span class="material-symbols-outlined">emergency</span></span>
-                <span class="protocol-name">SOS Emergency Chat</span>
-                <span class="protocol-status status-ready">READY</span>
-              </div>
-              <p class="protocol-desc">Encrypted chat rooms over DNS tunnel. Works during total blackouts. Auto-wipes after 1 hour. Share room ID + PIN verbally.</p>
-              <div class="protocol-tags">
-                <span class="tag">emergency</span>
-                <span class="tag">encrypted</span>
-                <span class="tag">auto-wipe</span>
-                <span class="tag">dns-tunnel</span>
-              </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl -sSL sos.dnscloak.net | sudo bash</div>
-              <button class="sos-web-btn" onclick="showSocksPopup()">
-                <span class="material-symbols-outlined">language</span>
-                Open Web Chat
-              </button>
-            </div>
-            
             <div class="protocol-item theme-red">
               <div class="protocol-header">
                 <span class="protocol-icon"><span class="material-symbols-outlined">emergency</span></span>
@@ -1623,6 +1482,57 @@
                 <span class="tag">no-domain</span>
               </div>
               <div class="protocol-cmd"><span class="prompt">$ </span>curl -sSL conduit.dnscloak.net | sudo bash</div>
+            </div>
+
+            <div class="protocol-item theme-sos-subtle">
+              <div class="protocol-header">
+                <span class="protocol-icon"><span class="material-symbols-outlined">emergency</span></span>
+                <span class="protocol-name">SOS Emergency Chat</span>
+                <span class="protocol-status status-ready">READY</span>
+              </div>
+              <p class="protocol-desc">Encrypted chat rooms over DNS tunnel. Works during total blackouts. Auto-wipes after 1 hour.</p>
+              <div class="protocol-tags">
+                <span class="tag">emergency</span>
+                <span class="tag">encrypted</span>
+                <span class="tag">dns-tunnel</span>
+              </div>
+              <div class="sos-download-dropdown" id="sos-dropdown">
+                <button class="sos-dropdown-btn" onclick="toggleSosDropdown()">
+                  <span>Download Client...</span>
+                  <span class="material-symbols-outlined">expand_more</span>
+                </button>
+                <div class="sos-dropdown-menu">
+                  <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-windows-amd64.exe" class="sos-dropdown-item">
+                    <span class="material-symbols-outlined">desktop_windows</span>
+                    <span>Windows</span>
+                    <span class="dl-info">10/11 (64-bit)</span>
+                  </a>
+                  <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" class="sos-dropdown-item" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
+                    <span class="material-symbols-outlined">laptop_mac</span>
+                    <span>macOS</span>
+                    <span class="dl-info">Apple Silicon (M-series)</span>
+                  </a>
+                  <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" class="sos-dropdown-item" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
+                    <span class="material-symbols-outlined">laptop_mac</span>
+                    <span>macOS</span>
+                    <span class="dl-info">Intel (10.13+)</span>
+                  </a>
+                  <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-amd64" class="sos-dropdown-item">
+                    <span class="material-symbols-outlined">terminal</span>
+                    <span>Linux</span>
+                    <span class="dl-info">x64 (Ubuntu, Debian, etc.)</span>
+                  </a>
+                  <a href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-arm64" class="sos-dropdown-item">
+                    <span class="material-symbols-outlined">terminal</span>
+                    <span>Linux</span>
+                    <span class="dl-info">ARM64 (Raspberry Pi, etc.)</span>
+                  </a>
+                </div>
+              </div>
+              <a href="http://relay.dnscloak.net:8899/" target="_blank" class="sos-web-link" title="Opens chat relay in new tab">
+                <span class="material-symbols-outlined">open_in_new</span>
+                Open Web Chat
+              </a>
             </div>
 
             <div class="protocol-item">
@@ -1847,6 +1757,7 @@
               <li class="nav-item"><a class="nav-link" data-doc="protocols/wg" onclick="loadDoc('protocols/wg')"><span class="material-symbols-outlined">vpn_lock</span> WireGuard</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/mtp" onclick="loadDoc('protocols/mtp')"><span class="material-symbols-outlined">send</span> MTProto</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/dnstt" onclick="loadDoc('protocols/dnstt')"><span class="material-symbols-outlined">emergency</span> DNS Tunnel</a></li>
+              <li class="nav-item"><a class="nav-link" data-doc="protocols/sos" onclick="loadDoc('protocols/sos')"><span class="material-symbols-outlined">sos</span> SOS Emergency Chat</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/vray" onclick="loadDoc('protocols/vray')"><span class="material-symbols-outlined">lock</span> VLESS + TLS</a></li>
             </ul>
           </div>
@@ -1965,6 +1876,16 @@
         });
         
         content.innerHTML = marked.parse(markdown);
+
+        // Wrap tables in scrollable container for mobile
+        content.querySelectorAll('table').forEach(table => {
+          if (!table.parentElement.classList.contains('table-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+          }
+        });
 
         // Restore mermaid content
         mermaidBlocks.forEach((code, index) => {
@@ -2554,6 +2475,26 @@
     document.getElementById('socks-popup').addEventListener('click', function(e) {
       if (e.target === this) closeSocksPopup();
     });
+    
+    // SOS Dropdown Toggle
+    function toggleSosDropdown() {
+      const dropdown = document.getElementById('sos-dropdown');
+      dropdown.classList.toggle('open');
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('sos-dropdown');
+      if (dropdown && !dropdown.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
   </script>
+  
+  <!-- Fixed SOS CTA Button -->
+  <button class="sos-cta-fixed" onclick="window.open('http://relay.dnscloak.net:8899/', '_blank')">
+    <span class="material-symbols-outlined">sos</span>
+    <span class="tooltip">SOS Emergency Chat<br>Right-click → Incognito</span>
+  </button>
 </body>
 </html>

@@ -4,47 +4,94 @@
 
 ---
 
-## Three Ways to Use SOS
+## Quick Start
 
-### Option 1: Web Client via DNSTT (Most Uncensorable) 🌐
+SOS works even during **total internet blackouts** because it tunnels through DNS queries. There are three ways to connect:
 
-Access chat through your browser via DNSTT tunnel. **Works even when the internet is blocked.**
+| Method | Best For | Censorship Resistance |
+|--------|----------|----------------------|
+| **Web Client via DNSTT** | When HTTP/HTTPS is blocked | ⭐⭐⭐ Maximum |
+| **TUI Client** | Terminal users, quick setup | ⭐⭐ High |
+| **Direct Web Access** | Testing, no censorship | ⭐ None |
 
-**Step 1**: Start DNSTT client (creates SOCKS5 proxy)
+---
+
+## DNSTT Client Setup (Required for Censored Networks)
+
+Before using the Web Client via DNSTT, you need to set up the DNSTT tunnel client on your machine:
+
+### Linux
 ```bash
-# macOS/Linux
-./dnstt-client -doh https://cloudflare-dns.com/dns-query \
-  -pubkey-file server.pub t.dnscloak.net 127.0.0.1:10800
-
-# Or use the DNSTT setup script
-curl -sSL dnstt.dnscloak.net/client | bash
+curl -sSL dnstt.dnscloak.net/setup/linux | bash
 ```
 
-**Step 2**: Configure browser SOCKS5 proxy
-- Firefox: Settings → Network → Manual proxy → SOCKS Host: `127.0.0.1`, Port: `10800`
-- Chrome: Use extension like SwitchyOmega
-
-**Step 3**: Navigate to relay
-```
-http://relay.dnscloak.net:8899/
+### macOS
+```bash
+curl -sSL dnstt.dnscloak.net/setup/macos | bash
 ```
 
-The web client:
+This creates a SOCKS5 proxy on `127.0.0.1:10800` that tunnels all traffic through DNS queries.
+
+---
+
+## Three Connection Methods
+
+### Method 1: Web Client via DNSTT (Most Uncensorable)
+
+**Prerequisites**: DNSTT client running (see setup above)
+
+1. **Configure browser SOCKS5 proxy**:
+   - **Firefox**: Settings → Network → Manual proxy → SOCKS Host: `127.0.0.1`, Port: `10800`
+   - **Chrome**: Use extension like SwitchyOmega
+   - **macOS System**: System Settings → Network → Proxies → SOCKS Proxy
+
+2. **Navigate to relay**:
+   ```
+   http://relay.dnscloak.net:8899/
+   ```
+
+The web client features:
 - **Single-page app** - No downloads, works in any browser
 - **Fully encrypted** - TweetNaCl.js for client-side E2E encryption
 - **TUI compatible** - Same rooms work with TUI and web clients!
 - **Offline-ready** - All dependencies inlined (~100KB total)
 
-### Option 2: Download Standalone Binary (Recommended for Offline)
+### Method 2: TUI Client (Terminal)
 
-Download from [GitHub Releases](https://github.com/behnamkhorsandian/DNSCloak/releases):
+Run directly in your terminal:
+```bash
+curl -sSL sos.dnscloak.net | bash
+```
+
+This downloads the Python TUI client. Features:
+- Auto-connects to `relay.dnscloak.net:8899`
+- Auto-falls back to direct connection if DNSTT unavailable
+- Works in any terminal emulator
+
+### Method 3: Direct Web Access (No Censorship Bypass)
+
+For testing or when no censorship bypass is needed:
+```
+http://relay.dnscloak.net:8899/
+```
+
+> ⚠️ **Warning**: Direct access does NOT bypass censorship. Use only when the relay is directly accessible.
+
+---
+
+## Download Standalone Binary (Pre-Download Before Blackouts)
+
+For maximum reliability, download the binary **before** an internet blackout:
 
 | Platform | Download |
 |----------|----------|
+| **Windows** (64-bit) | `sos-windows-amd64.exe` |
 | **macOS** (Apple Silicon) | `sos-darwin-arm64` |
 | **macOS** (Intel) | `sos-darwin-amd64` |
 | **Linux** (64-bit) | `sos-linux-amd64` |
-| **Windows** (64-bit) | `sos-windows-amd64.exe` |
+| **Linux** (ARM64) | `sos-linux-arm64` |
+
+Download from: [GitHub Releases](https://github.com/behnamkhorsandian/DNSCloak/releases)
 
 **macOS Users**: Run this to bypass Gatekeeper:
 ```bash
@@ -55,16 +102,6 @@ The binary:
 - **Auto-connects** to `relay.dnscloak.net:8899`
 - **Auto-falls back** to direct connection if DNSTT tunnel unavailable
 - **Bundles DNSTT client** for maximum censorship resistance
-
-### Option 3: Install via curl (Development/Testing)
-
-```bash
-curl -sSL sos.dnscloak.net | bash
-```
-
-This downloads the Python TUI client. Best for:
-- Testing the system
-- Development
 
 ---
 
@@ -100,33 +137,33 @@ This installs:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              SOS ARCHITECTURE                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   USER A (TUI Client)                         USER B (Web Client)            │
-│   ┌──────────────┐                           ┌──────────────┐                │
-│   │   SOS TUI    │                           │   Browser    │                │
-│   │   (Python)   │                           │   (app.js)   │                │
-│   └──────┬───────┘                           └───────┬──────┘                │
-│          │                                           │                       │
-│          │  DNSTT Tunnel (SOCKS5 :10800)             │                       │
-│          │  DNS queries to t.dnscloak.net            │                       │
-│          ▼                                           ▼                       │
-│   ┌──────────────────────────────────────────────────────────┐               │
-│   │                    DNSTT SERVER (VM)                      │               │
-│   │  ┌─────────────────────────────────────────────────────┐ │               │
-│   │  │              SOS Relay Daemon (relay.py:8899)       │ │               │
-│   │  │  GET /            → Web client (index.html)         │ │               │
-│   │  │  POST /room       → Create room API                 │ │               │
-│   │  │  GET /room/X/poll → Poll messages API               │ │               │
-│   │  │  - Rooms auto-expire (1hr TTL)                      │ │               │
-│   │  │  - Encrypted messages (max 500/room)                │ │               │
-│   │  │  - Rate limiting (exponential backoff)              │ │               │
-│   │  └─────────────────────────────────────────────────────┘ │               │
-│   └──────────────────────────────────────────────────────────┘               │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SOS ARCHITECTURE                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   USER A (TUI Client)                         USER B (Web Client)   │
+│   ┌──────────────┐                           ┌──────────────┐       │
+│   │   SOS TUI    │                           │   Browser    │       │
+│   │   (Python)   │                           │   (app.js)   │       │
+│   └──────┬───────┘                           └───────┬──────┘       │
+│          │                                           │              │
+│          │  DNSTT Tunnel (SOCKS5 :10800)             │              │
+│          │  DNS queries to t.dnscloak.net            │              │
+│          ▼                                           ▼              │
+│   ┌──────────────────────────────────────────────────────────┐      │
+│   │                    DNSTT SERVER (VM)                     │      │
+│   │  ┌─────────────────────────────────────────────────────┐ │      │
+│   │  │              SOS Relay Daemon (relay.py:8899)       │ │      │
+│   │  │  GET /            → Web client (index.html)         │ │      │
+│   │  │  POST /room       → Create room API                 │ │      │
+│   │  │  GET /room/X/poll → Poll messages API               │ │      │
+│   │  │  - Rooms auto-expire (1hr TTL)                      │ │      │
+│   │  │  - Encrypted messages (max 500/room)                │ │      │
+│   │  │  - Rate limiting (exponential backoff)              │ │      │
+│   │  └─────────────────────────────────────────────────────┘ │      │
+│   └──────────────────────────────────────────────────────────┘      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---

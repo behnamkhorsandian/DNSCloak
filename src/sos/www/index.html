@@ -14,20 +14,22 @@
     
     :root {
       --font-main: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
-      --bg-primary: #1a0a0a;
-      --bg-secondary: #2a1515;
-      --bg-tertiary: #3a2020;
-      --bg-input: #251010;
+      /* Main site theme colors */
+      --bg-primary: #232323;
+      --bg-secondary: #343434;
+      --bg-tertiary: #404040;
+      --bg-input: #2a2a2a;
       --text-primary: #e7e7e7;
-      --text-secondary: #b0a0a0;
-      --text-dim: #706060;
-      --sos-red: #ff4444;
-      --sos-red-dark: #cc2222;
-      --sos-red-glow: rgba(255, 68, 68, 0.3);
-      --sos-green: #44cc66;
-      --sos-yellow: #e5c855;
-      --border: #4a3030;
-      --border-focus: #ff4444;
+      --text-secondary: #9ab0a6;
+      --text-dim: #6a7a70;
+      /* Accent colors */
+      --accent-green: #2eb787;
+      --accent-light-green: #9acfa0;
+      --accent-red: #a25138;
+      --sos-green: #2eb787;
+      --sos-yellow: #e5e885;
+      --border: #466242;
+      --border-focus: #2eb787;
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,7 +49,7 @@
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-primary); }
     ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--sos-red); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-green); }
     
     /* App Container */
     #app {
@@ -74,7 +76,7 @@
     }
     
     .header-logo {
-      color: var(--sos-red);
+      color: var(--accent-green);
       font-size: 12px;
       line-height: 1.1;
       white-space: pre;
@@ -140,20 +142,20 @@
     }
     
     .btn:hover {
-      border-color: var(--sos-red);
+      border-color: var(--accent-green);
       background: var(--bg-tertiary);
     }
     
     .btn:active { transform: scale(0.98); }
     
     .btn-primary {
-      background: var(--sos-red-dark);
-      border-color: var(--sos-red);
-      color: white;
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #000;
     }
     
     .btn-primary:hover {
-      background: var(--sos-red);
+      background: var(--accent-light-green);
     }
     
     .btn:disabled {
@@ -232,8 +234,8 @@
       justify-content: center;
     }
     
-    .emoji-btn:hover { border-color: var(--sos-red); background: var(--bg-tertiary); }
-    .emoji-btn.selected { border-color: var(--sos-red); background: var(--sos-red-dark); }
+    .emoji-btn:hover { border-color: var(--accent-green); background: var(--bg-tertiary); }
+    .emoji-btn.selected { border-color: var(--accent-green); background: rgba(46, 183, 135, 0.3); }
     
     .emoji-selected {
       display: flex;
@@ -276,9 +278,9 @@
     
     .mode-btn:hover { border-color: var(--text-secondary); }
     .mode-btn.active {
-      border-color: var(--sos-red);
-      background: var(--sos-red-dark);
-      color: white;
+      border-color: var(--accent-green);
+      background: var(--accent-green);
+      color: #000;
     }
     
     .mode-btn .icon { font-size: 16px; display: block; margin-bottom: 4px; }
@@ -305,15 +307,15 @@
       justify-content: center;
     }
     
-    .pin-digit.filled { border-color: var(--sos-red); }
+    .pin-digit.filled { border-color: var(--accent-green); }
     
     input.pin-digit {
       outline: none;
     }
     
     input.pin-digit:focus {
-      border-color: var(--sos-red);
-      box-shadow: 0 0 0 2px var(--sos-red-glow);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 2px rgba(46, 183, 135, 0.3);
     }
     
     .pin-timer {
@@ -334,9 +336,9 @@
     }
     
     .status.error {
-      background: rgba(255, 68, 68, 0.1);
-      border-color: var(--sos-red);
-      color: var(--sos-red);
+      background: rgba(162, 81, 56, 0.1);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
     }
     
     .status.success {
@@ -412,7 +414,7 @@
     }
     
     .status-dot.connected { background: var(--sos-green); }
-    .status-dot.error { background: var(--sos-red); }
+    .status-dot.error { background: var(--accent-red); }
     
     /* Messages */
     .chat-messages {
@@ -435,8 +437,8 @@
     
     .message.own {
       align-self: flex-end;
-      background: var(--sos-red-dark);
-      border-color: var(--sos-red);
+      background: rgba(46, 183, 135, 0.15);
+      border-color: var(--accent-green);
     }
     
     .message-sender {
@@ -445,7 +447,7 @@
       margin-bottom: 2px;
     }
     
-    .message.own .message-sender { color: rgba(255,255,255,0.7); }
+    .message.own .message-sender { color: var(--accent-light-green); }
     
     .message-time {
       font-size: 9px;
@@ -454,7 +456,7 @@
       margin-top: 4px;
     }
     
-    .message.own .message-time { color: rgba(255,255,255,0.5); }
+    .message.own .message-time { color: var(--text-secondary); }
     
     .system-message {
       text-align: center;
@@ -485,23 +487,23 @@
     }
     
     .chat-input:focus {
-      border-color: var(--sos-red);
+      border-color: var(--accent-green);
     }
     
     .chat-input::placeholder { color: var(--text-dim); }
     
     .send-btn {
       padding: 10px 20px;
-      background: var(--sos-red-dark);
-      border: 1px solid var(--sos-red);
-      color: white;
+      background: var(--accent-green);
+      border: 1px solid var(--accent-green);
+      color: #000;
       font-family: var(--font-main);
       font-size: 13px;
       cursor: pointer;
       transition: all 0.15s;
     }
     
-    .send-btn:hover { background: var(--sos-red); }
+    .send-btn:hover { background: var(--accent-light-green); }
     .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     
     /* PIN overlay for rotating mode */
@@ -532,7 +534,7 @@
       margin-right: 8px;
     }
     
-    .back-btn:hover { color: var(--sos-red); }
+    .back-btn:hover { color: var(--accent-green); }
     
     /* Loading spinner */
     .spinner {
@@ -540,7 +542,7 @@
       width: 14px;
       height: 14px;
       border: 2px solid var(--text-dim);
-      border-top-color: var(--sos-red);
+      border-top-color: var(--accent-green);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -549,11 +551,128 @@
       to { transform: rotate(360deg); }
     }
     
-    /* Responsive */
-    @media (max-width: 400px) {
-      .emoji-picker { grid-template-columns: repeat(6, 1fr); }
-      .room-id-display { font-size: 24px; gap: 6px; }
+    /* Responsive - Tablet */
+    @media (max-width: 600px) {
+      #app { max-width: 100%; }
+      
+      .header { padding: 10px 12px; }
+      .header-logo { font-size: 10px; }
+      .header-subtitle { font-size: 10px; }
+      
+      #welcome-screen .content { padding: 20px 16px; gap: 16px; }
+      .welcome-info .icon { font-size: 40px; margin-bottom: 10px; }
+      .welcome-info h2 { font-size: 15px; }
+      .welcome-info { font-size: 11px; max-width: 100%; }
+      .feature-list { font-size: 10px; }
+      
+      .btn { padding: 12px 16px; font-size: 12px; max-width: 100%; }
+      .btn-group { max-width: 100%; }
+      
+      #setup-screen .content { padding: 16px; gap: 16px; }
+      .setup-section { padding: 14px; }
+      .setup-section h3 { font-size: 11px; }
+      
+      .room-id-display { font-size: 26px; padding: 14px; }
+      .emoji-picker { grid-template-columns: repeat(8, 1fr); gap: 3px; }
       .emoji-btn { font-size: 18px; }
+      .emoji-selected { font-size: 22px; padding: 10px; }
+      
+      .pin-input { font-size: 24px; letter-spacing: 6px; padding: 10px; }
+      
+      .chat-header { padding: 8px 12px; }
+      .chat-room-emojis { font-size: 12px; }
+      .chat-room-meta { font-size: 9px; }
+      .chat-status { font-size: 9px; }
+      
+      .chat-messages { padding: 10px 12px; gap: 6px; }
+      .message { font-size: 12px; padding: 6px 10px; }
+      .message-sender { font-size: 9px; }
+      .message-time { font-size: 8px; }
+      .system-message { font-size: 10px; }
+      
+      .chat-input-area { padding: 10px 12px; gap: 6px; }
+      .chat-input { padding: 8px 10px; font-size: 12px; }
+      .send-btn { padding: 8px 14px; font-size: 12px; }
+      
+      .pin-overlay { bottom: 60px; padding: 6px 12px; font-size: 10px; }
+    }
+    
+    /* Responsive - Small Mobile */
+    @media (max-width: 400px) {
+      body { font-size: 13px; }
+      
+      .header { padding: 8px 10px; }
+      .header-logo { font-size: 8px; }
+      .header-subtitle { font-size: 9px; }
+      
+      #welcome-screen .content { padding: 16px 12px; gap: 14px; }
+      .welcome-info .icon { font-size: 36px; margin-bottom: 8px; }
+      .welcome-info h2 { font-size: 14px; }
+      .welcome-info p { font-size: 11px; }
+      .feature-list { font-size: 10px; }
+      .feature-list li { gap: 6px; margin: 4px 0; }
+      
+      .btn { padding: 10px 14px; font-size: 11px; }
+      
+      #setup-screen .content { padding: 12px; gap: 14px; }
+      .setup-section { padding: 12px; }
+      .setup-section h3 { font-size: 10px; margin-bottom: 10px; }
+      
+      .room-id-display { font-size: 22px; gap: 5px; padding: 12px; }
+      .room-id-phonetic { font-size: 10px; }
+      .emoji-picker { grid-template-columns: repeat(6, 1fr); gap: 2px; }
+      .emoji-btn { font-size: 16px; }
+      .emoji-selected { font-size: 20px; padding: 8px; min-height: 44px; gap: 4px; }
+      
+      .pin-input { font-size: 20px; letter-spacing: 4px; padding: 8px; }
+      .mode-toggle { font-size: 11px; gap: 6px; flex-wrap: wrap; }
+      .mode-btn { padding: 5px 10px; font-size: 10px; }
+      
+      .chat-header { padding: 6px 10px; }
+      .chat-room-emojis { font-size: 11px; }
+      .chat-room-meta { font-size: 8px; }
+      .chat-status { font-size: 8px; gap: 4px; }
+      .status-dot { width: 6px; height: 6px; }
+      
+      .chat-messages { padding: 8px 10px; gap: 5px; }
+      .message { max-width: 90%; font-size: 11px; padding: 5px 8px; }
+      .message-sender { font-size: 8px; }
+      .message-time { font-size: 7px; }
+      .system-message { font-size: 9px; padding: 6px; }
+      
+      .chat-input-area { padding: 8px 10px; gap: 5px; }
+      .chat-input { padding: 7px 8px; font-size: 11px; }
+      .send-btn { padding: 7px 12px; font-size: 11px; }
+      
+      .pin-overlay { bottom: 55px; padding: 5px 10px; font-size: 9px; }
+      .back-btn { font-size: 16px; padding: 2px 6px; }
+    }
+    
+    /* Responsive - Very Small (iPhone SE, etc) */
+    @media (max-width: 340px) {
+      .header-logo { font-size: 6px; }
+      .header-subtitle { font-size: 8px; }
+      
+      .welcome-info .icon { font-size: 30px; }
+      .welcome-info h2 { font-size: 13px; }
+      
+      .room-id-display { font-size: 18px; gap: 4px; padding: 10px; }
+      .emoji-picker { grid-template-columns: repeat(6, 1fr); }
+      .emoji-btn { font-size: 14px; }
+      .emoji-selected { font-size: 16px; }
+      
+      .pin-input { font-size: 18px; letter-spacing: 3px; }
+      
+      .message { font-size: 10px; }
+      .chat-input { font-size: 10px; }
+      .send-btn { padding: 6px 10px; font-size: 10px; }
+    }
+    
+    /* Safe area for notched phones */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .chat-input-area {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      }
     }
     
     /* Hidden utility */
