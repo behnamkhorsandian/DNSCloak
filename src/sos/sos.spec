@@ -11,24 +11,30 @@ from pathlib import Path
 SPEC_DIR = os.path.dirname(os.path.abspath(SPECPATH)) if 'SPECPATH' in dir() else os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = str(Path(SPEC_DIR).parent.parent)
 
-# Platform-specific DNSTT binary
-system = platform.system().lower()
-machine = platform.machine().lower()
+# Allow CI to override platform detection via TARGET_PLATFORM env var
+# Format: os-arch (e.g., linux-amd64, darwin-arm64, windows-amd64)
+target_platform = os.environ.get('TARGET_PLATFORM', '')
+
+if target_platform:
+    # CI build with explicit target
+    parts = target_platform.split('-')
+    system = parts[0]
+    arch = parts[1] if len(parts) > 1 else 'amd64'
+else:
+    # Local build - detect from host
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if 'arm' in machine or 'aarch64' in machine:
+        arch = 'arm64'
+    else:
+        arch = 'amd64'
 
 if system == 'darwin':
-    if 'arm' in machine or 'aarch64' in machine:
-        dnstt_binary = 'bin/dnstt-client-darwin-arm64'
-        output_name = 'sos-darwin-arm64'
-    else:
-        dnstt_binary = 'bin/dnstt-client-darwin-amd64'
-        output_name = 'sos-darwin-amd64'
+    dnstt_binary = f'bin/dnstt-client-darwin-{arch}'
+    output_name = f'sos-darwin-{arch}'
 elif system == 'linux':
-    if 'arm' in machine or 'aarch64' in machine:
-        dnstt_binary = 'bin/dnstt-client-linux-arm64'
-        output_name = 'sos-linux-arm64'
-    else:
-        dnstt_binary = 'bin/dnstt-client-linux-amd64'
-        output_name = 'sos-linux-amd64'
+    dnstt_binary = f'bin/dnstt-client-linux-{arch}'
+    output_name = f'sos-linux-{arch}'
 elif system == 'windows':
     dnstt_binary = 'bin/dnstt-client-windows-amd64.exe'
     output_name = 'sos-windows-amd64'

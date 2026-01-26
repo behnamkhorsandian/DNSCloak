@@ -125,6 +125,8 @@ jobs:
           fi
       
       - name: Build SOS
+        env:
+          TARGET_PLATFORM: ${{ matrix.platform }}
         run: |
           pyinstaller --clean --noconfirm src/sos/sos.spec
       
