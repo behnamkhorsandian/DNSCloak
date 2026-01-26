@@ -42,15 +42,15 @@ else:
     raise RuntimeError(f"Unsupported platform: {system}")
 
 a = Analysis(
-    ['src/sos/main.py'],
+    ['main.py'],
     pathex=[],
-    binaries=[(dnstt_binary, 'bin')],
+    binaries=[(os.path.join('..', '..', dnstt_binary), 'bin')],
     datas=[
-        ('src/sos/app.py', 'sos'),
-        ('src/sos/room.py', 'sos'),
-        ('src/sos/transport.py', 'sos'),
-        ('src/sos/crypto.py', 'sos'),
-        ('src/sos/__init__.py', 'sos'),
+        ('app.py', 'sos'),
+        ('room.py', 'sos'),
+        ('transport.py', 'sos'),
+        ('crypto.py', 'sos'),
+        ('__init__.py', 'sos'),
     ],
     hiddenimports=[
         'textual',

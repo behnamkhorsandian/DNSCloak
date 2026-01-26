@@ -128,7 +128,7 @@ jobs:
         env:
           TARGET_PLATFORM: ${{ matrix.platform }}
         run: |
-          pyinstaller --clean --noconfirm src/sos/sos.spec
+          cd src/sos && pyinstaller --clean --noconfirm --distpath ../../dist sos.spec
       
       - name: Upload SOS Binary
         uses: actions/upload-artifact@v4
