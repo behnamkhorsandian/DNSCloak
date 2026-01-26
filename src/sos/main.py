@@ -272,7 +272,11 @@ def run_tui_mode():
     
     try:
         # Import and run the TUI app
-        from .app import SOSApp
+        # Try absolute import first (PyInstaller bundle), then relative (dev)
+        try:
+            from sos.app import SOSApp
+        except ImportError:
+            from .app import SOSApp
         app = SOSApp()
         app.run()
         return 0

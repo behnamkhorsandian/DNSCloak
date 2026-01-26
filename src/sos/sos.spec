@@ -43,16 +43,15 @@ else:
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[SPEC_DIR],  # Add spec dir to path so imports work
     binaries=[(os.path.join('..', '..', dnstt_binary), 'bin')],
-    datas=[
-        ('app.py', 'sos'),
-        ('room.py', 'sos'),
-        ('transport.py', 'sos'),
-        ('crypto.py', 'sos'),
-        ('__init__.py', 'sos'),
-    ],
+    datas=[],  # Modules collected via hiddenimports
     hiddenimports=[
+        'sos',
+        'sos.app',
+        'sos.room',
+        'sos.transport',
+        'sos.crypto',
         'textual',
         'textual.app',
         'textual.screen',

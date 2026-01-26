@@ -21,12 +21,21 @@ from textual.reactive import reactive
 from textual.message import Message as TextualMessage
 from textual import on
 
-from .crypto import (
-    EMOJI_SET, EMOJI_PHONETICS, 
-    generate_room_id, generate_pin, get_current_pin, 
-    get_time_remaining, room_id_to_hash, get_phonetic,
-    RoomCredentials
-)
+# Support both absolute (PyInstaller) and relative (dev) imports
+try:
+    from sos.crypto import (
+        EMOJI_SET, EMOJI_PHONETICS, 
+        generate_room_id, generate_pin, get_current_pin, 
+        get_time_remaining, room_id_to_hash, get_phonetic,
+        RoomCredentials
+    )
+except ImportError:
+    from .crypto import (
+        EMOJI_SET, EMOJI_PHONETICS, 
+        generate_room_id, generate_pin, get_current_pin, 
+        get_time_remaining, room_id_to_hash, get_phonetic,
+        RoomCredentials
+    )
 
 
 class EmojiBox(Static):

@@ -23,16 +23,29 @@ from textual.containers import Horizontal, Vertical, Container, VerticalScroll
 from textual.binding import Binding
 from textual import on
 
-from .crypto import (
-    EMOJI_SET, get_current_pin, encrypt_message, decrypt_message,
-    get_encryption_key, room_id_to_hash, get_phonetic_room_id,
-    RoomCredentials
-)
-from .room import (
-    Room, RoomKeyDisplay, EmojiOTPInput, PinInput,
-    create_room, join_room
-)
-from .transport import SOSTransport, ConnectionState, Message, RateLimitError
+# Support both absolute (PyInstaller) and relative (dev) imports
+try:
+    from sos.crypto import (
+        EMOJI_SET, get_current_pin, encrypt_message, decrypt_message,
+        get_encryption_key, room_id_to_hash, get_phonetic_room_id,
+        RoomCredentials
+    )
+    from sos.room import (
+        Room, RoomKeyDisplay, EmojiOTPInput, PinInput,
+        create_room, join_room
+    )
+    from sos.transport import SOSTransport, ConnectionState, Message, RateLimitError
+except ImportError:
+    from .crypto import (
+        EMOJI_SET, get_current_pin, encrypt_message, decrypt_message,
+        get_encryption_key, room_id_to_hash, get_phonetic_room_id,
+        RoomCredentials
+    )
+    from .room import (
+        Room, RoomKeyDisplay, EmojiOTPInput, PinInput,
+        create_room, join_room
+    )
+    from .transport import SOSTransport, ConnectionState, Message, RateLimitError
 
 
 # ASCII Banner
