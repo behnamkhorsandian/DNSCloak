@@ -6,10 +6,14 @@
 import os
 import platform
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_submodules
 
 # Get the spec file directory and project root
 SPEC_DIR = os.path.dirname(os.path.abspath(SPECPATH)) if 'SPECPATH' in dir() else os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = str(Path(SPEC_DIR).parent.parent)
+
+# Collect all rich submodules (includes unicode data)
+rich_hiddenimports = collect_submodules('rich')
 
 # Allow CI to override platform detection via TARGET_PLATFORM env var
 # Format: os-arch (e.g., linux-amd64, darwin-arm64, windows-amd64)
@@ -62,7 +66,7 @@ a = Analysis(
         'nacl.utils',
         'httpx',
         'argon2',
-    ],
+    ] + rich_hiddenimports,  # Include all rich submodules
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
