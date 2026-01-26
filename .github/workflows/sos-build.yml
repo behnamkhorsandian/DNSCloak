@@ -1,0 +1,132 @@
+name: Build SOS Binaries
+
+on:
+  push:
+    tags:
+      - 'sos-v*'
+  workflow_dispatch:
+
+jobs:
+  build-dnstt:
+    name: Build DNSTT Client
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: dnstt-client-linux-amd64
+          - goos: linux
+            goarch: arm64
+            output: dnstt-client-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            output: dnstt-client-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            output: dnstt-client-darwin-arm64
+          - goos: windows
+            goarch: amd64
+            output: dnstt-client-windows-amd64.exe
+    
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      
+      - name: Clone DNSTT
+        run: |
+          git clone --depth 1 https://www.bamsoftware.com/git/dnstt.git
+      
+      - name: Build DNSTT Client
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          cd dnstt/dnstt-client
+          go build -ldflags="-s -w" -o ${{ matrix.output }} .
+      
+      - name: Upload DNSTT Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: dnstt-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dnstt/dnstt-client/${{ matrix.output }}
+
+  build-sos:
+    name: Build SOS Binary
+    needs: build-dnstt
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-amd64
+            dnstt: dnstt-client-linux-amd64
+          - os: ubuntu-latest
+            platform: linux-arm64
+            dnstt: dnstt-client-linux-arm64
+          - os: macos-latest
+            platform: darwin-arm64
+            dnstt: dnstt-client-darwin-arm64
+          - os: macos-13
+            platform: darwin-amd64
+            dnstt: dnstt-client-darwin-amd64
+          - os: windows-latest
+            platform: windows-amd64
+            dnstt: dnstt-client-windows-amd64.exe
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller textual pynacl httpx[socks] argon2-cffi
+      
+      - name: Download DNSTT Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: dnstt-${{ matrix.platform }}
+          path: bin/
+      
+      - name: Make DNSTT executable (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x bin/${{ matrix.dnstt }}
+      
+      - name: Build SOS
+        run: |
+          pyinstaller --clean --noconfirm src/sos/sos.spec
+      
+      - name: Upload SOS Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: sos-${{ matrix.platform }}
+          path: dist/sos-*
+
+  release:
+    name: Create Release
+    needs: build-sos
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/sos-*/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true

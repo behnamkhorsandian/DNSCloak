@@ -231,8 +231,56 @@ Pre-compiled binaries users download BEFORE blackout:
 - [ ] `sos-darwin-arm64` - macOS Apple Silicon  
 - [ ] `sos-windows-amd64.exe` - Windows binary
 
-Build using PyInstaller or Nuitka from `src/sos/`.
-Distribute via GitHub Releases + mirror on DNSTT.
+**Key Features of Offline Binary:**
+1. **Bundled DNSTT Client** - No separate install needed
+2. **Auto-connect on launch** - Starts DNSTT in background, shows TUI
+3. **Auto-disconnect on exit** - Kills DNSTT when TUI closes
+4. **Proxy-only mode** - `./sos --proxy` keeps DNSTT running for 1 hour as SOCKS5 proxy
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     OFFLINE BINARY FLOW                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   USER RUNS: ./sos-darwin-arm64                                              │
+│                                                                              │
+│   1. STARTUP                                                                 │
+│      ┌─────────────────────────────────────────────────────────┐            │
+│      │  Binary extracts bundled dnstt-client                   │            │
+│      │  Spawns: dnstt-client -doh ... t.dnscloak.net :10800    │            │
+│      │  Waits for SOCKS5 proxy to be ready                     │            │
+│      └─────────────────────────────────────────────────────────┘            │
+│                              │                                               │
+│   2. TUI LAUNCH                                                              │
+│      ┌─────────────────────────────────────────────────────────┐            │
+│      │  SOS TUI connects to relay via SOCKS5 :10800            │            │
+│      │  User creates/joins room, chats                         │            │
+│      └─────────────────────────────────────────────────────────┘            │
+│                              │                                               │
+│   3. EXIT                                                                    │
+│      ┌─────────────────────────────────────────────────────────┐            │
+│      │  User quits (q or Ctrl+C)                               │            │
+│      │  TUI sends SIGTERM to dnstt-client subprocess           │            │
+│      │  Clean exit, no orphan processes                        │            │
+│      └─────────────────────────────────────────────────────────┘            │
+│                                                                              │
+│   PROXY-ONLY MODE: ./sos --proxy                                             │
+│      ┌─────────────────────────────────────────────────────────┐            │
+│      │  Starts DNSTT, prints SOCKS5 proxy address              │            │
+│      │  "SOCKS5 proxy running on 127.0.0.1:10800"              │            │
+│      │  "Auto-disconnect in 1 hour. Ctrl+C to stop."           │            │
+│      │  User can use proxy for any app (browser, curl, etc.)   │            │
+│      └─────────────────────────────────────────────────────────┘            │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Build Process:**
+- Use PyInstaller with `--onefile` flag
+- Bundle dnstt-client binary for each platform
+- Cross-compile or use GitHub Actions for multi-platform builds
+- Distribute via GitHub Releases
 
 ### Phase 2: Web Mode via DNSTT [FUTURE]
 Browser-based chat served entirely through DNSTT tunnel:
