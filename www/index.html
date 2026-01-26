@@ -635,12 +635,12 @@
           <div class="nav-section">
             <div class="nav-section-title"><span class="material-symbols-outlined">hub</span> Protocols</div>
             <ul class="nav-list">
+              <li class="nav-item"><a class="nav-link" data-doc="protocols/conduit" onclick="loadDoc('protocols/conduit')"><span class="material-symbols-outlined">volunteer_activism</span> Conduit (Psiphon)</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/reality" onclick="loadDoc('protocols/reality')"><span class="material-symbols-outlined">bolt</span> VLESS + REALITY</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/ws" onclick="loadDoc('protocols/ws')"><span class="material-symbols-outlined">cloud</span> WebSocket + CDN</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/wg" onclick="loadDoc('protocols/wg')"><span class="material-symbols-outlined">vpn_lock</span> WireGuard</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/mtp" onclick="loadDoc('protocols/mtp')"><span class="material-symbols-outlined">send</span> MTProto</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/dnstt" onclick="loadDoc('protocols/dnstt')"><span class="material-symbols-outlined">emergency</span> DNS Tunnel</a></li>
-              <li class="nav-item"><a class="nav-link" data-doc="protocols/conduit" onclick="loadDoc('protocols/conduit')"><span class="material-symbols-outlined">volunteer_activism</span> Conduit (Psiphon)</a></li>
               <li class="nav-item"><a class="nav-link" data-doc="protocols/vray" onclick="loadDoc('protocols/vray')"><span class="material-symbols-outlined">lock</span> VLESS + TLS</a></li>
             </ul>
           </div>
@@ -682,7 +682,7 @@
   
   <script>
     const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/docs/';
-    const DEFAULT_DOC = 'self-hosting';
+    const DEFAULT_DOC = 'conduit';
     let currentDoc = DEFAULT_DOC;
     
     function copyCommand(cmd) {
@@ -990,23 +990,7 @@
         "▒▒║  ▒▒║▒▒║╚▒▒╗▒▒║╚════▒▒║▒▒║     ▒▒║     ▒▒║   ▒▒║▒▒╔══▒▒║▒▒╔═▒▒╗ ",
         "▒▒▒▒▒▒╔╝▒▒║ ╚▒▒▒▒║▒▒▒▒▒▒▒║╚▒▒▒▒▒▒╗▒▒▒▒▒▒▒╗╚▒▒▒▒▒▒╔╝▒▒║  ▒▒║▒▒║  ▒▒╗",
         "╚═════╝ ╚═╝  ╚═══╝╚══════╝ ╚═════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝"
-      ],
-      // [                                     
-      //   "                 .    |     .                  ",
-      //   "                  \\   |    /                   ",
-      //   "      \\|\\||    .   \\  '   /   .'               ",
-      //   "     -- ||||/   `. .-*''*-. .'                 ",
-      //   "    /7   |||||/._ /        \\ _.-*'             ",
-      //   "   /    |||||||/.:          ;                  ",
-      //   "   \\-' |||||||||-----------------._            ",
-      //   "    -/||||||||\\                `` -`.          ",
-      //   "      /||||||\\             \\_  |   `\\\\         ",
-      //   "      -//|||\\|________...---'\\  \\    \\\\        ",
-      //   "         ||  |  \\ ``-.__--. | \\  |    ``-.__--.",
-      //   "        / |  |\\  \\   ``---'/ / | |       ``---'",
-      //   "     __/_/  / _|  )     __/ / _| |             ",
-      //   "    /,_/,__/_/,__/     /,__/ /,__/             ",
-      // ]
+      ]
     ];
     
     // Render first shape and start morphing

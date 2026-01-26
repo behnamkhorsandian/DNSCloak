@@ -59,6 +59,52 @@ is_conduit_running() {
     systemctl is-active --quiet conduit 2>/dev/null
 }
 
+is_conduit_failing() {
+    # Check if service exists but is in failed state
+    if systemctl is-enabled --quiet conduit 2>/dev/null; then
+        local status
+        status=$(systemctl is-active conduit 2>/dev/null)
+        [[ "$status" == "failed" || "$status" == "activating" ]]
+    else
+        return 1
+    fi
+}
+
+#-------------------------------------------------------------------------------
+# Auto-fix Service
+#-------------------------------------------------------------------------------
+
+fix_conduit_service() {
+    print_step "Attempting to fix Conduit service"
+    
+    # Get current settings from users.json or use defaults
+    local max_clients bandwidth
+    max_clients=$(server_get "conduit_max_clients" 2>/dev/null)
+    bandwidth=$(server_get "conduit_bandwidth" 2>/dev/null)
+    
+    CONDUIT_MAX_CLIENTS="${max_clients:-$DEFAULT_MAX_CLIENTS}"
+    CONDUIT_BANDWIDTH="${bandwidth:-$DEFAULT_BANDWIDTH}"
+    
+    # Stop the failing service
+    systemctl stop conduit 2>/dev/null || true
+    
+    # Recreate the service file with correct flags
+    create_systemd_service
+    
+    # Start service
+    systemctl start conduit
+    
+    sleep 3
+    
+    if is_conduit_running; then
+        print_success "Conduit fixed and running!"
+        return 0
+    else
+        print_error "Could not fix automatically"
+        return 1
+    fi
+}
+
 #-------------------------------------------------------------------------------
 # Detect Architecture
 #-------------------------------------------------------------------------------
@@ -557,6 +603,17 @@ main() {
     check_os
     
     if is_conduit_installed; then
+        # Check if service is failing and auto-fix
+        if is_conduit_failing || ! is_conduit_running; then
+            print_warning "Conduit service is not running properly"
+            echo ""
+            if confirm "Attempt automatic fix?"; then
+                if fix_conduit_service; then
+                    echo ""
+                    show_status
+                fi
+            fi
+        fi
         show_menu
     else
         install_conduit
