@@ -1,0 +1,919 @@
+/**
+ * SOS Emergency Chat - Web Client
+ * 
+ * End-to-end encrypted chat rooms over DNS tunnel.
+ * Compatible with TUI client (same crypto spec).
+ * 
+ * Crypto Spec (must match crypto.py exactly):
+ * - Room ID: 6 emojis from 32-emoji set
+ * - Room hash: SHA256(emojis)[:16] hex
+ * - Salt: SHA256("sos-chat-v1:" + emojis + [":" + timestamp])[:16]
+ * - Password: emojis + ":" + pin (UTF-8)
+ * - KDF: Argon2id (time=2, mem=64MB, p=1, hashLen=32)
+ * - Encryption: NaCl SecretBox (XSalsa20-Poly1305)
+ * - Nonce: 24 bytes, prepended to ciphertext
+ */
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const CONFIG = {
+  // Relay server (relative URL when served from relay, absolute for testing)
+  RELAY_URL: '',  // Empty = same origin
+  
+  // Polling interval (ms)
+  POLL_INTERVAL: 1500,
+  
+  // PIN rotation window (seconds)
+  PIN_WINDOW: 15,
+  
+  // Room TTL (seconds)
+  ROOM_TTL: 3600,
+  
+  // Max message length
+  MAX_MESSAGE_LENGTH: 2000
+};
+
+// ============================================================================
+// EMOJI SET (must match crypto.py exactly, same order)
+// ============================================================================
+
+const EMOJI_SET = [
+  "🔥", "🌙", "⭐", "🎯", "🌊", "💎", "🍀", "🎲",
+  "🚀", "🌈", "⚡", "🎵", "🔑", "🌸", "🍄", "🦋",
+  "🎪", "🌵", "🍎", "🐋", "🦊", "🌻", "🎭", "🔔",
+  "🏔️", "🌴", "🍕", "🐙", "🦉", "🌺", "🎨", "🔮"
+];
+
+const EMOJI_PHONETICS = {
+  "🔥": "fire", "🌙": "moon", "⭐": "star", "🎯": "target",
+  "🌊": "wave", "💎": "gem", "🍀": "clover", "🎲": "dice",
+  "🚀": "rocket", "🌈": "rainbow", "⚡": "bolt", "🎵": "music",
+  "🔑": "key", "🌸": "bloom", "🍄": "shroom", "🦋": "butterfly",
+  "🎪": "circus", "🌵": "cactus", "🍎": "apple", "🐋": "whale",
+  "🦊": "fox", "🌻": "sunflower", "🎭": "mask", "🔔": "bell",
+  "🏔️": "mountain", "🌴": "palm", "🍕": "pizza", "🐙": "octopus",
+  "🦉": "owl", "🌺": "hibiscus", "🎨": "palette", "🔮": "crystal"
+};
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+let state = {
+  mode: 'welcome',  // 'welcome', 'create', 'join', 'chat'
+  
+  // Room setup
+  selectedEmojis: [],
+  keyMode: 'rotating',  // 'rotating' or 'fixed'
+  
+  // Room session
+  roomHash: null,
+  roomEmojis: null,
+  memberId: null,
+  nickname: 'anon',
+  createdAt: null,
+  expiresAt: null,
+  encryptionKey: null,
+  fixedPin: null,
+  
+  // Chat state
+  messages: [],
+  lastMessageTs: 0,
+  pollInterval: null,
+  isConnected: false,
+  
+  // PIN timer
+  pinTimerInterval: null,
+  currentPin: null
+};
+
+// ============================================================================
+// CRYPTO FUNCTIONS (matching crypto.py exactly)
+// ============================================================================
+
+/**
+ * Generate random emojis for room ID
+ */
+function generateRoomId() {
+  const emojis = [];
+  for (let i = 0; i < 6; i++) {
+    const idx = Math.floor(Math.random() * EMOJI_SET.length);
+    emojis.push(EMOJI_SET[idx]);
+  }
+  return emojis;
+}
+
+/**
+ * Generate 6-digit PIN
+ */
+function generatePin() {
+  let pin = '';
+  for (let i = 0; i < 6; i++) {
+    pin += Math.floor(Math.random() * 10).toString();
+  }
+  return pin;
+}
+
+/**
+ * Compute SHA256 hash
+ */
+async function sha256(data) {
+  const encoder = new TextEncoder();
+  const dataBytes = typeof data === 'string' ? encoder.encode(data) : data;
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBytes);
+  return new Uint8Array(hashBuffer);
+}
+
+/**
+ * Convert bytes to hex string
+ */
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Convert hex string to bytes
+ */
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Calculate room hash from emojis
+ * Hash = SHA256(emojis)[:16] as hex
+ */
+async function roomIdToHash(emojis) {
+  const emojiStr = emojis.join('');
+  const hash = await sha256(emojiStr);
+  return bytesToHex(hash).slice(0, 16);
+}
+
+/**
+ * Get current PIN for rotating mode
+ * PIN = SHA256(roomId + ":" + bucket)[:6] -> each hex char mod 10
+ */
+async function getCurrentPin(emojis) {
+  const roomId = emojis.join('');
+  const bucket = Math.floor(Date.now() / 1000 / CONFIG.PIN_WINDOW);
+  const seed = `${roomId}:${bucket}`;
+  const hash = await sha256(seed);
+  const hashHex = bytesToHex(hash);
+  
+  let pin = '';
+  for (let i = 0; i < 6; i++) {
+    pin += (parseInt(hashHex[i], 16) % 10).toString();
+  }
+  return pin;
+}
+
+/**
+ * Get time remaining until next PIN rotation
+ */
+function getTimeRemaining() {
+  return CONFIG.PIN_WINDOW - (Math.floor(Date.now() / 1000) % CONFIG.PIN_WINDOW);
+}
+
+/**
+ * Derive encryption key using Argon2id (or PBKDF2 fallback)
+ * 
+ * Salt = SHA256("sos-chat-v1:" + emojis + [":" + timestamp])[:16]
+ * Password = emojis + ":" + pin
+ */
+async function deriveRoomKey(emojis, pin, timestamp = null) {
+  const emojiStr = emojis.join('');
+  
+  // Build salt input (must match Python exactly)
+  let saltInput = `sos-chat-v1:${emojiStr}`;
+  if (timestamp !== null) {
+    saltInput += `:${Math.floor(timestamp)}`;
+  }
+  
+  // Salt = SHA256(saltInput)[:16]
+  const saltHash = await sha256(saltInput);
+  const salt = saltHash.slice(0, 16);
+  
+  // Password = emojis:pin
+  const password = `${emojiStr}:${pin}`;
+  
+  // Derive key using Argon2id (or fallback)
+  const result = await argon2.hash({
+    pass: password,
+    salt: salt,
+    time: 2,
+    mem: 65536,  // 64 MB
+    parallelism: 1,
+    hashLen: 32,
+    type: argon2.ArgonType.Argon2id
+  });
+  
+  return result.hash;
+}
+
+/**
+ * Get encryption key based on mode
+ */
+async function getEncryptionKey(emojis, pin, mode, createdAt) {
+  if (mode === 'fixed') {
+    // Fixed mode: use room creation timestamp
+    return await deriveRoomKey(emojis, pin, createdAt);
+  } else {
+    // Rotating mode: use current time bucket
+    const bucket = Math.floor(Date.now() / 1000 / CONFIG.PIN_WINDOW) * CONFIG.PIN_WINDOW;
+    return await deriveRoomKey(emojis, pin, bucket);
+  }
+}
+
+/**
+ * Encrypt message using NaCl SecretBox
+ * Output: nonce (24 bytes) + ciphertext
+ */
+function encryptMessage(message, key) {
+  const messageBytes = new TextEncoder().encode(message);
+  const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);  // 24 bytes
+  const ciphertext = nacl.secretbox(messageBytes, nonce, key);
+  
+  // Prepend nonce to ciphertext
+  const result = new Uint8Array(nonce.length + ciphertext.length);
+  result.set(nonce);
+  result.set(ciphertext, nonce.length);
+  
+  return result;
+}
+
+/**
+ * Decrypt message using NaCl SecretBox
+ */
+function decryptMessage(encrypted, key) {
+  try {
+    const nonce = encrypted.slice(0, nacl.secretbox.nonceLength);
+    const ciphertext = encrypted.slice(nacl.secretbox.nonceLength);
+    const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
+    
+    if (!decrypted) return null;
+    return new TextDecoder().decode(decrypted);
+  } catch (e) {
+    console.error('Decryption failed:', e);
+    return null;
+  }
+}
+
+/**
+ * Try decrypting with multiple keys (for rotating mode, try current and previous buckets)
+ */
+async function tryDecrypt(encrypted, emojis, mode, createdAt) {
+  const keys = [];
+  
+  if (mode === 'fixed') {
+    // Fixed mode: only one key
+    const pin = state.fixedPin;
+    if (pin) {
+      keys.push(await deriveRoomKey(emojis, pin, createdAt));
+    }
+  } else {
+    // Rotating mode: try current and previous buckets
+    const now = Date.now() / 1000;
+    for (let offset = 0; offset <= 2; offset++) {
+      const bucket = Math.floor((now - offset * CONFIG.PIN_WINDOW) / CONFIG.PIN_WINDOW) * CONFIG.PIN_WINDOW;
+      const pin = await getCurrentPinForBucket(emojis, bucket);
+      keys.push(await deriveRoomKey(emojis, pin, bucket));
+    }
+  }
+  
+  for (const key of keys) {
+    const decrypted = decryptMessage(encrypted, key);
+    if (decrypted !== null) {
+      return decrypted;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get PIN for a specific time bucket
+ */
+async function getCurrentPinForBucket(emojis, bucket) {
+  const roomId = emojis.join('');
+  const bucketNum = Math.floor(bucket / CONFIG.PIN_WINDOW);
+  const seed = `${roomId}:${bucketNum}`;
+  const hash = await sha256(seed);
+  const hashHex = bytesToHex(hash);
+  
+  let pin = '';
+  for (let i = 0; i < 6; i++) {
+    pin += (parseInt(hashHex[i], 16) % 10).toString();
+  }
+  return pin;
+}
+
+// ============================================================================
+// API FUNCTIONS
+// ============================================================================
+
+async function apiRequest(endpoint, method = 'GET', body = null) {
+  const url = CONFIG.RELAY_URL + endpoint;
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+  
+  try {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    
+    return data;
+  } catch (e) {
+    console.error(`API error (${endpoint}):`, e);
+    throw e;
+  }
+}
+
+async function createRoom(roomHash, mode) {
+  return await apiRequest('/room', 'POST', { room_hash: roomHash, mode });
+}
+
+async function joinRoom(roomHash, nickname) {
+  return await apiRequest(`/room/${roomHash}/join`, 'POST', { nickname });
+}
+
+async function sendMessageApi(roomHash, content, sender, memberId) {
+  return await apiRequest(`/room/${roomHash}/send`, 'POST', {
+    content,
+    sender,
+    member_id: memberId
+  });
+}
+
+async function pollMessages(roomHash, since, memberId) {
+  const params = new URLSearchParams({ since: since.toString() });
+  if (memberId) params.append('member_id', memberId);
+  return await apiRequest(`/room/${roomHash}/poll?${params}`);
+}
+
+async function leaveRoomApi(roomHash, memberId) {
+  return await apiRequest(`/room/${roomHash}/leave`, 'POST', { member_id: memberId });
+}
+
+async function getRoomInfo(roomHash) {
+  return await apiRequest(`/room/${roomHash}/info`);
+}
+
+// ============================================================================
+// UI FUNCTIONS
+// ============================================================================
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function showWelcome() {
+  state.mode = 'welcome';
+  state.selectedEmojis = [];
+  clearInterval(state.pinTimerInterval);
+  clearInterval(state.pollInterval);
+  showScreen('welcome-screen');
+}
+
+function showCreateRoom() {
+  state.mode = 'create';
+  state.selectedEmojis = generateRoomId();
+  state.keyMode = 'rotating';
+  state.fixedPin = generatePin();
+  
+  // Update UI
+  document.getElementById('setup-title').textContent = 'Create Room';
+  document.getElementById('setup-action-btn').textContent = 'Create Room';
+  
+  // Show create UI, hide join UI
+  document.getElementById('create-room-id').classList.remove('hidden');
+  document.getElementById('join-room-id').classList.add('hidden');
+  document.getElementById('create-pin').classList.remove('hidden');
+  document.getElementById('join-pin').classList.add('hidden');
+  document.getElementById('mode-section').classList.remove('hidden');
+  document.getElementById('pin-section-title').textContent = 'Current PIN (share with joiner)';
+  
+  // Display emojis
+  updateEmojiDisplay();
+  
+  // Start PIN timer
+  updatePinDisplay();
+  startPinTimer();
+  
+  // Clear status
+  hideStatus();
+  
+  showScreen('setup-screen');
+}
+
+function showJoinRoom() {
+  state.mode = 'join';
+  state.selectedEmojis = [];
+  state.keyMode = 'rotating';  // Will be determined from room
+  
+  // Update UI
+  document.getElementById('setup-title').textContent = 'Join Room';
+  document.getElementById('setup-action-btn').textContent = 'Join Room';
+  
+  // Show join UI, hide create UI
+  document.getElementById('create-room-id').classList.add('hidden');
+  document.getElementById('join-room-id').classList.remove('hidden');
+  document.getElementById('create-pin').classList.add('hidden');
+  document.getElementById('join-pin').classList.remove('hidden');
+  document.getElementById('mode-section').classList.add('hidden');
+  document.getElementById('pin-section-title').textContent = 'Enter PIN';
+  
+  // Build emoji picker
+  buildEmojiPicker();
+  
+  // Update selected emojis display
+  updateSelectedEmojisDisplay();
+  
+  // Setup PIN inputs
+  setupPinInputs();
+  
+  // Clear status
+  hideStatus();
+  
+  showScreen('setup-screen');
+}
+
+function buildEmojiPicker() {
+  const picker = document.getElementById('emoji-picker');
+  picker.innerHTML = '';
+  
+  EMOJI_SET.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = emoji;
+    btn.title = EMOJI_PHONETICS[emoji];
+    btn.onclick = () => selectEmoji(emoji);
+    picker.appendChild(btn);
+  });
+}
+
+function selectEmoji(emoji) {
+  if (state.selectedEmojis.length < 6) {
+    state.selectedEmojis.push(emoji);
+    updateSelectedEmojisDisplay();
+  }
+}
+
+function removeLastEmoji() {
+  if (state.selectedEmojis.length > 0) {
+    state.selectedEmojis.pop();
+    updateSelectedEmojisDisplay();
+  }
+}
+
+function updateSelectedEmojisDisplay() {
+  const container = document.getElementById('selected-emojis');
+  
+  if (state.selectedEmojis.length === 0) {
+    container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Click emojis above (need 6)</span>';
+    return;
+  }
+  
+  container.innerHTML = state.selectedEmojis.map((e, i) => 
+    `<span onclick="removeEmojiAt(${i})" title="Click to remove">${e}</span>`
+  ).join('');
+  
+  if (state.selectedEmojis.length < 6) {
+    container.innerHTML += `<span style="color: var(--text-dim);">(${6 - state.selectedEmojis.length} more)</span>`;
+  }
+}
+
+function removeEmojiAt(index) {
+  state.selectedEmojis.splice(index, 1);
+  updateSelectedEmojisDisplay();
+}
+
+function updateEmojiDisplay() {
+  const display = document.getElementById('room-emojis-display');
+  const phonetic = document.getElementById('room-phonetic');
+  
+  display.innerHTML = state.selectedEmojis.map(e => `<span>${e}</span>`).join('');
+  phonetic.textContent = state.selectedEmojis.map(e => EMOJI_PHONETICS[e]).join(' · ');
+}
+
+function selectMode(mode) {
+  state.keyMode = mode;
+  
+  // Update UI
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  
+  // Update PIN display
+  updatePinDisplay();
+}
+
+async function updatePinDisplay() {
+  const display = document.getElementById('pin-display');
+  const timer = document.getElementById('pin-timer');
+  
+  let pin;
+  if (state.keyMode === 'rotating') {
+    pin = await getCurrentPin(state.selectedEmojis);
+    timer.textContent = `Refreshes in ${getTimeRemaining()}s`;
+    timer.classList.remove('fixed');
+  } else {
+    pin = state.fixedPin;
+    timer.textContent = 'Fixed PIN (does not change)';
+    timer.classList.add('fixed');
+  }
+  
+  state.currentPin = pin;
+  display.innerHTML = pin.split('').map(d => 
+    `<div class="pin-digit filled">${d}</div>`
+  ).join('');
+}
+
+function startPinTimer() {
+  clearInterval(state.pinTimerInterval);
+  
+  state.pinTimerInterval = setInterval(async () => {
+    if (state.keyMode === 'rotating') {
+      await updatePinDisplay();
+    }
+  }, 1000);
+}
+
+function setupPinInputs() {
+  const inputs = document.querySelectorAll('#join-pin .pin-digit');
+  
+  inputs.forEach((input, index) => {
+    input.value = '';
+    input.classList.remove('filled');
+    
+    input.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      e.target.value = val.slice(0, 1);
+      
+      if (val && index < 5) {
+        inputs[index + 1].focus();
+      }
+      
+      input.classList.toggle('filled', val.length > 0);
+    });
+    
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+  });
+  
+  // Focus first input
+  inputs[0].focus();
+}
+
+function getEnteredPin() {
+  const inputs = document.querySelectorAll('#join-pin .pin-digit');
+  return Array.from(inputs).map(i => i.value).join('');
+}
+
+function showStatus(message, type = 'info') {
+  const status = document.getElementById('setup-status');
+  status.textContent = message;
+  status.className = `status ${type}`;
+  status.classList.remove('hidden');
+}
+
+function hideStatus() {
+  document.getElementById('setup-status').classList.add('hidden');
+}
+
+async function performSetupAction() {
+  const btn = document.getElementById('setup-action-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Working...';
+  
+  try {
+    if (state.mode === 'create') {
+      await doCreateRoom();
+    } else {
+      await doJoinRoom();
+    }
+  } catch (e) {
+    showStatus(e.message || 'Operation failed', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = state.mode === 'create' ? 'Create Room' : 'Join Room';
+  }
+}
+
+async function doCreateRoom() {
+  const roomHash = await roomIdToHash(state.selectedEmojis);
+  
+  showStatus('Creating room...', 'info');
+  
+  const response = await createRoom(roomHash, state.keyMode);
+  
+  // Store session info
+  state.roomHash = roomHash;
+  state.roomEmojis = [...state.selectedEmojis];
+  state.memberId = response.member_id;
+  state.createdAt = response.created_at;
+  state.expiresAt = response.expires_at;
+  state.nickname = 'creator';
+  
+  // Derive encryption key
+  const pin = state.keyMode === 'fixed' ? state.fixedPin : await getCurrentPin(state.roomEmojis);
+  state.encryptionKey = await getEncryptionKey(state.roomEmojis, pin, state.keyMode, state.createdAt);
+  
+  // Enter chat
+  enterChat();
+}
+
+async function doJoinRoom() {
+  // Validate inputs
+  if (state.selectedEmojis.length !== 6) {
+    showStatus('Select all 6 emojis', 'error');
+    return;
+  }
+  
+  const pin = getEnteredPin();
+  if (pin.length !== 6) {
+    showStatus('Enter all 6 PIN digits', 'error');
+    return;
+  }
+  
+  const roomHash = await roomIdToHash(state.selectedEmojis);
+  
+  showStatus('Joining room...', 'info');
+  
+  // Get room info first to determine mode
+  let roomInfo;
+  try {
+    roomInfo = await getRoomInfo(roomHash);
+  } catch (e) {
+    showStatus('Room not found', 'error');
+    return;
+  }
+  
+  // Join the room
+  const response = await joinRoom(roomHash, state.nickname);
+  
+  // Store session info
+  state.roomHash = roomHash;
+  state.roomEmojis = [...state.selectedEmojis];
+  state.memberId = response.member_id;
+  state.createdAt = response.created_at;
+  state.expiresAt = response.expires_at;
+  state.keyMode = response.mode;
+  state.fixedPin = response.mode === 'fixed' ? pin : null;
+  
+  // Derive encryption key
+  state.encryptionKey = await getEncryptionKey(state.roomEmojis, pin, state.keyMode, state.createdAt);
+  
+  // Enter chat
+  enterChat();
+}
+
+function enterChat() {
+  state.mode = 'chat';
+  state.messages = [];
+  state.lastMessageTs = 0;
+  state.isConnected = true;
+  
+  // Update chat header
+  document.getElementById('chat-room-emojis').textContent = state.roomEmojis.join(' ');
+  updateChatExpiry();
+  
+  // Clear messages
+  document.getElementById('chat-messages').innerHTML = '';
+  addSystemMessage('You joined the room. Messages are end-to-end encrypted.');
+  
+  // Setup connection status
+  updateConnectionStatus(true);
+  
+  // Setup PIN overlay for creators
+  if (state.keyMode === 'rotating') {
+    setupPinOverlay();
+  }
+  
+  // Start polling
+  startPolling();
+  
+  // Focus message input
+  document.getElementById('message-input').focus();
+  
+  // Setup enter key handler
+  document.getElementById('message-input').onkeypress = (e) => {
+    if (e.key === 'Enter') sendMessage();
+  };
+  
+  showScreen('chat-screen');
+}
+
+function updateChatExpiry() {
+  const expiry = document.getElementById('chat-expiry');
+  const remaining = Math.max(0, Math.floor((state.expiresAt - Date.now() / 1000) / 60));
+  expiry.textContent = `${remaining}m left`;
+}
+
+function updateConnectionStatus(connected) {
+  state.isConnected = connected;
+  const dot = document.getElementById('connection-dot');
+  const text = document.getElementById('connection-text');
+  
+  dot.classList.remove('connected', 'error');
+  if (connected) {
+    dot.classList.add('connected');
+    text.textContent = 'Connected';
+  } else {
+    dot.classList.add('error');
+    text.textContent = 'Reconnecting...';
+  }
+}
+
+function setupPinOverlay() {
+  const overlay = document.getElementById('pin-overlay');
+  
+  async function updateOverlay() {
+    if (state.keyMode !== 'rotating') {
+      overlay.classList.remove('visible');
+      return;
+    }
+    
+    const pin = await getCurrentPin(state.roomEmojis);
+    document.getElementById('overlay-pin').textContent = pin;
+    document.getElementById('overlay-timer').textContent = getTimeRemaining();
+    
+    // Also update encryption key for new messages
+    state.encryptionKey = await getEncryptionKey(state.roomEmojis, pin, state.keyMode, state.createdAt);
+  }
+  
+  // Show overlay
+  overlay.classList.add('visible');
+  updateOverlay();
+  
+  // Update every second
+  setInterval(updateOverlay, 1000);
+}
+
+function addSystemMessage(text) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'system-message';
+  div.textContent = text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addMessage(sender, content, timestamp, isOwn = false) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `message${isOwn ? ' own' : ''}`;
+  
+  const time = new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  div.innerHTML = `
+    <div class="message-sender">${escapeHtml(sender)}</div>
+    <div class="message-content">${escapeHtml(content)}</div>
+    <div class="message-time">${time}</div>
+  `;
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('message-input');
+  const message = input.value.trim();
+  
+  if (!message || message.length > CONFIG.MAX_MESSAGE_LENGTH) return;
+  
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  
+  try {
+    // Encrypt message
+    const encrypted = encryptMessage(message, state.encryptionKey);
+    const encryptedBase64 = btoa(String.fromCharCode(...encrypted));
+    
+    // Send to server
+    await sendMessageApi(state.roomHash, encryptedBase64, state.nickname, state.memberId);
+    
+    // Clear input (message will appear via polling)
+    input.value = '';
+    
+  } catch (e) {
+    console.error('Send failed:', e);
+    addSystemMessage('Failed to send message');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+async function startPolling() {
+  clearInterval(state.pollInterval);
+  
+  async function poll() {
+    try {
+      const response = await pollMessages(state.roomHash, state.lastMessageTs, state.memberId);
+      
+      // Update connection status
+      if (!state.isConnected) {
+        updateConnectionStatus(true);
+        addSystemMessage('Reconnected');
+      }
+      
+      // Update expiry
+      state.expiresAt = response.expires_at;
+      updateChatExpiry();
+      
+      // Process new messages
+      for (const msg of response.messages) {
+        if (msg.timestamp <= state.lastMessageTs) continue;
+        
+        // Decrypt message content
+        const encryptedBytes = Uint8Array.from(atob(msg.content), c => c.charCodeAt(0));
+        const decrypted = await tryDecrypt(encryptedBytes, state.roomEmojis, state.keyMode, state.createdAt);
+        
+        if (decrypted !== null) {
+          const isOwn = msg.sender === state.nickname;
+          addMessage(msg.sender, decrypted, msg.timestamp, isOwn);
+        } else {
+          addMessage(msg.sender, '[Could not decrypt]', msg.timestamp, false);
+        }
+        
+        state.lastMessageTs = msg.timestamp;
+      }
+      
+      // Update members count
+      document.getElementById('chat-members').textContent = ` · ${response.members.length} online`;
+      
+    } catch (e) {
+      console.error('Poll failed:', e);
+      updateConnectionStatus(false);
+    }
+  }
+  
+  // Initial poll
+  await poll();
+  
+  // Continue polling
+  state.pollInterval = setInterval(poll, CONFIG.POLL_INTERVAL);
+}
+
+async function leaveRoom() {
+  clearInterval(state.pollInterval);
+  clearInterval(state.pinTimerInterval);
+  
+  try {
+    await leaveRoomApi(state.roomHash, state.memberId);
+  } catch (e) {
+    console.error('Leave failed:', e);
+  }
+  
+  // Reset state
+  state.roomHash = null;
+  state.roomEmojis = null;
+  state.memberId = null;
+  state.encryptionKey = null;
+  state.messages = [];
+  
+  // Hide PIN overlay
+  document.getElementById('pin-overlay').classList.remove('visible');
+  
+  showWelcome();
+}
+
+// Make functions available globally
+window.showWelcome = showWelcome;
+window.showCreateRoom = showCreateRoom;
+window.showJoinRoom = showJoinRoom;
+window.selectMode = selectMode;
+window.performSetupAction = performSetupAction;
+window.sendMessage = sendMessage;
+window.leaveRoom = leaveRoom;
+window.removeEmojiAt = removeEmojiAt;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('SOS Web Client loaded');
+  showWelcome();
+});
