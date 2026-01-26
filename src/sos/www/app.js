@@ -220,6 +220,8 @@ function sha256Fallback(message) {
     result[i*4+2] = (H[i] >>> 8) & 0xff;
     result[i*4+3] = H[i] & 0xff;
   }
+  return result;
+}
 
 /**
  * Convert bytes to hex string
