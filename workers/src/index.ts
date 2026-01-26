@@ -86,12 +86,25 @@ const SERVICES: Record<string, ServiceConfig> = {
       psiphon: 'https://psiphon.ca/download.html',
     },
   },
+  sos: {
+    name: 'SOS Emergency Chat',
+    description: 'Encrypted chat rooms over DNS tunnel. Auto-wipes after 1 hour. For emergencies.',
+    script: 'services/sos/install.sh',
+    clientApps: {
+      note: 'TUI client launches automatically after install.',
+    },
+  },
 };
 
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const hostname = url.hostname;
+
+    // Redirect root domain to www
+    if (hostname === 'dnscloak.net') {
+      return Response.redirect('https://www.dnscloak.net/', 301);
+    }
     
     // Extract service from subdomain (e.g., "reality" from "reality.dnscloak.net")
     const service = hostname.split('.')[0];

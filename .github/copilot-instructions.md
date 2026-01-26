@@ -19,14 +19,16 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `services/dnstt/install.sh` - DNS tunnel (emergency backup) ✅ TESTED
 - [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
 - [x] `services/conduit/install.sh` - Psiphon relay node ✅ CREATED
+- [x] `services/sos/install.sh` - Emergency secure chat over DNSTT ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 
 ### Phase 3: CLI and Workers [COMPLETE]
 - [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
 - [x] `workers/` - Unified Cloudflare Worker for all services ✅ DEPLOYED
-  - Routes: mtp, reality, wg, vray, ws, dnstt subdomains
+  - Routes: mtp, reality, wg, vray, ws, dnstt, sos subdomains
   - DNSTT client setup: /client, /setup/linux, /setup/macos, /setup/windows
+  - SOS: TUI emergency chat launcher
 - [x] `www/` - Landing page on Cloudflare Pages
 
 ### Phase 4: Documentation [COMPLETE]
@@ -41,6 +43,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `docs/protocols/ws.md` - WebSocket+CDN state machine
 - [x] `docs/protocols/dnstt.md` - DNStt state machine
 - [x] `docs/protocols/conduit.md` - Conduit Psiphon relay
+- [x] `docs/protocols/sos.md` - SOS emergency secure chat
 
 ## Architecture
 
@@ -60,6 +63,14 @@ services/
   ws/install.sh
   dnstt/install.sh
   conduit/install.sh
+  sos/install.sh
+src/
+  sos/              # Python TUI client for emergency chat
+    app.py          # Textual app with WelcomeScreen, ChatRoomScreen
+    room.py         # Emoji OTP input, room state
+    transport.py    # DNSTT SOCKS5 polling
+    crypto.py       # NaCl encryption, Argon2id key derivation
+    relay.py        # Server-side relay daemon
 cli/
   dnscloak.sh       # Unified CLI
 workers/
@@ -93,6 +104,8 @@ docs/
   dnstt/
     server.key
     server.pub
+  sos/
+    relay.py        # Chat relay daemon (runs alongside DNSTT)
 /usr/local/bin/
   dnscloak          # CLI symlink
   xray              # Shared Xray binary
@@ -205,9 +218,15 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
 - **WireGuard** (`services/wg/install.sh`) - Created, ready for testing
 - **CLI** (`cli/dnscloak.sh`) - Unified management CLI created
+- **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ CREATED
+  - TUI client with Textual framework
+  - 6-emoji room IDs + 6-digit rotating/fixed PIN
+  - E2E encryption (NaCl + Argon2id)
+  - Auto-wipe after 1 hour
+  - Rate limiting: exponential backoff [0, 10, 30, 60, 180, 300]s
 
 ### Cloudflare Setup
-- **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray)
+- **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray, sos)
 - **Worker features**: 
   - `/` - Serves install script
   - `/info` - HTML info page
@@ -235,6 +254,8 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 ### Services TODO
 - [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
 - [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
+- [x] `services/sos/install.sh` - Emergency secure chat ✅ CREATED
+- [x] `src/sos/` - Python TUI client (Textual) ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto  
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS with Let's Encrypt
 
