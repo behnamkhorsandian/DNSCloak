@@ -12,5 +12,15 @@ routes = [
   { pattern = "dnstt.dnscloak.net", custom_domain = true },
   { pattern = "conduit.dnscloak.net", custom_domain = true },
   { pattern = "sos.dnscloak.net", custom_domain = true },
+  { pattern = "stats.dnscloak.net", custom_domain = true },
   { pattern = "dnscloak.net", custom_domain = true }
 ]
+
+# Durable Objects for live stats relay
+[[durable_objects.bindings]]
+name = "STATS_RELAY"
+class_name = "StatsRelay"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["StatsRelay"]

@@ -1459,7 +1459,8 @@
                 <code><span class="prompt">$ </span>curl -sSL conduit.dnscloak.net | sudo bash</code>
                 <button class="copy-btn" onclick="copyCommand('curl -sSL conduit.dnscloak.net | sudo bash')">[ COPY ]</button>
               </div>
-              <p class="install-note">Turns your machine into a volunteer relay node for Psiphon network. Read more on their <a href="https://conduit.psiphon.ca/" target="_blank" rel="noopener noreferrer">website</a>.</p>
+              <p class="install-note">Turns your machine into a volunteer relay node for Psiphon network.
+                <br>Read more on their <a href="https://conduit.psiphon.ca/" target="_blank" rel="noopener noreferrer">website</a>.</p>
             </div>
           </div>
         </div>
@@ -1467,10 +1468,10 @@
 
       <section class="cli-preview">
         <div class="container">
-          <h2 class="section-title">CLI Preview</h2>
+          <!-- <h2 class="section-title">CLI Preview</h2> -->
           <div class="tui-window">
             <div class="tui-window-header">
-              <span>conduit — ssh</span>
+              <span>conduit — ssh <span id="live-indicator" style="color: #666; font-size: 0.85em;">(connecting...)</span></span>
               <div class="tui-controls"><span>[</span><span>-</span><span>]</span> <span>[</span><span>□</span><span>]</span> <span>[</span><span>x</span><span>]</span></div>
             </div>
             <div class="terminal-body">
@@ -1485,19 +1486,182 @@
               </div>
               <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit status</span></div>
               <div class="terminal-output">
-                <span class="success">●</span> Running (63h 29m uptime)<br>
-                [STATS] Connecting: 12 | Connected: 312 | Up: 145.1 GB | Down: 1.5 TB
+                <span class="success">●</span> Running (<span id="live-uptime">63h 29m</span> uptime)<br>
+                [STATS] Connecting: <span id="live-connecting">12</span> | Connected: <span id="live-connected">312</span> | Up: <span id="live-up">145.1 GB</span> | Down: <span id="live-down">1.5 TB</span>
               </div>
               <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit peers</span></div>
               <div class="terminal-output">
                 <span class="info">[*]</span> Connected peers by country:<br>
-                &nbsp;&nbsp;IR: 187 &nbsp;RU: 52 &nbsp;CN: 41 &nbsp;...
+                &nbsp;&nbsp;<span id="live-peers">IR: 187 &nbsp;RU: 52 &nbsp;CN: 41 &nbsp;...</span>
               </div>
               <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd cursor">█</span></div>
             </div>
           </div>
         </div>
       </section>
+      
+      <!-- Live Stats WebSocket Client -->
+      <script>
+        (function() {
+          'use strict';
+          
+          const STATS_WS_URL = 'wss://stats.dnscloak.net/';
+          const STATS_CACHE_KEY = 'dnscloak_live_stats';
+          const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000]; // Exponential backoff
+          
+          let ws = null;
+          let reconnectAttempt = 0;
+          let reconnectTimeout = null;
+          
+          // DOM elements
+          const elements = {
+            indicator: document.getElementById('live-indicator'),
+            uptime: document.getElementById('live-uptime'),
+            connecting: document.getElementById('live-connecting'),
+            connected: document.getElementById('live-connected'),
+            up: document.getElementById('live-up'),
+            down: document.getElementById('live-down'),
+            peers: document.getElementById('live-peers'),
+          };
+          
+          // Load cached stats on page load
+          function loadCachedStats() {
+            try {
+              const cached = localStorage.getItem(STATS_CACHE_KEY);
+              if (cached) {
+                const stats = JSON.parse(cached);
+                updateDisplay(stats);
+              }
+            } catch (e) {
+              // Ignore cache errors
+            }
+          }
+          
+          // Update DOM with stats
+          function updateDisplay(stats) {
+            if (!stats) return;
+            
+            if (elements.uptime && stats.uptime) {
+              elements.uptime.textContent = stats.uptime;
+            }
+            if (elements.connecting && typeof stats.connecting === 'number') {
+              elements.connecting.textContent = stats.connecting;
+            }
+            if (elements.connected && typeof stats.connected === 'number') {
+              elements.connected.textContent = stats.connected;
+            }
+            if (elements.up && stats.up) {
+              elements.up.textContent = stats.up;
+            }
+            if (elements.down && stats.down) {
+              elements.down.textContent = stats.down;
+            }
+            
+            // Countries array available in stats.countries
+            // Format: [{code: "IR", count: 187}, {code: "RU", count: 52}, ...]
+            // TODO: Display countries somewhere (protocols section, footer, etc.)
+            if (elements.peers && stats.countries && Array.isArray(stats.countries) && stats.countries.length > 0) {
+              const peersText = stats.countries
+                .slice(0, 5)
+                .map(c => `${c.code}: ${c.count}`)
+                .join(' \u00A0'); // non-breaking space
+              elements.peers.textContent = peersText + ' \u00A0...';
+            }
+            
+            // Cache stats
+            try {
+              localStorage.setItem(STATS_CACHE_KEY, JSON.stringify(stats));
+            } catch (e) {
+              // Ignore cache errors
+            }
+          }
+          
+          // Update connection indicator
+          function setIndicator(status) {
+            if (!elements.indicator) return;
+            
+            switch (status) {
+              case 'connected':
+                elements.indicator.textContent = '(live)';
+                elements.indicator.style.color = '#2eb787';
+                break;
+              case 'connecting':
+                elements.indicator.textContent = '(connecting...)';
+                elements.indicator.style.color = '#666';
+                break;
+              case 'offline':
+                elements.indicator.textContent = '(offline)';
+                elements.indicator.style.color = '#c44';
+                break;
+            }
+          }
+          
+          // Connect to WebSocket
+          function connect() {
+            if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+              return;
+            }
+            
+            setIndicator('connecting');
+            
+            try {
+              ws = new WebSocket(STATS_WS_URL);
+              
+              ws.onopen = function() {
+                reconnectAttempt = 0;
+                setIndicator('connected');
+              };
+              
+              ws.onmessage = function(event) {
+                try {
+                  const stats = JSON.parse(event.data);
+                  updateDisplay(stats);
+                } catch (e) {
+                  // Ignore parse errors
+                }
+              };
+              
+              ws.onclose = function() {
+                setIndicator('offline');
+                scheduleReconnect();
+              };
+              
+              ws.onerror = function() {
+                setIndicator('offline');
+                ws.close();
+              };
+              
+            } catch (e) {
+              setIndicator('offline');
+              scheduleReconnect();
+            }
+          }
+          
+          // Schedule reconnection with exponential backoff
+          function scheduleReconnect() {
+            if (reconnectTimeout) return;
+            
+            const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+            reconnectAttempt++;
+            
+            reconnectTimeout = setTimeout(function() {
+              reconnectTimeout = null;
+              connect();
+            }, delay);
+          }
+          
+          // Initialize
+          loadCachedStats();
+          connect();
+          
+          // Reconnect on visibility change (tab becomes visible)
+          document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && (!ws || ws.readyState !== WebSocket.OPEN)) {
+              connect();
+            }
+          });
+        })();
+      </script>
       
       <section class="protocols">
         <div class="container">
@@ -1749,7 +1913,7 @@
           <a href="#docs" onclick="showDocs(); return false;">[docs]</a>
           <a href="https://github.com/behnamkhorsandian/DNSCloak/issues">[issues]</a>
         </div>
-        <p>Made by @83hn4m ░█▓</p>
+        <p>Made by @83hn4m  ░▒▓█▀</p>
       </div>
     </footer>
   </div>

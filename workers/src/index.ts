@@ -5,7 +5,15 @@
  * Routes based on subdomain: reality.dnscloak.net, wg.dnscloak.net, etc.
  */
 
+// Re-export Durable Object class for stats relay
+export { StatsRelay } from './stats-relay';
+
 const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main';
+
+// Environment bindings
+interface Env {
+  STATS_RELAY: DurableObjectNamespace;
+}
 
 // Service configurations
 interface ServiceConfig {
@@ -97,7 +105,7 @@ const SERVICES: Record<string, ServiceConfig> = {
 };
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
@@ -108,6 +116,13 @@ export default {
     
     // Extract service from subdomain (e.g., "reality" from "reality.dnscloak.net")
     const service = hostname.split('.')[0];
+
+    // Route stats subdomain to Durable Object
+    if (service === 'stats') {
+      const id = env.STATS_RELAY.idFromName('singleton');
+      const stub = env.STATS_RELAY.get(id);
+      return stub.fetch(request);
+    }
     
     // CORS headers
     const corsHeaders = {

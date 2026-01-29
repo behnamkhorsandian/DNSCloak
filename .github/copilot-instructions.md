@@ -210,6 +210,14 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - Web dashboard - Browser-based management
 - Telegram bot - User self-service
 
+### Security Audit (stats.dnscloak.net WebSocket)
+- [ ] HMAC-signed push requests from VPS (prevent spoofing)
+- [ ] Origin validation (only allow dnscloak.net origins)
+- [ ] Rate limiting per IP (prevent DoS)
+- [ ] Cloudflare threat score filtering (block high-risk)
+- [ ] Enable Bot Fight Mode on stats subdomain
+- [ ] WAF rules for additional protection
+
 ## SOS Roadmap (Emergency Chat)
 
 ### Current State (v1.0 - Testing)
