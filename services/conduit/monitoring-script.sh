@@ -53,15 +53,18 @@ cmd_status() {
     
     echo ""
     
-    # Latest stats
+    # Latest stats - try multiple patterns
     local stats
-    stats=$(docker logs --tail 100 conduit 2>&1 | grep "\[STATS\]" | tail -1)
+    stats=$(docker logs --tail 200 conduit 2>&1 | grep -iE "STATS|Connected:|clients" | tail -3)
     
     if [[ -n "$stats" ]]; then
         echo -e "${CYAN}Latest Stats:${NC}"
-        echo "  $stats"
+        echo "$stats" | while read line; do echo "  $line"; done
     else
         echo -e "${YELLOW}Waiting for stats... (may take a few minutes)${NC}"
+        echo ""
+        echo -e "${CYAN}Recent logs:${NC}"
+        docker logs --tail 5 conduit 2>&1 | while read line; do echo "  $line"; done
     fi
     echo ""
 }
@@ -80,7 +83,8 @@ cmd_logs() {
     echo -e "${CYAN}═══ LIVE STATS (Ctrl+C to exit) ═══${NC}"
     echo ""
     
-    docker logs -f --tail 20 conduit 2>&1 | grep --line-buffered "\[STATS\]"
+    # Show all logs - stats may be formatted as STATS or [STATS]
+    docker logs -f --tail 50 conduit 2>&1 | grep --line-buffered -iE "STATS|Connected:|clients"
 }
 
 #-------------------------------------------------------------------------------
@@ -128,10 +132,10 @@ cmd_peers() {
             [[ "$ip" =~ ^127\. ]] && continue
             
             local country
-            country=$(geoiplookup "$ip" 2>/dev/null | head -1 | cut -d: -f2- | sed 's/^[A-Z][A-Z], //' | sed 's/^ *//')
+            country=$(geoiplookup "$ip" 2>/dev/null | head -1 | cut -d: -f2- | sed 's/^ *//')
             
             [[ -z "$country" || "$country" == *"not found"* ]] && country="Unknown"
-            [[ "$country" == "Iran, Islamic Republic of" ]] && country="Free Iran"
+            [[ "$country" == *"Iran"* ]] && country="Free Iran"
             
             ((countries["$country"]++))
             ((total++))
