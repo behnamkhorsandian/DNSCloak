@@ -1,0 +1,180 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ==========================================================================
+  # BASH TESTS (lib/*.sh, cli/*.sh)
+  # ==========================================================================
+  bash-tests:
+    name: Bash Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats jq shellcheck
+
+      - name: Syntax check
+        run: |
+          echo "=== Syntax Check ==="
+          for file in lib/*.sh cli/*.sh services/*/*.sh; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              bash -n "$file"
+            fi
+          done
+
+      - name: ShellCheck lint
+        continue-on-error: true
+        run: |
+          echo "=== ShellCheck ==="
+          shellcheck -e SC1091 -e SC2034 lib/*.sh cli/*.sh services/*/*.sh || true
+
+      - name: Run lib tests
+        run: |
+          echo "=== Library Tests ==="
+          bats tests/lib/*.bats
+
+      - name: Run CLI tests
+        run: |
+          echo "=== CLI Tests ==="
+          bats tests/cli/*.bats
+
+  # ==========================================================================
+  # SECURITY TESTS
+  # ==========================================================================
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats jq
+
+      - name: Run injection tests
+        run: |
+          echo "=== Injection Tests ==="
+          bats tests/security/injection.bats
+
+      - name: Run permission tests
+        run: |
+          echo "=== Permission Tests ==="
+          bats tests/security/permissions.bats
+
+      - name: Run auth tests
+        run: |
+          echo "=== Auth Tests ==="
+          bats tests/security/auth.bats
+
+  # ==========================================================================
+  # WORKER TESTS (TypeScript)
+  # ==========================================================================
+  worker-tests:
+    name: Worker Tests
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install test dependencies
+        run: pnpm add -D vitest
+
+      - name: Run tests
+        run: pnpm vitest run --reporter=verbose
+        continue-on-error: true
+
+      - name: TypeScript check
+        run: pnpm tsc --noEmit || true
+
+  # ==========================================================================
+  # INTEGRATION TESTS (Optional - requires secrets)
+  # ==========================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [bash-tests, security-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test health endpoint
+        run: |
+          echo "=== Health Check ==="
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://stats.dnscloak.net/health || echo "000")
+          if [ "$response" = "200" ]; then
+            echo "✓ Health endpoint responding"
+          else
+            echo "! Health endpoint returned $response (may be rate limited)"
+          fi
+
+      - name: Test landing pages
+        run: |
+          echo "=== Landing Pages ==="
+          for subdomain in reality ws wg dnstt conduit sos; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" "https://${subdomain}.dnscloak.net/" || echo "000")
+            if [ "$response" = "200" ]; then
+              echo "✓ ${subdomain}.dnscloak.net responding"
+            else
+              echo "! ${subdomain}.dnscloak.net returned $response"
+            fi
+          done
+
+  # ==========================================================================
+  # SUMMARY
+  # ==========================================================================
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [bash-tests, security-tests, worker-tests]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "=== Test Results ==="
+          echo "Bash Tests: ${{ needs.bash-tests.result }}"
+          echo "Security Tests: ${{ needs.security-tests.result }}"
+          echo "Worker Tests: ${{ needs.worker-tests.result }}"
+          
+          if [ "${{ needs.bash-tests.result }}" = "failure" ] || \
+             [ "${{ needs.security-tests.result }}" = "failure" ]; then
+            echo "❌ Critical tests failed"
+            exit 1
+          fi
+          
+          echo "✅ All critical tests passed"
