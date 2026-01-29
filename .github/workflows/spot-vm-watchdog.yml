@@ -71,29 +71,37 @@ jobs:
 
       - name: Check Services Health (if VM is running)
         if: steps.vm-status.outputs.status == 'RUNNING'
+        continue-on-error: true  # Health check is informational only
         run: |
           # Check if stats endpoint is responding
+          # Note: May be blocked by Cloudflare bot protection, which is OK
           HEALTH_RESPONSE=$(curl -sSL --connect-timeout 10 --max-time 15 \
+            -H "User-Agent: DNSCloak-Watchdog/1.0" \
             "https://stats.dnscloak.net/health" 2>/dev/null || echo '{"status":"error"}')
           
-          echo "Health response: $HEALTH_RESPONSE"
-          
-          # Check if last update was recent (within 2 minutes)
-          LAST_UPDATE=$(echo "$HEALTH_RESPONSE" | jq -r '.last_update // 0')
-          NOW=$(date +%s)
-          
-          if [ "$LAST_UPDATE" != "0" ] && [ "$LAST_UPDATE" != "null" ]; then
-            AGE=$((NOW - LAST_UPDATE))
-            echo "Stats age: ${AGE}s"
+          # Check if response is valid JSON (not Cloudflare challenge page)
+          if echo "$HEALTH_RESPONSE" | jq -e . >/dev/null 2>&1; then
+            echo "Health response: $HEALTH_RESPONSE"
             
-            if [ "$AGE" -gt 120 ]; then
-              echo "⚠️ Stats are stale (${AGE}s old), services may need restart"
-              # Could SSH and restart services here if needed
+            # Check if last update was recent (within 2 minutes)
+            LAST_UPDATE=$(echo "$HEALTH_RESPONSE" | jq -r '.last_update // 0')
+            NOW=$(date +%s)
+            
+            if [ "$LAST_UPDATE" != "0" ] && [ "$LAST_UPDATE" != "null" ]; then
+              AGE=$((NOW - LAST_UPDATE))
+              echo "Stats age: ${AGE}s"
+              
+              if [ "$AGE" -gt 120 ]; then
+                echo "⚠️ Stats are stale (${AGE}s old), services may need restart"
+              else
+                echo "✅ Stats are fresh (${AGE}s old)"
+              fi
             else
-              echo "✅ Stats are fresh (${AGE}s old)"
+              echo "ℹ️ Health endpoint not available or no stats yet"
             fi
           else
-            echo "ℹ️ Health endpoint not available or no stats yet"
+            echo "ℹ️ Health endpoint blocked by Cloudflare or unavailable (this is OK)"
+            echo "VM is running - health check skipped"
           fi
 
       - name: Summary
