@@ -7,13 +7,15 @@
 # It helps users in censored regions access the open internet.
 #
 # Usage: curl -sSL conduit.dnscloak.net | sudo bash
+#
+# Requirements: Docker (auto-installed if not present)
+# Commands: conduit status | logs | peers
 #===============================================================================
 
 set -e
 
-# Version
-CONDUIT_VERSION="e421eff"
-CONDUIT_RELEASE_URL="https://github.com/ssmirr/conduit/releases/download/${CONDUIT_VERSION}"
+# Docker Image
+CONDUIT_IMAGE="ghcr.io/ssmirr/conduit/conduit:latest"
 
 # Determine script location (works for both local and piped execution)
 if [[ -f "${BASH_SOURCE[0]}" ]]; then
@@ -40,130 +42,52 @@ source "$LIB_DIR/bootstrap.sh"
 
 SERVICE_NAME="conduit"
 CONDUIT_DIR="$DNSCLOAK_DIR/conduit"
-CONDUIT_BIN="/usr/local/bin/conduit"
-CONDUIT_DATA="$CONDUIT_DIR/data"
+CONDUIT_MONITORING_SCRIPT="/usr/local/bin/conduit"
+CONDUIT_VOLUME="conduit-data"
 
 # Default settings
 DEFAULT_MAX_CLIENTS=200
-DEFAULT_BANDWIDTH=5  # Mbps
+DEFAULT_BANDWIDTH=5  # Mbps (-1 for unlimited)
 
 #-------------------------------------------------------------------------------
 # Installation Check
 #-------------------------------------------------------------------------------
 
 is_conduit_installed() {
-    [[ -f "$CONDUIT_BIN" ]] && systemctl is-enabled --quiet conduit 2>/dev/null
+    docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^conduit$"
 }
 
 is_conduit_running() {
-    systemctl is-active --quiet conduit 2>/dev/null
+    docker ps --filter "name=conduit" --filter "status=running" --format '{{.Names}}' 2>/dev/null | grep -q "^conduit$"
 }
 
-is_conduit_failing() {
-    # Check if service exists but is in failed state
-    if systemctl is-enabled --quiet conduit 2>/dev/null; then
-        local status
-        status=$(systemctl is-active conduit 2>/dev/null)
-        [[ "$status" == "failed" || "$status" == "activating" ]]
+#-------------------------------------------------------------------------------
+# Install Monitoring Script
+#-------------------------------------------------------------------------------
+
+install_monitoring_script() {
+    print_step "Installing monitoring script"
+    
+    # Get the script content (from same directory during installation)
+    local script_dir
+    if [[ -f "${BASH_SOURCE[0]}" ]]; then
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     else
-        return 1
+        script_dir="/tmp/dnscloak-conduit"
+        mkdir -p "$script_dir"
+        # Download from GitHub
+        local script_url="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/services/conduit/monitoring-script.sh"
+        curl -sL "$script_url" -o "$script_dir/monitoring-script.sh"
     fi
-}
-
-#-------------------------------------------------------------------------------
-# Auto-fix Service
-#-------------------------------------------------------------------------------
-
-fix_conduit_service() {
-    print_step "Attempting to fix Conduit service"
     
-    # Get current settings from users.json or use defaults
-    local max_clients bandwidth
-    max_clients=$(server_get "conduit_max_clients" 2>/dev/null)
-    bandwidth=$(server_get "conduit_bandwidth" 2>/dev/null)
-    
-    CONDUIT_MAX_CLIENTS="${max_clients:-$DEFAULT_MAX_CLIENTS}"
-    CONDUIT_BANDWIDTH="${bandwidth:-$DEFAULT_BANDWIDTH}"
-    
-    # Stop the failing service
-    systemctl stop conduit 2>/dev/null || true
-    
-    # Recreate the service file with correct flags
-    create_systemd_service
-    
-    # Start service
-    systemctl start conduit
-    
-    sleep 3
-    
-    if is_conduit_running; then
-        print_success "Conduit fixed and running!"
-        return 0
+    # Install to /usr/local/bin
+    if [[ -f "$script_dir/monitoring-script.sh" ]]; then
+        cp "$script_dir/monitoring-script.sh" "$CONDUIT_MONITORING_SCRIPT"
+        chmod +x "$CONDUIT_MONITORING_SCRIPT"
+        print_success "Monitoring script installed"
     else
-        print_error "Could not fix automatically"
-        return 1
+        print_warning "Could not find monitoring script, skipping"
     fi
-}
-
-#-------------------------------------------------------------------------------
-# Detect Architecture
-#-------------------------------------------------------------------------------
-
-detect_arch() {
-    local arch
-    arch=$(uname -m)
-    
-    case "$arch" in
-        x86_64|amd64)
-            echo "amd64"
-            ;;
-        aarch64|arm64)
-            echo "arm64"
-            ;;
-        *)
-            print_error "Unsupported architecture: $arch"
-            print_info "Conduit supports: x86_64 (amd64), aarch64 (arm64)"
-            exit 1
-            ;;
-    esac
-}
-
-#-------------------------------------------------------------------------------
-# Download Conduit Binary
-#-------------------------------------------------------------------------------
-
-download_conduit() {
-    print_step "Downloading Conduit binary"
-    
-    local arch
-    arch=$(detect_arch)
-    
-    local download_url="${CONDUIT_RELEASE_URL}/conduit-linux-${arch}"
-    local tmp_file="/tmp/conduit-$$"
-    
-    print_info "Architecture: linux-${arch}"
-    print_info "URL: $download_url"
-    
-    if ! curl -L --fail --progress-bar -o "$tmp_file" "$download_url"; then
-        print_error "Failed to download Conduit"
-        rm -f "$tmp_file"
-        exit 1
-    fi
-    
-    # Make executable and move to bin
-    chmod +x "$tmp_file"
-    mv "$tmp_file" "$CONDUIT_BIN"
-    
-    # Verify binary works
-    if ! "$CONDUIT_BIN" --version &>/dev/null; then
-        print_error "Downloaded binary is not executable"
-        rm -f "$CONDUIT_BIN"
-        exit 1
-    fi
-    
-    local version
-    version=$("$CONDUIT_BIN" --version 2>/dev/null | head -1)
-    print_success "Conduit installed: $version"
 }
 
 #-------------------------------------------------------------------------------
@@ -195,12 +119,12 @@ configure_settings() {
     # Bandwidth
     echo -e "  ${CYAN}Bandwidth limit (Mbps):${RESET}"
     echo "  Recommended: 5-40 Mbps depending on your server"
-    echo "  Set 0 for unlimited (not recommended)"
+    echo "  Set -1 for unlimited (not recommended)"
     echo ""
     get_input "Bandwidth (Mbps)" "$DEFAULT_BANDWIDTH" bandwidth
     
     # Validate
-    if ! [[ "$bandwidth" =~ ^[0-9]+$ ]]; then
+    if ! [[ "$bandwidth" =~ ^-?[0-9]+$ ]]; then
         bandwidth=$DEFAULT_BANDWIDTH
     fi
     
@@ -214,70 +138,49 @@ configure_settings() {
     
     print_success "Settings configured"
     echo "  - Max clients: $max_clients"
-    echo "  - Bandwidth: ${bandwidth} Mbps"
-}
-
-#-------------------------------------------------------------------------------
-# Create Systemd Service
-#-------------------------------------------------------------------------------
-
-create_systemd_service() {
-    print_step "Creating systemd service"
-    
-    local bandwidth_arg=""
-    if [[ "$CONDUIT_BANDWIDTH" -gt 0 ]]; then
-        bandwidth_arg="--bandwidth $CONDUIT_BANDWIDTH"
+    if [[ "$bandwidth" == "-1" ]]; then
+        echo "  - Bandwidth: Unlimited"
+    else
+        echo "  - Bandwidth: ${bandwidth} Mbps"
     fi
-    
-    cat > /etc/systemd/system/conduit.service <<EOF
-[Unit]
-Description=Conduit - Psiphon Volunteer Relay Node
-Documentation=https://github.com/ssmirr/conduit
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=root
-ExecStart=${CONDUIT_BIN} start --data-dir ${CONDUIT_DATA} --max-clients ${CONDUIT_MAX_CLIENTS} ${bandwidth_arg}
-Restart=always
-RestartSec=5
-LimitNOFILE=65535
-
-# Security hardening
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=${CONDUIT_DIR}
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    print_success "Systemd service created"
 }
 
 #-------------------------------------------------------------------------------
-# Start Conduit Service
+# Start Conduit Container
 #-------------------------------------------------------------------------------
 
 start_conduit() {
-    print_step "Starting Conduit service"
+    print_step "Starting Conduit container"
     
-    systemctl enable conduit
-    systemctl start conduit
-    
-    # Wait for startup
-    sleep 3
-    
-    if is_conduit_running; then
-        print_success "Conduit is running"
+    if docker start conduit &>/dev/null; then
+        # Wait for startup
+        sleep 3
+        
+        if is_conduit_running; then
+            print_success "Conduit is running"
+        else
+            print_error "Conduit failed to start"
+            print_info "Check logs: docker logs conduit"
+            exit 1
+        fi
     else
-        print_error "Conduit failed to start"
-        print_info "Check logs: journalctl -u conduit -n 50"
+        print_error "Failed to start container"
         exit 1
+    fi
+}
+
+#-------------------------------------------------------------------------------
+# Stop Conduit Container
+#-------------------------------------------------------------------------------
+
+stop_conduit() {
+    print_step "Stopping Conduit container"
+    
+    if docker stop conduit &>/dev/null; then
+        print_success "Conduit stopped"
+    else
+        print_error "Failed to stop container"
+        return 1
     fi
 }
 
@@ -291,6 +194,11 @@ show_status() {
     print_line
     echo ""
     
+    if ! is_conduit_installed; then
+        echo -e "  Status:      ${RED}Not Installed${RESET}"
+        return 1
+    fi
+    
     if is_conduit_running; then
         echo -e "  Status:      ${GREEN}Running${RESET}"
     else
@@ -302,20 +210,29 @@ show_status() {
     bandwidth=$(server_get "conduit_bandwidth")
     
     echo "  Max Clients: ${max_clients:-$DEFAULT_MAX_CLIENTS}"
-    echo "  Bandwidth:   ${bandwidth:-$DEFAULT_BANDWIDTH} Mbps"
-    echo "  Data Dir:    $CONDUIT_DATA"
+    if [[ "${bandwidth:-$DEFAULT_BANDWIDTH}" == "-1" ]]; then
+        echo "  Bandwidth:   Unlimited"
+    else
+        echo "  Bandwidth:   ${bandwidth:-$DEFAULT_BANDWIDTH} Mbps"
+    fi
+    echo "  Data Volume: $CONDUIT_VOLUME"
     echo ""
     
-    # Show conduit key info if available
-    if [[ -f "$CONDUIT_DATA/conduit_key.json" ]]; then
-        echo -e "  ${CYAN}Node Identity:${RESET}"
-        echo "  Your node has a unique identity stored in:"
-        echo "  $CONDUIT_DATA/conduit_key.json"
+    # Show latest stats from logs
+    if is_conduit_running; then
+        echo -e "  ${CYAN}Latest Statistics:${RESET}"
+        docker logs conduit 2>&1 | grep "\[STATS\]" | tail -1 || echo "  No stats available yet"
         echo ""
-        echo -e "  ${YELLOW}Important: Back up this file!${RESET}"
-        echo "  The Psiphon broker tracks your reputation by this key."
-        echo "  If you lose it, you'll need to build reputation from scratch."
     fi
+    
+    # Show node identity info
+    echo -e "  ${CYAN}Node Identity:${RESET}"
+    echo "  Your node has a unique identity stored in Docker volume"
+    echo "  Volume: $CONDUIT_VOLUME"
+    echo ""
+    echo -e "  ${YELLOW}Important: Back up this volume!${RESET}"
+    echo "  The Psiphon broker tracks your reputation by this key."
+    echo "  If you lose it, you'll need to build reputation from scratch."
     echo ""
 }
 
@@ -327,8 +244,11 @@ show_live_stats() {
     print_info "Showing live statistics (Ctrl+C to exit)"
     echo ""
     
-    "$CONDUIT_BIN" service status -f 2>/dev/null || \
-    journalctl -u conduit -f --no-pager
+    if command -v conduit &>/dev/null; then
+        conduit logs
+    else
+        docker logs -f conduit 2>&1 | grep --line-buffered "\[STATS\]"
+    fi
 }
 
 #-------------------------------------------------------------------------------
@@ -370,23 +290,58 @@ install_conduit() {
         fi
     fi
     
-    # Create directories
-    print_step "Creating directories"
-    mkdir -p "$CONDUIT_DIR" "$CONDUIT_DATA"
-    chmod 700 "$CONDUIT_DIR" "$CONDUIT_DATA"
-    print_success "Directories created"
+    # Ensure Docker is installed
+    if ! command -v docker &>/dev/null; then
+        install_docker
+    else
+        print_info "Docker is already installed"
+    fi
     
-    # Download binary
-    download_conduit
+    # Pull Docker image
+    print_step "Pulling Conduit Docker image"
+    if docker pull "$CONDUIT_IMAGE"; then
+        print_success "Docker image pulled"
+    else
+        print_error "Failed to pull Docker image"
+        exit 1
+    fi
     
     # Configure settings
     configure_settings
     
-    # Create service
-    create_systemd_service
+    # Create directories (for compatibility)
+    print_step "Creating directories"
+    mkdir -p "$CONDUIT_DIR"
+    chmod 700 "$CONDUIT_DIR"
+    print_success "Directories created"
     
-    # Start service
-    start_conduit
+    # Create and start Docker container
+    print_step "Creating Conduit container"
+    
+    local bandwidth_flag="-b ${CONDUIT_BANDWIDTH}"
+    
+    if docker run -d --name conduit \
+        -v "$CONDUIT_VOLUME":/home/conduit/data \
+        --restart unless-stopped \
+        "$CONDUIT_IMAGE" \
+        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv; then
+        print_success "Container created"
+    else
+        print_error "Failed to create container"
+        exit 1
+    fi
+    
+    # Wait for startup
+    sleep 3
+    
+    if ! is_conduit_running; then
+        print_error "Conduit failed to start"
+        print_info "Check logs: docker logs conduit"
+        exit 1
+    fi
+    
+    # Install monitoring script
+    install_monitoring_script
     
     # Show results
     print_line
@@ -397,10 +352,11 @@ install_conduit() {
     echo ""
     echo -e "  ${BOLD}${WHITE}Useful Commands${RESET}"
     print_line
-    echo "  dnscloak status conduit     - Show status"
-    echo "  dnscloak restart conduit    - Restart service"
-    echo "  conduit service status -f   - Live statistics"
-    echo "  journalctl -u conduit -f    - View logs"
+    echo "  conduit status              - Show status and stats"
+    echo "  conduit logs                - Live statistics"
+    echo "  conduit peers               - Live country monitoring"
+    echo "  docker logs conduit         - View all logs"
+    echo "  docker restart conduit      - Restart container"
     echo ""
     
     echo -e "  ${GREEN}Thank you for helping users in censored regions!${RESET}"
@@ -412,11 +368,9 @@ install_conduit() {
 #-------------------------------------------------------------------------------
 
 uninstall_conduit_quiet() {
-    systemctl stop conduit 2>/dev/null || true
-    systemctl disable conduit 2>/dev/null || true
-    rm -f /etc/systemd/system/conduit.service
-    systemctl daemon-reload
-    rm -f "$CONDUIT_BIN"
+    docker stop conduit 2>/dev/null || true
+    docker rm conduit 2>/dev/null || true
+    rm -f "$CONDUIT_MONITORING_SCRIPT"
 }
 
 uninstall_conduit() {
@@ -431,36 +385,34 @@ uninstall_conduit() {
     fi
     
     echo -e "  ${YELLOW}Warning: This will:${RESET}"
-    echo "  - Stop and remove the Conduit service"
-    echo "  - Remove the Conduit binary"
+    echo "  - Stop and remove the Conduit container"
+    echo "  - Remove the monitoring script"
     echo ""
-    echo -e "  ${CYAN}Your node identity will be preserved in:${RESET}"
-    echo "  $CONDUIT_DATA/conduit_key.json"
+    echo -e "  ${CYAN}Your node identity will be preserved in Docker volume:${RESET}"
+    echo "  $CONDUIT_VOLUME"
     echo ""
     
     if ! confirm "Uninstall Conduit?"; then
         return 0
     fi
     
-    print_step "Stopping service"
-    systemctl stop conduit 2>/dev/null || true
-    systemctl disable conduit 2>/dev/null || true
-    print_success "Service stopped"
+    print_step "Stopping container"
+    docker stop conduit 2>/dev/null || true
+    print_success "Container stopped"
     
-    print_step "Removing service"
-    rm -f /etc/systemd/system/conduit.service
-    systemctl daemon-reload
-    print_success "Service removed"
+    print_step "Removing container"
+    docker rm conduit 2>/dev/null || true
+    print_success "Container removed"
     
-    print_step "Removing binary"
-    rm -f "$CONDUIT_BIN"
-    print_success "Binary removed"
+    print_step "Removing monitoring script"
+    rm -f "$CONDUIT_MONITORING_SCRIPT"
+    print_success "Monitoring script removed"
     
-    if confirm "Remove data directory (including node identity)?"; then
-        rm -rf "$CONDUIT_DIR"
-        print_success "Data directory removed"
+    if confirm "Remove data volume (including node identity)?"; then
+        docker volume rm "$CONDUIT_VOLUME" 2>/dev/null || true
+        print_success "Data volume removed"
     else
-        print_info "Data preserved at: $CONDUIT_DIR"
+        print_info "Data preserved in volume: $CONDUIT_VOLUME"
     fi
     
     print_success "Conduit uninstalled"
@@ -486,18 +438,22 @@ reconfigure_settings() {
     echo ""
     echo "  Current settings:"
     echo "  - Max clients: ${current_max_clients:-$DEFAULT_MAX_CLIENTS}"
-    echo "  - Bandwidth: ${current_bandwidth:-$DEFAULT_BANDWIDTH} Mbps"
+    if [[ "${current_bandwidth:-$DEFAULT_BANDWIDTH}" == "-1" ]]; then
+        echo "  - Bandwidth: Unlimited"
+    else
+        echo "  - Bandwidth: ${current_bandwidth:-$DEFAULT_BANDWIDTH} Mbps"
+    fi
     echo ""
     
     # Get new settings
     get_input "Max clients" "${current_max_clients:-$DEFAULT_MAX_CLIENTS}" max_clients
-    get_input "Bandwidth (Mbps)" "${current_bandwidth:-$DEFAULT_BANDWIDTH}" bandwidth
+    get_input "Bandwidth (Mbps, -1 for unlimited)" "${current_bandwidth:-$DEFAULT_BANDWIDTH}" bandwidth
     
     # Validate
     if ! [[ "$max_clients" =~ ^[0-9]+$ ]] || [[ "$max_clients" -lt 1 ]]; then
         max_clients="${current_max_clients:-$DEFAULT_MAX_CLIENTS}"
     fi
-    if ! [[ "$bandwidth" =~ ^[0-9]+$ ]]; then
+    if ! [[ "$bandwidth" =~ ^-?[0-9]+$ ]]; then
         bandwidth="${current_bandwidth:-$DEFAULT_BANDWIDTH}"
     fi
     
@@ -508,18 +464,34 @@ reconfigure_settings() {
     server_set "conduit_max_clients" "$max_clients"
     server_set "conduit_bandwidth" "$bandwidth"
     
-    # Recreate service
-    create_systemd_service
+    # Stop and remove container
+    print_step "Stopping container"
+    docker stop conduit 2>/dev/null || true
+    docker rm conduit 2>/dev/null || true
     
-    # Restart
-    print_step "Restarting Conduit"
-    systemctl restart conduit
+    # Recreate container with new settings
+    print_step "Creating container with new settings"
     
+    local bandwidth_flag="-b ${CONDUIT_BANDWIDTH}"
+    
+    if docker run -d --name conduit \
+        -v "$CONDUIT_VOLUME":/home/conduit/data \
+        --restart unless-stopped \
+        "$CONDUIT_IMAGE" \
+        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv; then
+        print_success "Container created with new settings"
+    else
+        print_error "Failed to create container"
+        return 1
+    fi
+    
+    # Wait and check
+    sleep 3
     if is_conduit_running; then
         print_success "Conduit restarted with new settings"
     else
         print_error "Conduit failed to start"
-        print_info "Check logs: journalctl -u conduit -n 50"
+        print_info "Check logs: docker logs conduit"
     fi
 }
 
@@ -536,9 +508,10 @@ show_menu() {
         echo "  1) Show status"
         echo "  2) Live statistics"
         echo "  3) View logs"
-        echo "  4) Reconfigure settings"
-        echo "  5) Restart service"
-        echo "  6) Uninstall Conduit"
+        echo "  4) View peers (country monitoring)"
+        echo "  5) Reconfigure settings"
+        echo "  6) Restart service"
+        echo "  7) Uninstall Conduit"
         echo "  0) Exit"
         echo ""
         
@@ -554,21 +527,30 @@ show_menu() {
                 ;;
             3)
                 echo ""
-                print_info "Showing last 50 log lines (Ctrl+C to exit live mode)"
-                journalctl -u conduit -n 50 --no-pager
+                print_info "Showing last 50 log lines (Ctrl+C to exit)"
+                docker logs --tail 50 conduit
                 echo ""
                 if confirm "Follow logs in real-time?"; then
-                    journalctl -u conduit -f --no-pager
+                    docker logs -f conduit
                 fi
                 press_enter
                 ;;
             4)
-                reconfigure_settings
+                if command -v conduit &>/dev/null; then
+                    conduit peers
+                else
+                    print_warning "Monitoring script not installed"
+                    print_info "Reinstall Conduit to get monitoring commands"
+                fi
                 press_enter
                 ;;
             5)
+                reconfigure_settings
+                press_enter
+                ;;
+            6)
                 print_step "Restarting Conduit"
-                systemctl restart conduit
+                docker restart conduit
                 sleep 2
                 if is_conduit_running; then
                     print_success "Conduit restarted"
@@ -577,7 +559,7 @@ show_menu() {
                 fi
                 press_enter
                 ;;
-            6)
+            7)
                 uninstall_conduit
                 press_enter
                 ;;
@@ -603,17 +585,6 @@ main() {
     check_os
     
     if is_conduit_installed; then
-        # Check if service is failing and auto-fix
-        if is_conduit_failing || ! is_conduit_running; then
-            print_warning "Conduit service is not running properly"
-            echo ""
-            if confirm "Attempt automatic fix?"; then
-                if fix_conduit_service; then
-                    echo ""
-                    show_status
-                fi
-            fi
-        fi
         show_menu
     else
         install_conduit
