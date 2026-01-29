@@ -11,7 +11,7 @@
   <meta property="og:url" content="https://dnscloak.net/">
   <meta property="og:title" content="DNSCloak - Multi-Protocol Censorship Bypass">
   <meta property="og:description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect. Help keep people connected.">
-  <meta property="og:image" content="https://dnscloak.net/og-image.png">
+  <meta property="og:image" content="https://opengraph.githubassets.com/1/behnamkhorsandian/DNSCloak">
   <meta property="og:site_name" content="DNSCloak">
   
   <!-- Twitter -->
@@ -19,7 +19,7 @@
   <meta name="twitter:url" content="https://dnscloak.net/">
   <meta name="twitter:title" content="DNSCloak - Multi-Protocol Censorship Bypass">
   <meta name="twitter:description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect.">
-  <meta name="twitter:image" content="https://dnscloak.net/og-image.png">
+  <meta name="twitter:image" content="https://opengraph.githubassets.com/1/behnamkhorsandian/DNSCloak">
   
   <link rel="icon" href="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/globe_2_question/default/48px.svg">
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">  
@@ -829,7 +829,7 @@
       100% { transform: translateX(calc(-50% - 10px)); } /* half of track which includes gap */
     }
     
-    .cli-preview { padding: 40px 0; border-top: 1px solid var(--border); }
+    .cli-preview { padding: 10px 0; }
     
     .terminal { background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden; }
     .terminal-header { background: var(--bg-secondary); padding: 8px 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
@@ -1464,6 +1464,40 @@
           </div>
         </div>
       </section>
+
+      <section class="cli-preview">
+        <div class="container">
+          <h2 class="section-title">CLI Preview</h2>
+          <div class="tui-window">
+            <div class="tui-window-header">
+              <span>conduit — ssh</span>
+              <div class="tui-controls"><span>[</span><span>-</span><span>]</span> <span>[</span><span>□</span><span>]</span> <span>[</span><span>x</span><span>]</span></div>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line"><span class="prompt">root@vps:~# </span><span class="cmd">curl -sSL conduit.dnscloak.net | sudo bash</span></div>
+              <div class="terminal-output">
+                <span class="success">[+]</span> Installing Docker...<br>
+                <span class="success">[+]</span> Pulling ghcr.io/ssmirr/conduit...<br>
+                <span class="success">[+]</span> Starting Conduit relay...<br><br>
+                <span class="info">[*]</span> Conduit is now running!<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Max Clients: 1000<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Bandwidth: Unlimited
+              </div>
+              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit status</span></div>
+              <div class="terminal-output">
+                <span class="success">●</span> Running (63h 29m uptime)<br>
+                [STATS] Connecting: 12 | Connected: 312 | Up: 145.1 GB | Down: 1.5 TB
+              </div>
+              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit peers</span></div>
+              <div class="terminal-output">
+                <span class="info">[*]</span> Connected peers by country:<br>
+                &nbsp;&nbsp;IR: 187 &nbsp;RU: 52 &nbsp;CN: 41 &nbsp;...
+              </div>
+              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd cursor">█</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
       
       <section class="protocols">
         <div class="container">
@@ -1702,41 +1736,6 @@
                 <div class="feature-title">Open Source</div>
                 <div class="feature-desc">100% open source. Audit the code, contribute, or fork for your own needs.</div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      <section class="cli-preview">
-        <div class="container">
-          <h2 class="section-title">CLI Preview</h2>
-          <div class="tui-window">
-            <div class="tui-window-header">
-              <span>conduit — ssh</span>
-              <div class="tui-controls"><span>[</span><span>-</span><span>]</span> <span>[</span><span>□</span><span>]</span> <span>[</span><span>x</span><span>]</span></div>
-            </div>
-            <div class="terminal-body">
-              <div class="terminal-line"><span class="prompt">root@vps:~# </span><span class="cmd">curl -sSL conduit.dnscloak.net | sudo bash</span></div>
-              <div class="terminal-output">
-                <span class="success">[+]</span> Installing Docker...<br>
-                <span class="success">[+]</span> Pulling ghcr.io/ssmirr/conduit...<br>
-                <span class="success">[+]</span> Starting Conduit relay...<br><br>
-                <span class="info">[*]</span> Conduit is now running!<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Max Clients: 1000<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Bandwidth: Unlimited
-              </div>
-              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit status</span></div>
-              <div class="terminal-output">
-                <span class="success">●</span> Running (63h 29m uptime)<br>
-                [STATS] Connecting: 12 | Connected: 312<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Up: 145.1 GB | Down: 1.5 TB
-              </div>
-              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">conduit peers</span></div>
-              <div class="terminal-output">
-                <span class="info">[*]</span> Connected peers by country:<br>
-                &nbsp;&nbsp;IR: 187 &nbsp;RU: 52 &nbsp;CN: 41 &nbsp;...
-              </div>
-              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd cursor">█</span></div>
             </div>
           </div>
         </div>
