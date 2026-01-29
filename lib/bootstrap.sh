@@ -91,62 +91,6 @@ install_prerequisites() {
 }
 
 #-------------------------------------------------------------------------------
-# Install Docker
-#-------------------------------------------------------------------------------
-
-install_docker() {
-    # Check if Docker is already installed
-    if command -v docker &>/dev/null; then
-        local docker_ver
-        docker_ver=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',')
-        print_info "Docker $docker_ver already installed"
-        return 0
-    fi
-    
-    print_step "Installing Docker"
-    
-    export DEBIAN_FRONTEND=noninteractive
-    wait_for_apt_lock
-    
-    # Install dependencies
-    apt-get install -y -qq \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release
-    
-    # Add Docker's official GPG key
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-        gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null
-    
-    # Set up Docker repository
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
-        tee /etc/apt/sources.list.d/docker.list >/dev/null
-    
-    # Install Docker Engine
-    wait_for_apt_lock
-    apt-get update -qq
-    apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    
-    # Start and enable Docker
-    systemctl start docker
-    systemctl enable docker
-    
-    # Verify installation
-    if docker --version &>/dev/null; then
-        local docker_ver
-        docker_ver=$(docker --version | awk '{print $3}' | tr -d ',')
-        print_success "Docker $docker_ver installed"
-    else
-        print_error "Docker installation failed"
-        return 1
-    fi
-}
-
-#-------------------------------------------------------------------------------
 # Network Optimization
 #-------------------------------------------------------------------------------
 
