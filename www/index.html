@@ -521,6 +521,200 @@
       visibility: visible;
     }
     
+    /* Status Button - Bottom Left */
+    .status-btn-fixed {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      transition: all 0.2s;
+    }
+    
+    .status-btn-fixed:hover {
+      border-color: var(--accent-green);
+      color: var(--text-primary);
+    }
+    
+    .status-btn-fixed .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: status-pulse 2s ease-in-out infinite;
+    }
+    
+    .status-btn-fixed .status-dot.degraded { background: var(--accent-yellow); }
+    .status-btn-fixed .status-dot.down { background: var(--accent-red); animation: none; }
+    .status-btn-fixed .status-dot.unknown { background: var(--text-dim); animation: none; }
+    
+    @keyframes status-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Status Popup */
+    .status-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+    
+    .status-popup-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .status-popup {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      width: 90%;
+      max-width: 420px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .status-popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .status-popup-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .status-popup-close {
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    
+    .status-popup-close:hover {
+      background: var(--accent-red);
+      color: #fff;
+      border-color: var(--accent-red);
+    }
+    
+    .status-popup-body {
+      padding: 16px;
+    }
+    
+    .status-overall {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    
+    .status-overall-indicator {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .status-overall-indicator.up { background: rgba(46, 183, 135, 0.2); color: var(--accent-green); }
+    .status-overall-indicator.degraded { background: rgba(229, 232, 133, 0.2); color: var(--accent-yellow); }
+    .status-overall-indicator.down { background: rgba(162, 81, 56, 0.2); color: var(--accent-red); }
+    .status-overall-indicator.unknown { background: rgba(106, 122, 112, 0.2); color: var(--text-dim); }
+    
+    .status-overall-text h4 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+    .status-overall-text p { font-size: 11px; color: var(--text-dim); }
+    
+    .status-services-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .status-service {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+    }
+    
+    .status-service-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    
+    .status-service-name .icon { color: var(--accent-blue); font-size: 18px; }
+    
+    .status-service-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    
+    .status-service-status .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    
+    .status-service-status.up { color: var(--accent-green); }
+    .status-service-status.up .dot { background: var(--accent-green); }
+    .status-service-status.down { color: var(--accent-red); }
+    .status-service-status.down .dot { background: var(--accent-red); }
+    .status-service-status.not_installed { color: var(--text-dim); }
+    .status-service-status.not_installed .dot { background: var(--text-dim); }
+    .status-service-status.unknown { color: var(--text-dim); }
+    .status-service-status.unknown .dot { background: var(--text-dim); }
+    
+    .status-footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+    }
+    
     .sos-web-link {
       display: inline-flex;
       align-items: center;
@@ -1363,6 +1557,14 @@
       .sos-cta-fixed { bottom: 15px; right: 15px; width: 50px; height: 50px; }
       .sos-cta-fixed .material-symbols-outlined { font-size: 24px; }
       .sos-cta-fixed .tooltip { display: none; }
+      
+      /* Status Button */
+      .status-btn-fixed { bottom: 15px; left: 15px; padding: 6px 10px; font-size: 11px; }
+      .status-popup { width: 95%; max-width: none; }
+      .status-overall { flex-direction: column; text-align: center; }
+      .status-service { padding: 8px 10px; }
+      .status-service-name { font-size: 12px; }
+      .status-footer { flex-direction: column; gap: 4px; text-align: center; }
       
       /* Footer */
       footer { padding: 20px 0; font-size: 11px; }
@@ -2690,5 +2892,176 @@
     <span class="material-symbols-outlined">sos</span>
     <span class="tooltip">SOS Emergency Chat<br>Right-click → Incognito</span>
   </button>
+  
+  <!-- Status Button & Popup -->
+  <button class="status-btn-fixed" onclick="showStatusPopup()">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-btn-text">Status</span>
+  </button>
+  
+  <div class="status-popup-overlay" id="status-popup">
+    <div class="status-popup">
+      <div class="status-popup-header">
+        <h3>
+          <span class="material-symbols-outlined">monitoring</span>
+          System Status
+        </h3>
+        <button class="status-popup-close" onclick="closeStatusPopup()">ESC</button>
+      </div>
+      <div class="status-popup-body">
+        <div class="status-overall" id="status-overall">
+          <div class="status-overall-indicator unknown" id="status-indicator">
+            <span class="material-symbols-outlined">sync</span>
+          </div>
+          <div class="status-overall-text">
+            <h4 id="status-title">Loading...</h4>
+            <p id="status-subtitle">Checking services</p>
+          </div>
+        </div>
+        
+        <div class="status-services-list" id="status-services">
+          <!-- Services will be populated by JavaScript -->
+        </div>
+        
+        <div class="status-footer">
+          <span id="status-updated">Last update: --</span>
+          <span id="status-uptime">Uptime: --</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Status Popup
+    let statusInterval = null;
+    
+    const SERVICE_INFO = {
+      conduit: { name: 'Conduit', icon: 'cloud_sync', desc: 'Psiphon relay node' },
+      xray: { name: 'Xray', icon: 'security', desc: 'Reality, WS, VRAY protocols' },
+      dnstt: { name: 'DNSTT', icon: 'dns', desc: 'DNS tunnel server' },
+      wireguard: { name: 'WireGuard', icon: 'vpn_lock', desc: 'VPN server' },
+      sos: { name: 'SOS Relay', icon: 'emergency', desc: 'Emergency chat' },
+    };
+    
+    async function fetchHealth() {
+      try {
+        const res = await fetch('https://stats.dnscloak.net/health');
+        if (!res.ok) throw new Error('Health endpoint unavailable');
+        return await res.json();
+      } catch (e) {
+        console.error('Health fetch error:', e);
+        return { status: 'unknown', services: null, stale: true };
+      }
+    }
+    
+    function updateStatusUI(health) {
+      const dot = document.getElementById('status-dot');
+      const btnText = document.getElementById('status-btn-text');
+      const indicator = document.getElementById('status-indicator');
+      const title = document.getElementById('status-title');
+      const subtitle = document.getElementById('status-subtitle');
+      const servicesList = document.getElementById('status-services');
+      const updated = document.getElementById('status-updated');
+      const uptime = document.getElementById('status-uptime');
+      
+      // Update button dot
+      dot.className = 'status-dot ' + (health.status || 'unknown');
+      
+      // Update button text
+      const statusText = health.status === 'up' ? 'All Systems' : 
+                         health.status === 'degraded' ? 'Degraded' :
+                         health.status === 'down' ? 'Down' : 'Status';
+      btnText.textContent = statusText;
+      
+      // Update indicator
+      indicator.className = 'status-overall-indicator ' + (health.status || 'unknown');
+      const icons = { up: 'check_circle', degraded: 'warning', down: 'error', unknown: 'help' };
+      indicator.innerHTML = `<span class="material-symbols-outlined">${icons[health.status] || 'help'}</span>`;
+      
+      // Update title
+      const titles = { up: 'All Systems Operational', degraded: 'Partial Outage', down: 'Major Outage', unknown: 'Status Unknown' };
+      title.textContent = titles[health.status] || 'Unknown';
+      
+      // Update subtitle
+      if (health.system) {
+        subtitle.textContent = `${health.system.machine} | ${health.system.vcpus} vCPUs | ${health.system.ram} RAM`;
+      } else {
+        subtitle.textContent = health.stale ? 'Stats are stale' : 'Checking services...';
+      }
+      
+      // Update services list
+      if (health.services) {
+        servicesList.innerHTML = Object.entries(health.services).map(([key, status]) => {
+          const info = SERVICE_INFO[key] || { name: key, icon: 'extension', desc: '' };
+          return `
+            <div class="status-service">
+              <div class="status-service-name">
+                <span class="material-symbols-outlined icon">${info.icon}</span>
+                <span>${info.name}</span>
+              </div>
+              <div class="status-service-status ${status}">
+                <span class="dot"></span>
+                <span>${status === 'not_installed' ? 'N/A' : status}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        servicesList.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px;">No service data available</div>';
+      }
+      
+      // Update footer
+      if (health.last_update) {
+        const date = new Date(health.last_update * 1000);
+        updated.textContent = `Last update: ${date.toLocaleTimeString()}`;
+      } else {
+        updated.textContent = 'Last update: --';
+      }
+      
+      uptime.textContent = health.uptime ? `Uptime: ${health.uptime}` : 'Uptime: --';
+    }
+    
+    async function showStatusPopup() {
+      document.getElementById('status-popup').classList.add('active');
+      const health = await fetchHealth();
+      updateStatusUI(health);
+      
+      // Start polling every 10 seconds while popup is open
+      statusInterval = setInterval(async () => {
+        const h = await fetchHealth();
+        updateStatusUI(h);
+      }, 10000);
+    }
+    
+    function closeStatusPopup() {
+      document.getElementById('status-popup').classList.remove('active');
+      if (statusInterval) {
+        clearInterval(statusInterval);
+        statusInterval = null;
+      }
+    }
+    
+    // Close on overlay click
+    document.getElementById('status-popup').addEventListener('click', function(e) {
+      if (e.target === this) closeStatusPopup();
+    });
+    
+    // Close on Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeStatusPopup();
+    });
+    
+    // Initial status fetch on page load
+    (async () => {
+      const health = await fetchHealth();
+      const dot = document.getElementById('status-dot');
+      const btnText = document.getElementById('status-btn-text');
+      dot.className = 'status-dot ' + (health.status || 'unknown');
+      const statusText = health.status === 'up' ? 'All Systems' : 
+                         health.status === 'degraded' ? 'Degraded' :
+                         health.status === 'down' ? 'Down' : 'Status';
+      btnText.textContent = statusText;
+    })();
+  </script>
 </body>
 </html>

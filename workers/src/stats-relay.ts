@@ -19,6 +19,13 @@ export interface StatsData {
     ram: string;
     bandwidth: string;
   };
+  services?: {
+    conduit: 'up' | 'down' | 'not_installed' | 'unknown';
+    xray: 'up' | 'down' | 'not_installed' | 'unknown';
+    dnstt: 'up' | 'down' | 'not_installed' | 'unknown';
+    wireguard: 'up' | 'down' | 'not_installed' | 'unknown';
+    sos: 'up' | 'down' | 'not_installed' | 'unknown';
+  };
   timestamp: number;
 }
 
@@ -83,6 +90,11 @@ export class StatsRelay implements DurableObject {
     // GET /current - return latest stats
     if (path === '/current' && request.method === 'GET') {
       return this.handleCurrent(corsHeaders);
+    }
+
+    // GET /health - aggregated health status for watchdog and dashboard
+    if (path === '/health' && request.method === 'GET') {
+      return this.handleHealth(corsHeaders);
     }
 
     return new Response('Not found', { status: 404, headers: corsHeaders });
@@ -173,6 +185,57 @@ export class StatsRelay implements DurableObject {
     }
 
     return Response.json(this.latestStats, { headers: corsHeaders });
+  }
+
+  /**
+   * Return aggregated health status for watchdog and dashboard
+   */
+  private handleHealth(corsHeaders: Record<string, string>): Response {
+    const now = Math.floor(Date.now() / 1000);
+    
+    // If no stats, VM is likely down
+    if (!this.latestStats) {
+      return Response.json({
+        status: 'unknown',
+        message: 'No stats received yet',
+        services: null,
+        last_update: null,
+        stale: true,
+      }, { headers: corsHeaders });
+    }
+
+    // Check if stats are stale (older than 60 seconds)
+    const age = now - this.latestStats.timestamp;
+    const isStale = age > 60;
+
+    // Determine overall status
+    let overallStatus: 'up' | 'degraded' | 'down' = 'up';
+    const services = this.latestStats.services;
+    
+    if (services) {
+      const statuses = Object.values(services);
+      const downCount = statuses.filter(s => s === 'down').length;
+      const upCount = statuses.filter(s => s === 'up').length;
+      
+      if (isStale || upCount === 0) {
+        overallStatus = 'down';
+      } else if (downCount > 0) {
+        overallStatus = 'degraded';
+      }
+    } else if (isStale) {
+      overallStatus = 'down';
+    }
+
+    return Response.json({
+      status: overallStatus,
+      services: services || null,
+      system: this.latestStats.system || null,
+      uptime: this.latestStats.uptime,
+      connected: this.latestStats.connected,
+      last_update: this.latestStats.timestamp,
+      age_seconds: age,
+      stale: isStale,
+    }, { headers: corsHeaders });
   }
 
   /**

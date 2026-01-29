@@ -1,7 +1,8 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Conduit Stats Pusher
-# Pushes live stats to stats.dnscloak.net for website display
+# DNSCloak - Health & Stats Pusher
+# Pushes live stats and service health to stats.dnscloak.net
+# Monitors: Conduit, Xray (Reality/WS/VRAY), DNSTT, WireGuard, SOS
 # Usage: curl -sSL stats.dnscloak.net/setup | sudo bash
 #===============================================================================
 
@@ -11,6 +12,61 @@ set -euo pipefail
 STATS_ENDPOINT="https://stats.dnscloak.net/push"
 PUSH_INTERVAL=5  # seconds
 LOG_FILE="/var/log/conduit-stats.log"
+
+#-------------------------------------------------------------------------------
+# Check health of all DNSCloak services
+#-------------------------------------------------------------------------------
+
+get_services_health() {
+    local services='{"conduit":"unknown","xray":"unknown","dnstt":"unknown","wireguard":"unknown","sos":"unknown"}'
+    
+    # Conduit (Docker)
+    if docker ps -q -f name=conduit &>/dev/null && [[ -n "$(docker ps -q -f name=conduit)" ]]; then
+        services=$(echo "$services" | sed 's/"conduit":"unknown"/"conduit":"up"/')
+    elif docker ps -a -q -f name=conduit &>/dev/null && [[ -n "$(docker ps -a -q -f name=conduit)" ]]; then
+        services=$(echo "$services" | sed 's/"conduit":"unknown"/"conduit":"down"/')
+    else
+        services=$(echo "$services" | sed 's/"conduit":"unknown"/"conduit":"not_installed"/')
+    fi
+    
+    # Xray (Reality, WS, VRAY)
+    if systemctl is-active xray &>/dev/null; then
+        services=$(echo "$services" | sed 's/"xray":"unknown"/"xray":"up"/')
+    elif systemctl list-unit-files xray.service &>/dev/null; then
+        services=$(echo "$services" | sed 's/"xray":"unknown"/"xray":"down"/')
+    else
+        services=$(echo "$services" | sed 's/"xray":"unknown"/"xray":"not_installed"/')
+    fi
+    
+    # DNSTT
+    if systemctl is-active dnstt &>/dev/null || pgrep -f "dnstt-server" &>/dev/null; then
+        services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"up"/')
+    elif [[ -f /opt/dnscloak/dnstt/server.key ]]; then
+        services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"down"/')
+    else
+        services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"not_installed"/')
+    fi
+    
+    # WireGuard
+    if systemctl is-active wg-quick@wg0 &>/dev/null || wg show wg0 &>/dev/null 2>&1; then
+        services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"up"/')
+    elif [[ -f /opt/dnscloak/wg/wg0.conf ]] || [[ -f /etc/wireguard/wg0.conf ]]; then
+        services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"down"/')
+    else
+        services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"not_installed"/')
+    fi
+    
+    # SOS Relay
+    if systemctl is-active sos-relay &>/dev/null || pgrep -f "relay.py" &>/dev/null; then
+        services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"up"/')
+    elif [[ -f /opt/dnscloak/sos/relay.py ]]; then
+        services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"down"/')
+    else
+        services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"not_installed"/')
+    fi
+    
+    echo "$services"
+}
 
 #-------------------------------------------------------------------------------
 # Parse Conduit stats from Docker logs
@@ -94,6 +150,10 @@ get_stats() {
         bandwidth="? Gbps"
     fi
     
+    # Get services health
+    local services
+    services=$(get_services_health)
+    
     # Build JSON
     cat <<EOF
 {
@@ -109,6 +169,7 @@ get_stats() {
     "ram": "$ram",
     "bandwidth": "$bandwidth"
   },
+  "services": $services,
   "timestamp": $(date +%s)
 }
 EOF

@@ -1,0 +1,105 @@
+# DNSCloak - Spot VM Watchdog
+#
+# Auto-restarts the GCP Spot VM if it gets preempted.
+# Runs every 5 minutes via cron schedule.
+#
+# Setup:
+# 1. Create GCP service account with compute.instanceAdmin.v1 role
+# 2. Export JSON key and add as GCP_SA_KEY secret in GitHub repo
+#
+name: Spot VM Watchdog
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes
+  workflow_dispatch:  # Manual trigger for testing
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  ZONE: ${{ secrets.ZONE }}
+  INSTANCE_NAME: dnscloak
+
+jobs:
+  check-and-recover:
+    name: Check VM Health
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check VM Status
+        id: vm-status
+        run: |
+          STATUS=$(gcloud compute instances describe $INSTANCE_NAME \
+            --project=$PROJECT_ID \
+            --zone=$ZONE \
+            --format='value(status)' 2>/dev/null || echo "NOT_FOUND")
+          
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "VM Status: $STATUS"
+
+      - name: Start VM if Terminated
+        if: steps.vm-status.outputs.status == 'TERMINATED'
+        run: |
+          echo "VM is TERMINATED, starting..."
+          gcloud compute instances start $INSTANCE_NAME \
+            --project=$PROJECT_ID \
+            --zone=$ZONE
+          
+          echo "Waiting for VM to start..."
+          sleep 30
+          
+          NEW_STATUS=$(gcloud compute instances describe $INSTANCE_NAME \
+            --project=$PROJECT_ID \
+            --zone=$ZONE \
+            --format='value(status)')
+          
+          echo "New VM Status: $NEW_STATUS"
+          
+          if [ "$NEW_STATUS" = "RUNNING" ]; then
+            echo "✅ VM successfully restarted!"
+          else
+            echo "⚠️ VM status is $NEW_STATUS, may need manual intervention"
+            exit 1
+          fi
+
+      - name: Check Services Health (if VM is running)
+        if: steps.vm-status.outputs.status == 'RUNNING'
+        run: |
+          # Check if stats endpoint is responding
+          HEALTH_RESPONSE=$(curl -sSL --connect-timeout 10 --max-time 15 \
+            "https://stats.dnscloak.net/health" 2>/dev/null || echo '{"status":"error"}')
+          
+          echo "Health response: $HEALTH_RESPONSE"
+          
+          # Check if last update was recent (within 2 minutes)
+          LAST_UPDATE=$(echo "$HEALTH_RESPONSE" | jq -r '.last_update // 0')
+          NOW=$(date +%s)
+          
+          if [ "$LAST_UPDATE" != "0" ] && [ "$LAST_UPDATE" != "null" ]; then
+            AGE=$((NOW - LAST_UPDATE))
+            echo "Stats age: ${AGE}s"
+            
+            if [ "$AGE" -gt 120 ]; then
+              echo "⚠️ Stats are stale (${AGE}s old), services may need restart"
+              # Could SSH and restart services here if needed
+            else
+              echo "✅ Stats are fresh (${AGE}s old)"
+            fi
+          else
+            echo "ℹ️ Health endpoint not available or no stats yet"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## VM Watchdog Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Instance**: $INSTANCE_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Zone**: $ZONE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.vm-status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
