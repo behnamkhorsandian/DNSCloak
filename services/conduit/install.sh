@@ -282,6 +282,12 @@ install_conduit() {
     # Bootstrap (updates, prerequisites)
     bootstrap
     
+    # Install monitoring dependencies
+    print_step "Installing monitoring dependencies"
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get install -y -qq tcpdump geoip-bin geoip-database 2>/dev/null || true
+    print_success "Dependencies installed"
+    
     if is_conduit_installed; then
         print_warning "Conduit is already installed"
         if confirm "Reinstall?"; then
@@ -317,16 +323,30 @@ install_conduit() {
     chmod 700 "$CONDUIT_DIR"
     print_success "Directories created"
     
+    # Fix volume permissions (conduit runs as uid 1000)
+    print_step "Setting up data volume"
+    docker volume create "$CONDUIT_VOLUME" 2>/dev/null || true
+    docker run --rm -v "${CONDUIT_VOLUME}:/home/conduit/data" alpine \
+        sh -c "chown -R 1000:1000 /home/conduit/data" 2>/dev/null || true
+    print_success "Volume configured"
+    
     # Create and start Docker container
     print_step "Creating Conduit container"
     
     local bandwidth_flag="-b ${CONDUIT_BANDWIDTH}"
     
+    # Use --network host and explicit DNS servers to fix DNS resolution issues
+    # The DNS flags ensure the container can resolve external domains like s3.amazonaws.com
     if docker run -d --name conduit \
+        --network host \
+        --dns 8.8.8.8 \
+        --dns 1.1.1.1 \
         -v "$CONDUIT_VOLUME":/home/conduit/data \
         --restart unless-stopped \
+        --log-opt max-size=15m \
+        --log-opt max-file=3 \
         "$CONDUIT_IMAGE" \
-        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv; then
+        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv --stats-file; then
         print_success "Container created"
     else
         print_error "Failed to create container"
@@ -471,16 +491,26 @@ reconfigure_settings() {
     docker stop conduit 2>/dev/null || true
     docker rm conduit 2>/dev/null || true
     
+    # Fix volume permissions
+    docker run --rm -v "${CONDUIT_VOLUME}:/home/conduit/data" alpine \
+        sh -c "chown -R 1000:1000 /home/conduit/data" 2>/dev/null || true
+    
     # Recreate container with new settings
     print_step "Creating container with new settings"
     
     local bandwidth_flag="-b ${CONDUIT_BANDWIDTH}"
     
+    # Use --network host and explicit DNS servers to fix DNS resolution issues
     if docker run -d --name conduit \
+        --network host \
+        --dns 8.8.8.8 \
+        --dns 1.1.1.1 \
         -v "$CONDUIT_VOLUME":/home/conduit/data \
         --restart unless-stopped \
+        --log-opt max-size=15m \
+        --log-opt max-file=3 \
         "$CONDUIT_IMAGE" \
-        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv; then
+        start --data-dir /home/conduit/data -m "$CONDUIT_MAX_CLIENTS" $bandwidth_flag -vv --stats-file; then
         print_success "Container created with new settings"
     else
         print_error "Failed to create container"
