@@ -23,4 +23,4 @@ class_name = "StatsRelay"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["StatsRelay"]
+new_sqlite_classes = ["StatsRelay"]
