@@ -80,11 +80,31 @@ cmd_logs() {
     fi
     
     echo ""
-    echo -e "${CYAN}═══ LIVE STATS (Ctrl+C to exit) ═══${NC}"
+    echo -e "${CYAN}═══ LIVE LOGS (Ctrl+C to exit) ═══${NC}"
+    echo -e "${YELLOW}Tip: Use 'conduit stats' to filter for [STATS] only${NC}"
     echo ""
     
-    # Show all logs - stats may be formatted as STATS or [STATS]
-    docker logs -f --tail 50 conduit 2>&1 | grep --line-buffered -iE "STATS|Connected:|clients"
+    # Show all logs - unfiltered
+    docker logs -f --tail 50 conduit 2>&1
+}
+
+#-------------------------------------------------------------------------------
+# Stats - Follow only [STATS] lines
+#-------------------------------------------------------------------------------
+
+cmd_stats() {
+    if ! docker ps 2>/dev/null | grep -q conduit; then
+        echo -e "${RED}Conduit is not running${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${CYAN}═══ LIVE STATS (Ctrl+C to exit) ═══${NC}"
+    echo -e "${YELLOW}Waiting for [STATS] output...${NC}"
+    echo ""
+    
+    # Filter for STATS lines only
+    docker logs -f --tail 100 conduit 2>&1 | grep --line-buffered "\[STATS\]"
 }
 
 #-------------------------------------------------------------------------------
@@ -242,7 +262,8 @@ cmd_help() {
     echo ""
     echo "Commands:"
     echo "  status     Show status and latest stats"
-    echo "  logs       Follow live connection stats"
+    echo "  stats      Follow [STATS] lines only"
+    echo "  logs       Follow all docker logs"
     echo "  peers      Show connected countries (requires root)"
     echo "  start      Start container"
     echo "  stop       Stop container"
@@ -257,6 +278,7 @@ cmd_help() {
 
 case "${1:-status}" in
     status)    cmd_status ;;
+    stats)     cmd_stats ;;
     logs)      cmd_logs ;;
     peers)     cmd_peers ;;
     start)     cmd_start ;;

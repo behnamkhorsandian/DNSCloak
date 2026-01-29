@@ -112,13 +112,13 @@ run_conduit() {
     log_info "Starting Conduit container..."
     docker run -d \
         --name conduit \
-        --network host \
         --restart unless-stopped \
-        --log-opt max-size=10m \
+        --log-opt max-size=15m \
         --log-opt max-file=3 \
         -v conduit-data:/home/conduit/data \
+        --network host \
         "$CONDUIT_IMAGE" \
-        start --data-dir /home/conduit/data -m "$MAX_CLIENTS" -b "$BANDWIDTH" -vv --stats-file
+        start --max-clients "$MAX_CLIENTS" --bandwidth "$BANDWIDTH" --stats-file
     
     sleep 3
     
