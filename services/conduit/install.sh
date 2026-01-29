@@ -75,14 +75,14 @@ get_settings() {
     
     # Max clients
     echo -e "${CYAN}Max clients:${NC} (default: 1000, recommended: 200-1000)"
-    read -p "  Enter value: " max_clients
+    read -p "  Enter value: " max_clients < /dev/tty
     MAX_CLIENTS=${max_clients:-1000}
     
     echo ""
     
     # Bandwidth
     echo -e "${CYAN}Bandwidth limit:${NC} (Mbps, -1 for unlimited, default: -1)"
-    read -p "  Enter value: " bandwidth
+    read -p "  Enter value: " bandwidth < /dev/tty
     BANDWIDTH=${bandwidth:--1}
     
     echo ""
@@ -191,7 +191,7 @@ main() {
         echo "  2) Open CLI (conduit)"
         echo "  0) Exit"
         echo ""
-        read -p "  Choice: " choice
+        read -p "  Choice: " choice < /dev/tty
         case $choice in
             1) docker rm -f conduit 2>/dev/null || true ;;
             2) exec conduit ;;
