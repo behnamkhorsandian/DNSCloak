@@ -1,217 +1,170 @@
-# Conduit Protocol Documentation
+# Conduit - Psiphon Volunteer Relay
 
-## Overview
+> 🧪 **Experimental**: This service is under active development.
 
-Conduit is a volunteer-run proxy relay node for the Psiphon network. Unlike other DNSCloak services that provide individual user VPN connections, Conduit turns your server into a relay node that helps users in censored regions access the open internet through the Psiphon network.
+Help users in censored regions access the open internet by running a volunteer relay node.
+
+## What is Conduit?
+
+Conduit turns your server into a relay node for the [Psiphon network](https://psiphon.ca). Unlike other DNSCloak services that create personal VPNs, Conduit helps **many users** by relaying their traffic through the Psiphon network.
+
+**You don't manage users.** Psiphon handles everything—you just provide the bandwidth.
+
+## Install
+
+```bash
+curl -sSL conduit.dnscloak.net | sudo bash
+```
+
+That's it. The script will:
+1. Install Docker (if needed)
+2. Ask for your settings (max clients, bandwidth)
+3. Start the Conduit container
+4. Show you the management dashboard
+
+## Dashboard
+
+Run the same command again to open the dashboard:
+
+```bash
+curl -sSL conduit.dnscloak.net | sudo bash
+```
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║          CONDUIT - PSIPHON VOLUNTEER RELAY                        ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+  Status: ● Running
+  Max Clients: 200
+  Bandwidth: Unlimited
+
+  [STATS] Connecting: 5 | Connected: 312 | Up: 145 GB | Down: 1.5 TB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1) View live stats
+  2) View peers by country
+  3) Start / Stop / Restart
+  4) Change settings
+  5) Update Conduit
+  6) Uninstall
+  0) Exit
+```
+
+## CLI Commands
+
+You can also use the `conduit` command directly:
+
+```bash
+conduit status     # Show status and latest stats
+conduit stats      # Live [STATS] stream
+conduit logs       # All container logs
+conduit peers      # Live peer countries (requires sudo)
+conduit start      # Start container
+conduit stop       # Stop container
+conduit restart    # Restart container
+conduit uninstall  # Remove everything
+```
+
+## Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Max Clients | 1000 | How many users can connect at once |
+| Bandwidth | Unlimited (-1) | Speed limit in Mbps per user |
+
+### Recommended by Server Size
+
+| Server | RAM | Max Clients | Bandwidth |
+|--------|-----|-------------|-----------|
+| Small | 1 GB | 100-200 | 5-10 Mbps |
+| Medium | 2 GB | 200-400 | 10-20 Mbps |
+| Large | 4+ GB | 400-1000 | Unlimited |
+
+## New Node Warming Up
+
+⏳ **New nodes take time to receive clients!**
+
+When you first start Conduit, you'll see messages like:
+```
+[ERROR] inproxy.(*Proxy).proxyOneClient#715: limited
+[ERROR] inproxy.(*Proxy).proxyOneClient#719: no match
+```
+
+**This is normal!** Psiphon is testing your node's reliability before sending real traffic. This can take hours or even days. Just keep your node running 24/7.
+
+Once clients start connecting, you'll see:
+```
+2026-01-29 14:24:51 [STATS] Connecting: 12 | Connected: 312 | Up: 145.1 GB | Down: 1.5 TB | Uptime: 63h29m3s
+```
+
+## Node Identity
+
+Your node's identity key is stored in a Docker volume:
+
+```
+conduit-data:/home/conduit/data/conduit_key.json
+```
+
+**Don't delete the volume!** Psiphon tracks your node's reputation by this key. Deleting it resets your reputation to zero.
 
 ## How It Works
 
 ```
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
 │  Psiphon User   │──────│  Your Conduit   │──────│   Internet      │
-│  (censored)     │      │  Relay Node     │      │                 │
+│  (in Iran, etc) │      │  Relay Node     │      │                 │
 └─────────────────┘      └─────────────────┘      └─────────────────┘
-         │                        │
          │                        │
          ▼                        ▼
    ┌───────────┐            ┌───────────┐
-   │  Psiphon  │            │  Psiphon  │
+   │  Psiphon  │◄──────────►│  Psiphon  │
    │  Client   │            │  Broker   │
    └───────────┘            └───────────┘
 ```
 
-1. **User downloads Psiphon app** - Official apps from psiphon.ca
-2. **Psiphon broker assigns nodes** - Based on availability and reputation
-3. **Your Conduit relays traffic** - Users connect through Psiphon, not directly
-4. **Internet access provided** - Censored users can access the open web
+1. User in censored country downloads Psiphon app
+2. Psiphon broker assigns your node to the user
+3. Traffic flows through your Conduit relay
+4. User accesses the open internet
 
-## State Machine
+## Differences from Other Services
 
-```
-                                    ┌──────────────┐
-                                    │    START     │
-                                    └──────────────┘
-                                           │
-                                           ▼
-                                    ┌──────────────┐
-                               ┌────│  INSTALLING  │────┐
-                               │    └──────────────┘    │
-                               │           │            │
-                               ▼           │            ▼
-                        ┌──────────┐       │     ┌──────────┐
-                        │  FAILED  │       │     │CONFIGURED│
-                        └──────────┘       │     └──────────┘
-                                           │           │
-                                           ▼           │
-                                    ┌──────────────┐   │
-                                    │   STARTING   │◄──┘
-                                    └──────────────┘
-                                           │
-                               ┌───────────┴───────────┐
-                               ▼                       ▼
-                        ┌──────────┐           ┌──────────────┐
-                        │  ERROR   │           │   RUNNING    │◄─┐
-                        └──────────┘           └──────────────┘  │
-                               │                       │         │
-                               │                       │  ┌──────┴─────┐
-                               ▼                       │  │  CLIENTS   │
-                        ┌──────────┐                   │  │ CONNECTING │
-                        │  RETRY   │───────────────────┘  └────────────┘
-                        └──────────┘
-```
-
-## Installation
-
-### One-Line Install
-
-```bash
-curl -sSL conduit.dnscloak.net | sudo bash
-```
-
-### Manual Installation
-
-```bash
-# Download binary (x86_64)
-curl -L -o conduit https://github.com/ssmirr/conduit/releases/download/e421eff/conduit-linux-amd64
-chmod +x conduit
-
-# Install as service
-sudo mv conduit /usr/local/bin/
-sudo conduit service install --max-clients 200 --bandwidth 10
-sudo conduit service start
-```
-
-## Configuration Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--max-clients` | 200 | Maximum concurrent client connections |
-| `--bandwidth` | 5 | Bandwidth limit in Mbps (0 = unlimited) |
-| `--data-dir` | `/opt/dnscloak/conduit/data` | Directory for node identity and state |
-| `--stats-file` | `/opt/dnscloak/conduit/stats.json` | Statistics output file |
-
-## Recommended Settings by Server Size
-
-| Server Type | Max Clients | Bandwidth |
-|-------------|-------------|-----------|
-| Small VPS (1GB RAM) | 100 | 5 Mbps |
-| Medium VPS (2GB RAM) | 200 | 10 Mbps |
-| Large VPS (4GB+ RAM) | 500 | 20-40 Mbps |
-
-## Node Identity & Reputation
-
-Conduit generates a unique identity key on first run:
-
-```
-/opt/dnscloak/conduit/data/conduit_key.json
-```
-
-**Important:** Back up this file! The Psiphon broker tracks your node's reputation by this key. If you lose it, you'll need to build reputation from scratch.
-
-### Reputation System
-
-- New nodes start with low reputation
-- Reputation increases over time with good uptime
-- Higher reputation = more client assignments
-- Keep your node running 24/7 for best results
-
-## Management Commands
-
-```bash
-# Show status
-dnscloak status conduit
-
-# Restart service
-dnscloak restart conduit
-
-# Live statistics
-conduit service status -f
-
-# View logs
-journalctl -u conduit -f
-
-# Reconfigure (through installer menu)
-curl -sSL conduit.dnscloak.net | sudo bash
-```
-
-## Statistics
-
-Conduit writes statistics to `/opt/dnscloak/conduit/stats.json`:
-
-```json
-{
-  "connectingClients": 5,
-  "connectedClients": 12,
-  "totalBytesUp": 1234567890,
-  "totalBytesDown": 9876543210
-}
-```
-
-## Differences from Other DNSCloak Services
-
-| Feature | Conduit | Other Services |
-|---------|---------|----------------|
-| User management | None (automatic) | Per-user configs |
-| Connection | Via Psiphon broker | Direct to server |
-| Use case | Volunteer relay | Personal VPN |
-| Client apps | Psiphon apps only | Various VPN apps |
-| Domain needed | No | Depends on service |
-
-## Security Considerations
-
-1. **No direct user access** - Users connect through Psiphon, not directly to your server
-2. **No user data stored** - Conduit doesn't log user identities or traffic
-3. **Ephemeral connections** - Sessions are temporary
-4. **Legal considerations** - Check your jurisdiction's laws about running relay nodes
+| | Conduit | Reality/WS/etc |
+|---|---------|----------------|
+| **Purpose** | Help many users | Personal VPN |
+| **User management** | Automatic (Psiphon) | You create users |
+| **Client apps** | Psiphon only | Hiddify, v2rayNG, etc |
+| **Connection** | Via Psiphon broker | Direct to your server |
+| **Domain needed** | No | Depends |
 
 ## Troubleshooting
 
-### Service won't start
+| Problem | Solution |
+|---------|----------|
+| No stats showing | Wait for node to warm up (hours/days) |
+| `limited` errors | Normal for new nodes, keep running |
+| Container won't start | Run `docker logs conduit` to check |
+| High resource usage | Lower max-clients or bandwidth in settings |
 
+## Uninstall
+
+From dashboard: Choose option **6) Uninstall**
+
+Or via CLI:
 ```bash
-# Check logs
-journalctl -u conduit -n 100
-
-# Verify binary
-/usr/local/bin/conduit --version
-
-# Check permissions
-ls -la /opt/dnscloak/conduit/
+sudo conduit uninstall
 ```
 
-### No clients connecting
+## Credits & Resources
 
-- New nodes need time to build reputation (hours to days)
-- Ensure your server has good network connectivity
-- Check that no firewall is blocking outbound connections
+- [Conduit](https://github.com/ssmirr/conduit) by **ssmirr** — Docker image for Psiphon Conduit
+- [Conduit Manager](https://github.com/SamNet-dev/conduit-manager) by **SamNet** — Feature-rich alternative with multi-container support
+- [Psiphon](https://psiphon.ca) — Circumvention tool trusted by millions
 
-### High resource usage
+---
 
-- Reduce `--max-clients` setting
-- Lower `--bandwidth` limit
-- Consider upgrading server resources
+## Thank You! 🙏
 
-## Uninstallation
-
-```bash
-# Through installer menu
-curl -sSL conduit.dnscloak.net | sudo bash
-# Select option 6 (Uninstall)
-
-# Or manually
-sudo systemctl stop conduit
-sudo systemctl disable conduit
-sudo rm /etc/systemd/system/conduit.service
-sudo rm /usr/local/bin/conduit
-sudo systemctl daemon-reload
-```
-
-## Resources
-
-- [Conduit GitHub](https://github.com/ssmirr/conduit)
-- [Psiphon Website](https://psiphon.ca)
-- [Psiphon Tunnel Core](https://github.com/Psiphon-Labs/psiphon-tunnel-core)
-
-## Thank You
-
-By running a Conduit node, you're helping people in censored regions access the free and open internet. Thank you for supporting internet freedom!
+By running a Conduit node, you're helping people in censored regions access the free and open internet. Every relay makes a difference.

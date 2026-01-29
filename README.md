@@ -14,6 +14,8 @@ Multi-protocol censorship bypass platform. Deploy proxy services on any VM with 
 | Reality | ✅ Ready | No | Primary proxy (all countries) | `curl -sSL reality.dnscloak.net \| sudo bash` |
 | WS+CDN | ✅ Ready | Yes (Cloudflare) | IP hidden behind CDN | `curl -sSL ws.dnscloak.net \| sudo bash` |
 | DNStt | ✅ Ready | Yes (NS records) | Emergency during blackouts | `curl -sSL dnstt.dnscloak.net \| sudo bash` |
+| Conduit | 🧪 Experimental | No | Psiphon volunteer relay | `curl -sSL conduit.dnscloak.net \| sudo bash` |
+| SOS | 🧪 Experimental | Yes (NS) | Emergency encrypted chat | `curl -sSL sos.dnscloak.net \| bash` |
 | WireGuard | 🔜 Coming | No | Fast VPN tunnel | `curl -sSL wg.dnscloak.net \| sudo bash` |
 | MTP | 🔜 Coming | Optional | Telegram access | `curl -sSL mtp.dnscloak.net \| sudo bash` |
 | V2Ray | 🔜 Coming | Yes | Classic proxy with TLS | `curl -sSL vray.dnscloak.net \| sudo bash` |
@@ -77,6 +79,8 @@ dnscloak uninstall reality      # Remove Reality service
   - [V2Ray](docs/protocols/vray.md) - VLESS+TCP+TLS setup
   - [WS+CDN](docs/protocols/ws.md) - WebSocket over Cloudflare CDN
   - [DNStt](docs/protocols/dnstt.md) - DNS tunnel for emergencies
+  - [Conduit](docs/protocols/conduit.md) - Psiphon volunteer relay
+  - [SOS](docs/protocols/sos.md) - Emergency encrypted chat over DNS
 
 ## Implementation Status
 
@@ -91,6 +95,8 @@ dnscloak uninstall reality      # Remove Reality service
 - [x] services/reality - VLESS+REALITY ✅ Tested
 - [x] services/ws - VLESS+WebSocket+CDN ✅ Tested
 - [x] services/dnstt - DNS tunnel ✅ Tested
+- [x] services/conduit - Psiphon relay 🧪 Experimental
+- [x] services/sos - Emergency chat 🧪 Experimental
 - [ ] services/wg - WireGuard
 - [ ] services/mtp - MTProto (refactor)
 - [ ] services/vray - VLESS+TCP+TLS
@@ -131,3 +137,5 @@ MIT - See [LICENSE](LICENSE)
 - [mtprotoproxy](https://github.com/alexbers/mtprotoproxy)
 - [dnstt](https://www.bamsoftware.com/software/dnstt/)
 - [WireGuard](https://www.wireguard.com/)
+- [Conduit](https://github.com/ssmirr/conduit) by ssmirr
+- [Conduit Manager](https://github.com/SamNet-dev/conduit-manager) by SamNet

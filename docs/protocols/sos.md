@@ -1,5 +1,7 @@
 # SOS - Emergency Secure Chat
 
+> 🧪 **Experimental**: This service is under active development.
+
 **Encrypted chat rooms over DNS tunnel for emergency communication.**
 
 ---
