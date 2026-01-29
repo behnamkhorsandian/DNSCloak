@@ -4,9 +4,6 @@
 # Usage: curl -sSL conduit.dnscloak.net | sudo bash
 #===============================================================================
 
-# Don't exit on error for read commands
-set +e
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -18,6 +15,9 @@ NC='\033[0m'
 # Config
 CONDUIT_IMAGE="ghcr.io/ssmirr/conduit/conduit:latest"
 INSTALL_DIR="/opt/conduit"
+
+# Reopen stdin from tty for interactive input when piped
+exec 3</dev/tty 2>/dev/null || exec 3<&0
 
 #-------------------------------------------------------------------------------
 # Helpers
@@ -77,7 +77,7 @@ get_settings() {
     # Max clients
     echo -e "${CYAN}Max clients:${NC} (default: 1000, recommended: 200-1000)"
     echo -n "  Enter value: "
-    read max_clients < /dev/tty || max_clients=""
+    read max_clients <&3 || max_clients=""
     MAX_CLIENTS=${max_clients:-1000}
     
     echo ""
@@ -85,7 +85,7 @@ get_settings() {
     # Bandwidth
     echo -e "${CYAN}Bandwidth limit:${NC} (Mbps, -1 for unlimited, default: -1)"
     echo -n "  Enter value: "
-    read bandwidth < /dev/tty || bandwidth=""
+    read bandwidth <&3 || bandwidth=""
     BANDWIDTH=${bandwidth:--1}
     
     echo ""
@@ -195,7 +195,7 @@ main() {
         echo "  0) Exit"
         echo ""
         echo -n "  Choice: "
-        read choice < /dev/tty || choice="0"
+        read choice <&3 || choice="0"
         case $choice in
             1) docker rm -f conduit 2>/dev/null || true ;;
             2) exec conduit ;;
