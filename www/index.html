@@ -1494,6 +1494,10 @@
                 <span class="info">[*]</span> Connected peers by country:<br>
                 &nbsp;&nbsp;<span id="live-peers">IR: 187 &nbsp;RU: 52 &nbsp;CN: 41 &nbsp;...</span>
               </div>
+              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">neofetch --off</span></div>
+              <div class="terminal-output">
+                <span style="color: #888;" id="live-system">n2d-highcpu-8 | 8 vCPUs | 8GB RAM | 16 Gbps</span>
+              </div>
               <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd cursor">█</span></div>
             </div>
           </div>
@@ -1522,6 +1526,7 @@
             up: document.getElementById('live-up'),
             down: document.getElementById('live-down'),
             peers: document.getElementById('live-peers'),
+            system: document.getElementById('live-system'),
           };
           
           // Load cached stats on page load
@@ -1559,13 +1564,19 @@
             
             // Countries array available in stats.countries
             // Format: [{code: "IR", count: 187}, {code: "RU", count: 52}, ...]
-            // TODO: Display countries somewhere (protocols section, footer, etc.)
             if (elements.peers && stats.countries && Array.isArray(stats.countries) && stats.countries.length > 0) {
               const peersText = stats.countries
                 .slice(0, 5)
                 .map(c => `${c.code}: ${c.count}`)
                 .join(' \u00A0'); // non-breaking space
               elements.peers.textContent = peersText + ' \u00A0...';
+            }
+            
+            // System info (VM specs)
+            // Format: {system: {machine: "n2d-highcpu-8", vcpus: 8, ram: "8GB", bandwidth: "16 Gbps"}}
+            if (elements.system && stats.system) {
+              const sys = stats.system;
+              elements.system.textContent = `${sys.machine || 'unknown'} | ${sys.vcpus || '?'} vCPUs | ${sys.ram || '?'} RAM | ${sys.bandwidth || '?'}`;
             }
             
             // Cache stats

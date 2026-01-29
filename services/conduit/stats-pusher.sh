@@ -76,6 +76,24 @@ get_stats() {
         fi
     fi
     
+    # Get system info (VM specs)
+    local machine vcpus ram bandwidth
+    if command -v curl &>/dev/null; then
+        # Try GCP metadata
+        machine=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/machine-type" 2>/dev/null | awk -F'/' '{print $NF}' || echo "")
+    fi
+    [[ -z "$machine" ]] && machine="unknown"
+    vcpus=$(nproc 2>/dev/null || echo "?")
+    ram=$(free -h 2>/dev/null | awk '/^Mem:/{print $2}' | sed 's/i$//' || echo "?")
+    # Estimate bandwidth based on vCPUs (2 Gbps per vCPU, max 16 for most instances)
+    if [[ "$vcpus" =~ ^[0-9]+$ ]]; then
+        local bw=$((vcpus * 2))
+        [[ $bw -gt 16 ]] && bw=16
+        bandwidth="${bw} Gbps"
+    else
+        bandwidth="? Gbps"
+    fi
+    
     # Build JSON
     cat <<EOF
 {
@@ -85,6 +103,12 @@ get_stats() {
   "up": "$up",
   "down": "$down",
   "countries": $countries,
+  "system": {
+    "machine": "$machine",
+    "vcpus": $vcpus,
+    "ram": "$ram",
+    "bandwidth": "$bandwidth"
+  },
   "timestamp": $(date +%s)
 }
 EOF

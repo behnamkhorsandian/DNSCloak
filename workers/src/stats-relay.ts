@@ -13,6 +13,12 @@ export interface StatsData {
   up: string;
   down: string;
   countries: Array<{ code: string; count: number }>;
+  system?: {
+    machine: string;
+    vcpus: number;
+    ram: string;
+    bandwidth: string;
+  };
   timestamp: number;
 }
 
