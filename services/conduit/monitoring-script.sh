@@ -208,14 +208,16 @@ cmd_uninstall() {
     fi
     
     echo ""
-    read -p "Remove Conduit? (y/N): " confirm < /dev/tty
+    echo -n "Remove Conduit? (y/N): "
+    read confirm < /dev/tty || confirm="n"
     [[ "$confirm" != "y" && "$confirm" != "Y" ]] && exit 0
     
     echo -e "${CYAN}Removing...${NC}"
     docker stop conduit 2>/dev/null || true
     docker rm conduit 2>/dev/null || true
     
-    read -p "Remove data volume too? (y/N): " rm_data < /dev/tty
+    echo -n "Remove data volume too? (y/N): "
+    read rm_data < /dev/tty || rm_data="n"
     [[ "$rm_data" == "y" || "$rm_data" == "Y" ]] && docker volume rm conduit-data 2>/dev/null
     
     rm -rf "$INSTALL_DIR"

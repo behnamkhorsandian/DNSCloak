@@ -4,7 +4,8 @@
 # Usage: curl -sSL conduit.dnscloak.net | sudo bash
 #===============================================================================
 
-set -e
+# Don't exit on error for read commands
+set +e
 
 # Colors
 RED='\033[0;31m'
@@ -75,14 +76,16 @@ get_settings() {
     
     # Max clients
     echo -e "${CYAN}Max clients:${NC} (default: 1000, recommended: 200-1000)"
-    read -p "  Enter value: " max_clients < /dev/tty
+    echo -n "  Enter value: "
+    read max_clients < /dev/tty || max_clients=""
     MAX_CLIENTS=${max_clients:-1000}
     
     echo ""
     
     # Bandwidth
     echo -e "${CYAN}Bandwidth limit:${NC} (Mbps, -1 for unlimited, default: -1)"
-    read -p "  Enter value: " bandwidth < /dev/tty
+    echo -n "  Enter value: "
+    read bandwidth < /dev/tty || bandwidth=""
     BANDWIDTH=${bandwidth:--1}
     
     echo ""
@@ -191,7 +194,8 @@ main() {
         echo "  2) Open CLI (conduit)"
         echo "  0) Exit"
         echo ""
-        read -p "  Choice: " choice < /dev/tty
+        echo -n "  Choice: "
+        read choice < /dev/tty || choice="0"
         case $choice in
             1) docker rm -f conduit 2>/dev/null || true ;;
             2) exec conduit ;;
