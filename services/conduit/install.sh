@@ -82,6 +82,8 @@ install_monitoring_script() {
     
     # Install to /usr/local/bin
     if [[ -f "$script_dir/monitoring-script.sh" ]]; then
+        # Remove old file first to avoid "Text file busy" error
+        rm -f "$CONDUIT_MONITORING_SCRIPT" 2>/dev/null || true
         cp "$script_dir/monitoring-script.sh" "$CONDUIT_MONITORING_SCRIPT"
         chmod +x "$CONDUIT_MONITORING_SCRIPT"
         print_success "Monitoring script installed"
