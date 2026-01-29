@@ -118,7 +118,7 @@ run_conduit() {
         -v conduit-data:/home/conduit/data \
         --network host \
         "$CONDUIT_IMAGE" \
-        start -m "$MAX_CLIENTS" -b "$BANDWIDTH" -v
+        start -m "$MAX_CLIENTS" -b "$BANDWIDTH" -vv
     
     sleep 3
     
