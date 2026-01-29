@@ -36,6 +36,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `docs/dns.md` - DNS setup for each protocol
 - [x] `docs/workers.md` - Cloudflare Workers deployment
 - [x] `docs/self-hosting.md` - Self-hosting guide
+- [x] `docs/spot-vm-recovery.md` - Spot VM auto-recovery setup
 - [x] `docs/protocols/reality.md` - VLESS+REALITY state machine
 - [x] `docs/protocols/wg.md` - WireGuard state machine
 - [x] `docs/protocols/mtp.md` - MTProto state machine
@@ -44,6 +45,14 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `docs/protocols/dnstt.md` - DNStt state machine
 - [x] `docs/protocols/conduit.md` - Conduit Psiphon relay
 - [x] `docs/protocols/sos.md` - SOS emergency secure chat
+
+### Phase 5: Infrastructure & Operations [COMPLETE]
+- [x] GCP Spot VM with static IP (`dnscloak-static`)
+- [x] GitHub Actions watchdog (`.github/workflows/spot-vm-watchdog.yml`)
+- [x] Health monitoring endpoint (`stats.dnscloak.net/health`)
+- [x] Health pusher script (`services/conduit/stats-pusher.sh`)
+- [x] Website status popup with live service indicators
+- [x] Service account for CI/CD (`github-vm-manager@noteefy-85339.iam.gserviceaccount.com`)
 
 ## Architecture
 
@@ -357,33 +366,48 @@ Architecture for Phase 2:
 1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'sos.dnscloak.net'
 2) as user i have two option, either use this url via curl on terminal, or just out it in my browser. and since its served over dnstt, it can never be blocked (even if the main website don't work, this subdomain always loads the instant chatroom.
 
-## Current Session Context (Updated 2026-01-26)
+## Current Session Context (Updated 2026-01-30)
+
+### Infrastructure
+- **GCP Project**: `noteefy-85339` (Noteefy)
+- **VM Name**: `dnscloak`
+- **Zone**: `europe-west3-c`
+- **Machine Type**: `n2d-highcpu-8` (8 vCPU, 8GB RAM, 16 Gbps bandwidth)
+- **VM Type**: **Spot VM** (60% cost savings, ~$42/month total)
+- **Static IP**: `34.185.221.241` (named `dnscloak-static`)
+- **Disk**: 10GB boot disk from snapshot `dnscloak-backup-20260129`
+
+### Spot VM Auto-Recovery
+- **Workflow**: `.github/workflows/spot-vm-watchdog.yml` - Runs every 5 minutes
+- **Service Account**: `github-vm-manager@noteefy-85339.iam.gserviceaccount.com`
+- **GitHub Secret**: `GCP_SA_KEY` - Service account JSON key
+- **Recovery Time**: ~5 minutes max (cron interval)
+- **Documentation**: `docs/spot-vm-recovery.md`
+
+### Health Monitoring
+- **Endpoint**: `https://stats.dnscloak.net/health` - Aggregated health status
+- **Pusher**: `services/conduit/stats-pusher.sh` - Reports all service health every 5 seconds
+- **Website**: Status popup on `dnscloak.net` (bottom-left button)
+- **Services Monitored**: Conduit, Xray (Reality/WS/VRAY), DNSTT, WireGuard, SOS
 
 ### What's Working
 - **Reality** (`services/reality/install.sh`) - Fully tested, works on GCP
 - **WS+CDN** (`services/ws/install.sh`) - Fully tested, works with Cloudflare SSL "Flexible"
 - **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
-- **WireGuard** (`services/wg/install.sh`) - Created, ready for testing
-- **CLI** (`cli/dnscloak.sh`) - Unified management CLI created
+- **Conduit** (`services/conduit/install.sh`) - Psiphon relay, Docker-based
 - **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ TESTED
   - TUI client with Textual framework
-  - **Web client** (`src/sos/www/`) - Browser-based SPA served via relay ✅ NEW
+  - **Web client** (`src/sos/www/`) - Browser-based SPA served via relay
   - Standalone binaries (via GitHub Actions CI/CD)
-  - Auto-fallback: DNSTT → Direct relay connection
   - Default relay: `relay.dnscloak.net:8899`
-  - 6-emoji room IDs + 6-digit rotating/fixed PIN
   - E2E encryption (NaCl + Argon2id)
-  - Auto-wipe after 1 hour
-  - Rate limiting: exponential backoff [0, 10, 30, 60, 180, 300]s
-  - **TUI ↔ Web interop**: Same rooms work across clients
+- **WireGuard** (`services/wg/install.sh`) - Created, config exists but not running
+- **CLI** (`cli/dnscloak.sh`) - Unified management CLI
 
 ### Cloudflare Setup
-- **Workers**: Deployed at `dnscloak` worker, handles all subdomains (reality, ws, dnstt, mtp, wg, vray, sos)
-- **Worker features**: 
-  - `/` - Serves install script
-  - `/info` - HTML info page
-  - `/client` (dnstt only) - Client setup page with one-liner scripts
-  - `/setup/linux|macos|windows` (dnstt only) - Platform-specific setup scripts
+- **Workers**: Deployed at `dnscloak` worker, handles all subdomains
+  - Routes: mtp, reality, wg, vray, ws, dnstt, conduit, sos, stats
+  - Stats relay: `stats.dnscloak.net` with WebSocket and `/health` endpoint
 - **Pages**: Landing page at `www.dnscloak.net` via direct upload of `www/` folder
 - **DNS**: 
   - `*.dnscloak.net` - Worker routes
@@ -392,28 +416,33 @@ Architecture for Phase 2:
   - `ns1.dnscloak.net` - DNSTT nameserver (DNS only, NOT proxied)
   - `t.dnscloak.net` - NS record pointing to ns1.dnscloak.net
   - `relay.dnscloak.net` - SOS relay server (DNS only, NOT proxied) → 34.185.221.241
+  - `stats.dnscloak.net` - Worker route for health/stats
 
 ### Key Technical Decisions
-1. **WS+CDN uses port 80 (HTTP) on origin** - Cloudflare handles TLS at edge, SSL mode must be "Flexible"
-2. **DNSTT builds from source** - Downloads Go 1.21 from go.dev, builds dnstt-server
-3. **User database** - `/opt/dnscloak/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
-4. **Auto-cleanup** - Scripts clean `/tmp/dnscloak*` at start for fresh installs
-5. **WireGuard network** - Uses `10.66.66.0/24` subnet, server at `.1`, clients from `.2`
+1. **Spot VM with auto-recovery** - 60% cost savings, GitHub Actions watchdog restarts if preempted
+2. **WS+CDN uses port 80 (HTTP) on origin** - Cloudflare handles TLS at edge, SSL mode must be "Flexible"
+3. **DNSTT builds from source** - Downloads Go 1.21 from go.dev, builds dnstt-server
+4. **User database** - `/opt/dnscloak/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
+5. **Health aggregation** - Single `/health` endpoint reports all services, used by watchdog and website
+6. **WireGuard network** - Uses `10.66.66.0/24` subnet, server at `.1`, clients from `.2`
 
-### Testing Environment
-- **Server**: GCP VM at `34.185.221.241` (europe-west3)
-- **Domain**: `dnscloak.net` on Cloudflare
+### Cost Summary (Monthly)
+| Component | Cost |
+|-----------|------|
+| n2d-highcpu-8 Spot VM | ~$37 |
+| Static IP | $4 |
+| Boot disk (10GB) | $1 |
+| GitHub Actions | FREE |
+| **Total** | **~$42** |
 
 ### Services TODO
-- [x] `services/wg/install.sh` - WireGuard VPN ✅ CREATED
-- [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
-- [x] `services/sos/install.sh` - Emergency secure chat ✅ CREATED
-- [x] `src/sos/` - Python TUI client (Textual) ✅ CREATED
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto  
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS with Let's Encrypt
+- [ ] Start WireGuard service (config exists)
 
 ### Known Issues Fixed
 - `user_exists()` now supports optional protocol parameter: `user_exists "name" "ws"`
 - `user_get()` now supports optional key parameter: `user_get "name" "ws" "uuid"`
-- WS installer uses correct function names from lib files (cloud_get_public_ip, bootstrap, create_directories, etc.)
+- WS installer uses correct function names from lib files
+- Watchdog handles Cloudflare bot protection on health endpoint gracefully
 
