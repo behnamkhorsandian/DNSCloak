@@ -335,12 +335,12 @@ class SOSRelay:
             return web.json_response({"error": "invalid_json"}, status=400)
         
         room_hash = data.get("room_hash")
-        mode = data.get("mode", "rotating")
+        mode = "fixed"
         
         if not room_hash or len(room_hash) != 16:
             return web.json_response({"error": "invalid_room_hash"}, status=400)
         
-        if mode not in ("rotating", "fixed"):
+        if mode not in ("fixed",):
             return web.json_response({"error": "invalid_mode"}, status=400)
         
         # Check if room exists
