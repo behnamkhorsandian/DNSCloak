@@ -1,0 +1,13 @@
+name = "dnscloak-sos-chat"
+main = "src/index.ts"
+compatibility_date = "2026-02-02"
+
+[durable_objects]
+bindings = [
+  { name = "SOS_ROOM", class_name = "SOSRoom" },
+  { name = "SOS_RATE", class_name = "SOSRateLimiter" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SOSRoom", "SOSRateLimiter"]
