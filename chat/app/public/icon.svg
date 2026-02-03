@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DNSCloak SOS">
+  <defs>
+    <linearGradient id="sos-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="55%" stop-color="#22c55e" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0b0f19" />
+  <circle cx="256" cy="256" r="170" fill="url(#sos-grad)" opacity="0.18" />
+  <circle cx="256" cy="256" r="130" fill="url(#sos-grad)" opacity="0.32" />
+  <circle cx="256" cy="256" r="88" fill="url(#sos-grad)" />
+  <path d="M176 256c0-44.2 35.8-80 80-80s80 35.8 80 80-35.8 80-80 80-80-35.8-80-80z" fill="#0b0f19" />
+  <path d="M204 256a52 52 0 1 0 104 0 52 52 0 0 0-104 0z" fill="#0ea5e9" />
+  <text x="256" y="360" text-anchor="middle" fill="#e2e8f0" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" letter-spacing="6">SOS</text>
+</svg>
