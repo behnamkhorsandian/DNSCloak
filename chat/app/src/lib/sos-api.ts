@@ -33,6 +33,24 @@ export async function createRoom(relayUrl: string, roomHash: string, mode: RoomM
   }>(relayUrl, '/room', 'POST', { room_hash: roomHash, mode });
 }
 
+export async function createRoomWithDirectory(
+  relayUrl: string,
+  roomHash: string,
+  mode: RoomMode,
+  emojis: string[],
+  description: string | null,
+  nickname: string
+) {
+  return apiRequest<{
+    room_hash: string;
+    mode: RoomMode;
+    created_at: number;
+    expires_at: number;
+    member_id: string;
+    members: string[];
+  }>(relayUrl, '/room', 'POST', { room_hash: roomHash, mode, emojis, description, nickname });
+}
+
 export async function joinRoom(relayUrl: string, roomHash: string, nickname: string) {
   return apiRequest<{
     room_hash: string;
@@ -85,4 +103,23 @@ export async function getRoomInfo(relayUrl: string, roomHash: string) {
     message_count: number;
     time_remaining: number;
   }>(relayUrl, `/room/${roomHash}/info`);
+}
+
+export async function getWorkers(relayUrl: string) {
+  return apiRequest<{
+    workers: Array<{ url: string; last_seen: number; last_ok: number; fail_count: number; is_genesis?: boolean }>;
+  }>(relayUrl, '/workers');
+}
+
+export async function getRooms(relayUrl: string) {
+  return apiRequest<{
+    rooms: Array<{
+      room_hash: string;
+      emojis?: string[];
+      description?: string;
+      created_at: number;
+      expires_at: number;
+      worker: string;
+    }>;
+  }>(relayUrl, '/rooms');
 }
