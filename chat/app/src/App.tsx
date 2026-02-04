@@ -48,7 +48,7 @@ const STORAGE_KEYS = {
   hideInstallPrompt: 'sos_hide_install_prompt'
 };
 
-type Screen = 'home' | 'rooms' | 'nodes' | 'create' | 'join' | 'chat';
+type Screen = 'home' | 'rooms' | 'nodes' | 'create' | 'join' | 'chat' | 'guide';
 type TabScreen = 'home' | 'rooms' | 'nodes';
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -496,6 +496,11 @@ export default function App() {
     setSelectedRoomDescription(null);
   };
 
+  const startGuide = () => {
+    setStatus(null);
+    setScreen('guide');
+  };
+
   const joinFromDirectory = (room: RoomDirectoryEntry) => {
     setStatus(null);
     setScreen('join');
@@ -703,14 +708,16 @@ export default function App() {
             ? 'Nodes'
             : screen === 'chat'
               ? 'Chat'
-              : 'Home';
+              : screen === 'guide'
+                ? 'Guide'
+                : 'Home';
 
   const showBottomTabs = screen !== 'chat';
 
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-muted/40 via-background to-background text-foreground">
-        <Navbar pageLabel={pageLabel} />
+        <Navbar pageLabel={pageLabel} onGuideClick={startGuide} guideActive={screen === 'guide'} />
         <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-md flex-col px-5 py-8 pb-28">
           {screen === 'home' && (
             <section className="space-y-6">
@@ -757,6 +764,65 @@ export default function App() {
                   })}
                 </div>
               </section>
+            </section>
+          )}
+
+          {screen === 'guide' && (
+            <section className="space-y-6">
+              <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-sm font-semibold">Quick guide</div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This app lets you make private chat rooms using a 6-emoji ID and a 6-digit PIN. Everything is end-to-end encrypted.
+                </p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Create a room</div>
+                <p>Tap <strong>Create room</strong>, pick 6 emojis, and set a 6-digit PIN.</p>
+                <p>Optional: add a short description so others know what the room is for.</p>
+                <p>Optional: add a username. If you leave it blank, we make a random one.</p>
+                <p>Share the 6 emojis and the PIN with people you want to invite.</p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Join a room</div>
+                <p>Tap <strong>Join room</strong> and enter the same 6 emojis.</p>
+                <p>Enter the 6-digit PIN from the creator.</p>
+                <p>Pick a username or leave it blank for a random one.</p>
+                <p>If the room was listed, you can also join from the <strong>Rooms</strong> list.</p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Descriptions and PINs</div>
+                <p>The description is public in the room list. Keep it short.</p>
+                <p>Never post a PIN unless you want anyone to join.</p>
+                <p>The PIN is required to decrypt messages.</p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Chat</div>
+                <p>Type your message and press <strong>Send</strong>.</p>
+                <p>You will see the room emojis, member count, and time left.</p>
+                <p>Use <strong>Leave</strong> to exit the room.</p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Rooms list</div>
+                <p>The <strong>Rooms</strong> tab shows public rooms shared with a description.</p>
+                <p>You can filter rooms by emoji ID.</p>
+                <p>Rooms expire automatically, so they may disappear.</p>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Nodes</div>
+                <p>The <strong>Nodes</strong> tab shows available relay nodes.</p>
+                <p>Tap a node to connect to it.</p>
+                <p>Use <strong>Add node</strong> if you have a custom node URL.</p>
+              </section>
+
+              <div className="grid gap-2">
+                <Button onClick={() => setScreen('home')}>Back to home</Button>
+              </div>
             </section>
           )}
 

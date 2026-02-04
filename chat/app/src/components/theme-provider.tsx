@@ -1,4 +1,4 @@
-import React from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -7,7 +7,7 @@ type ThemeContextValue = {
   toggleTheme: () => void;
 };
 
-const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 const THEME_KEY = 'dnscloak-theme';
 
@@ -22,15 +22,15 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = React.useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('light');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const initial = getInitialTheme();
     setTheme(initial);
     applyTheme(initial);
   }, []);
 
-  const toggleTheme = React.useCallback(() => {
+  const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
       localStorage.setItem(THEME_KEY, next);
@@ -47,7 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useTheme() {
-  const ctx = React.useContext(ThemeContext);
+  const ctx = useContext(ThemeContext);
   if (!ctx) {
     throw new Error('useTheme must be used within ThemeProvider');
   }
