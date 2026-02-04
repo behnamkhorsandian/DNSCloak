@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check, Home, Network, Plus, Search, PlugZap, X } from 'lucide-react';
 import Navbar from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -39,14 +40,20 @@ import {
 
 const RELAY_DEFAULT = SOS_CONFIG.RELAY_URL;
 const FIXED_MODE: RoomMode = 'fixed';
-const WORKERS_REFRESH_MS = 15000;
+const NODES_REFRESH_MS = 15000;
 const ROOMS_REFRESH_MS = 10000;
 const STORAGE_KEYS = {
   workers: 'sos_workers',
-  relayUrl: 'sos_relay_url'
+  relayUrl: 'sos_relay_url',
+  hideInstallPrompt: 'sos_hide_install_prompt'
 };
 
-type Screen = 'home' | 'create' | 'join' | 'chat';
+type Screen = 'home' | 'rooms' | 'nodes' | 'create' | 'join' | 'chat';
+type TabScreen = 'home' | 'rooms' | 'nodes';
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 type Status = { type: 'info' | 'error' | 'success'; message: string } | null;
 
@@ -150,6 +157,7 @@ export default function App() {
   const [nowTick, setNowTick] = React.useState(Date.now());
   const [showAddWorker, setShowAddWorker] = React.useState(false);
   const [manualWorkerUrl, setManualWorkerUrl] = React.useState('');
+  const [roomSearchEmojis, setRoomSearchEmojis] = React.useState<string[]>([]);
 
   const [selectedEmojis, setSelectedEmojis] = React.useState<string[]>([]);
   const [nickname, setNickname] = React.useState('');
@@ -170,11 +178,16 @@ export default function App() {
   const [encryptionKey, setEncryptionKey] = React.useState<Uint8Array | null>(null);
   const [connected, setConnected] = React.useState(true);
   const [sending, setSending] = React.useState(false);
+  const [installPromptEvent, setInstallPromptEvent] = React.useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallModal, setShowInstallModal] = React.useState(false);
+  const [installMessage, setInstallMessage] = React.useState('');
+  const [installDismissClicks, setInstallDismissClicks] = React.useState(0);
 
   const lastMessageTsRef = React.useRef(0);
   const encryptionKeyRef = React.useRef<Uint8Array | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const workersRef = React.useRef<WorkerStatus[]>([]);
+  const installReminderTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     lastMessageTsRef.current = lastMessageTs;
@@ -195,6 +208,71 @@ export default function App() {
   React.useEffect(() => {
     saveStoredWorkers(workers);
   }, [workers]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const hidden = window.localStorage.getItem(STORAGE_KEYS.hideInstallPrompt) === '1';
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    if (!hidden && !standalone) {
+      setShowInstallModal(true);
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPromptEvent(event as BeforeInstallPromptEvent);
+      setInstallMessage('');
+    };
+
+    const handleAppInstalled = () => {
+      setShowInstallModal(false);
+      window.localStorage.setItem(STORAGE_KEYS.hideInstallPrompt, '1');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (showInstallModal) return;
+    if (window.localStorage.getItem(STORAGE_KEYS.hideInstallPrompt) === '1') return;
+
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (standalone) return;
+
+    const onClick = () => {
+      setInstallDismissClicks((prev) => prev + 1);
+    };
+
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, [showInstallModal]);
+
+  React.useEffect(() => {
+    if (showInstallModal) return;
+    if (installDismissClicks < 20) return;
+    setInstallDismissClicks(0);
+    setShowInstallModal(true);
+  }, [installDismissClicks, showInstallModal]);
+
+  React.useEffect(() => {
+    return () => {
+      if (installReminderTimerRef.current) {
+        window.clearTimeout(installReminderTimerRef.current);
+      }
+    };
+  }, []);
 
   const fetchWorkersFromGenesis = React.useCallback(async () => {
     const genesis = SOS_CONFIG.GENESIS_WORKERS;
@@ -239,7 +317,7 @@ export default function App() {
   );
 
   React.useEffect(() => {
-    if (screen !== 'home') return;
+    if (screen === 'chat') return;
     let active = true;
     const loadWorkers = async () => {
       setLoadingWorkers(true);
@@ -266,7 +344,7 @@ export default function App() {
       setLoadingWorkers(false);
     };
     loadWorkers();
-    const interval = setInterval(loadWorkers, WORKERS_REFRESH_MS);
+    const interval = setInterval(loadWorkers, NODES_REFRESH_MS);
     return () => {
       active = false;
       clearInterval(interval);
@@ -274,7 +352,7 @@ export default function App() {
   }, [screen, fetchWorkersFromGenesis, pingWorker]);
 
   React.useEffect(() => {
-    if (screen !== 'home') return;
+    if (screen === 'chat') return;
     const interval = setInterval(() => {
       const urls = workersRef.current.map((worker) => worker.url);
       urls.forEach((url) => {
@@ -289,7 +367,7 @@ export default function App() {
   }, [workers]);
 
   React.useEffect(() => {
-    if (screen !== 'home') return;
+    if (screen === 'chat') return;
     let active = true;
     const loadRooms = async () => {
       setLoadingRooms(true);
@@ -314,7 +392,7 @@ export default function App() {
   }, [screen, relayUrl]);
 
   React.useEffect(() => {
-    if (screen !== 'home') return;
+    if (screen === 'chat') return;
     const interval = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [screen]);
@@ -548,100 +626,254 @@ export default function App() {
     setScreen('home');
   };
 
+  const setTab = (tab: TabScreen) => {
+    setStatus(null);
+    setScreen(tab);
+  };
+
+  const hideInstallPromptForever = () => {
+    if (installReminderTimerRef.current) {
+      window.clearTimeout(installReminderTimerRef.current);
+      installReminderTimerRef.current = null;
+    }
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEYS.hideInstallPrompt, '1');
+    }
+    setShowInstallModal(false);
+  };
+
+  const dismissInstallPromptTemporarily = () => {
+    setShowInstallModal(false);
+    setInstallMessage('');
+    setInstallDismissClicks(0);
+    if (installReminderTimerRef.current) {
+      window.clearTimeout(installReminderTimerRef.current);
+    }
+    installReminderTimerRef.current = window.setTimeout(() => {
+      if (typeof window === 'undefined') return;
+      if (window.localStorage.getItem(STORAGE_KEYS.hideInstallPrompt) === '1') return;
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      if (!standalone) {
+        setShowInstallModal(true);
+      }
+    }, 10000);
+  };
+
+  const installPwa = async () => {
+    if (!installPromptEvent) {
+      setInstallMessage('Install is not available yet on this browser.');
+      return;
+    }
+    await installPromptEvent.prompt();
+    const choice = await installPromptEvent.userChoice;
+    if (choice.outcome === 'accepted') {
+      hideInstallPromptForever();
+      return;
+    }
+    setInstallPromptEvent(null);
+  };
+
   const expiresIn = expiresAt ? Math.max(0, Math.floor(expiresAt - Date.now() / 1000)) : null;
+
+  const sortedRooms = React.useMemo(
+    () => [...rooms].sort((a, b) => b.created_at - a.created_at),
+    [rooms]
+  );
+
+  const latestRooms = React.useMemo(() => sortedRooms.slice(0, 4), [sortedRooms]);
+
+  const filteredRooms = React.useMemo(() => {
+    if (roomSearchEmojis.length === 0) return sortedRooms;
+    return sortedRooms.filter((room) => {
+      if (!room.emojis || room.emojis.length < roomSearchEmojis.length) return false;
+      return roomSearchEmojis.every((emoji, index) => room.emojis?.[index] === emoji);
+    });
+  }, [sortedRooms, roomSearchEmojis]);
+
+  const pageLabel =
+    screen === 'create'
+      ? 'Create Room'
+      : screen === 'join'
+        ? 'Join Room'
+        : screen === 'rooms'
+          ? 'Rooms'
+          : screen === 'nodes'
+            ? 'Nodes'
+            : screen === 'chat'
+              ? 'Chat'
+              : 'Home';
+
+  const showBottomTabs = screen !== 'chat';
 
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-muted/40 via-background to-background text-foreground">
-        <Navbar />
-        <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-md flex-col px-5 py-8">
+        <Navbar pageLabel={pageLabel} />
+        <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-md flex-col px-5 py-8 pb-28">
           {screen === 'home' && (
-            <>
-              <header className="mb-10 text-center">
-                <h1 className="text-2xl font-semibold tracking-tight">Uncensored and Decentralized</h1>
-              </header>
-
+            <section className="space-y-6">
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Relay</div>
-                    <div className="mt-1 text-sm font-medium text-foreground/90">
-                      {relayUrl.replace('http://', '').replace('https://', '')}
-                    </div>
-                  </div>
-                  <span className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {connected ? 'Ready' : 'Offline'}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button onClick={startCreate}>Create room</Button>
                   <Button variant="outline" onClick={startJoin}>Join room</Button>
                 </div>
-
-                <div className="mt-6 space-y-3 border-t border-border pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Workers</div>
-                    <Button size="sm" variant="outline" onClick={() => setShowAddWorker(true)}>
-                      Add worker
-                    </Button>
-                  </div>
-                  {loadingWorkers && <div className="text-xs text-muted-foreground">Checking workers...</div>}
-                  {!loadingWorkers && workers.length === 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      No workers reachable from genesis. Add a worker URL if you have one.
-                    </div>
-                  )}
-                  <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-                    {workers.map((worker) => (
-                      <div key={worker.url} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-3 py-2">
-                        <div>
-                          <div className="text-[13px] font-medium text-foreground/90">
-                            {worker.url.replace('http://', '').replace('https://', '')}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {worker.is_genesis ? 'Genesis · ' : ''}
-                            {worker.online ? 'Online' : 'Offline'}
-                            {worker.latency_ms ? ` · ${worker.latency_ms}ms` : ''}
-                            {worker.fail_count ? ` · fails ${worker.fail_count}` : ''}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`flex h-4 w-3 items-end justify-center gap-0.5 ${worker.online ? 'text-foreground' : 'text-muted-foreground'}`}
-                            title={worker.latency_ms ? `${worker.latency_ms}ms` : worker.online ? 'Online' : 'Offline'}
-                          >
-                            <span className={`h-1 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 120 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
-                            <span className={`h-1.5 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 200 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
-                            <span className={`h-2 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 350 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
-                            <span className={`h-2.5 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 500 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
-                          </div>
-                          <Button
-                            size="sm"
-                            variant={relayUrl === worker.url ? 'default' : 'outline'}
-                            onClick={() => setRelayUrl(worker.url)}
-                          >
-                            {relayUrl === worker.url ? 'Connected' : 'Use'}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </section>
 
-              <section className="mt-6 rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
+              <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
                 <div className="flex items-center justify-between">
-                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Rooms</div>
+                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Latest rooms</div>
                   <span className="text-[10px] text-muted-foreground">
                     {loadingRooms ? 'Refreshing...' : `${rooms.length} listed`}
                   </span>
                 </div>
-                <div className="mt-4 space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                  {rooms.length === 0 && !loadingRooms && (
+                <div className="mt-4 space-y-3">
+                  {latestRooms.length === 0 && !loadingRooms && (
                     <div className="text-xs text-muted-foreground">No active rooms shared yet.</div>
                   )}
-                  {rooms.map((room) => {
+                  {latestRooms.map((room) => {
+                    const remaining = Math.max(0, Math.floor(room.expires_at - Date.now() / 1000));
+                    return (
+                      <div key={room.room_hash} className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[13px] font-medium text-foreground/90">
+                              {room.emojis && room.emojis.length === 6 ? room.emojis.join(' ') : room.room_hash}
+                            </div>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              {room.description ? room.description : 'No description provided.'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {Math.floor(remaining / 60)}m {remaining % 60}s
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => joinFromDirectory(room)}>
+                            Join
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </section>
+          )}
+
+          {screen === 'create' && (
+            <section className="space-y-6">
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="text-xs text-muted-foreground">Room emojis</div>
+                <div className="mt-3">
+                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">Username (optional)</label>
+                  <input
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value.slice(0, 20))}
+                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    placeholder="Leave blank for random"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">PIN</label>
+                  <input
+                    value={createPin}
+                    onChange={(e) => setCreatePin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
+                    placeholder="Enter 6-digit PIN"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Room description (optional)</label>
+                  <textarea
+                    value={roomDescription}
+                    onChange={(e) => setRoomDescription(e.target.value.slice(0, 140))}
+                    className="mt-2 min-h-[88px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    placeholder="Short description, include PIN if you want it public"
+                  />
+                  <div className="mt-2 text-[10px] text-muted-foreground">{roomDescription.length}/140</div>
+                </div>
+                {selectedEmojis.length === 6 && (
+                  <div className="text-xs text-muted-foreground">
+                    {selectedEmojis.map((e) => EMOJI_PHONETICS[e]).join(' · ')}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Button onClick={handleCreateRoom}>Create room</Button>
+                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
+              </div>
+            </section>
+          )}
+
+          {screen === 'join' && (
+            <section className="space-y-6">
+              <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                {selectedRoomDescription ? selectedRoomDescription : 'No description provided.'}
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="text-xs text-muted-foreground">Room emojis</div>
+                <div className="mt-3">
+                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">PIN</label>
+                  <input
+                    value={joinPin}
+                    onChange={(e) => setJoinPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
+                    placeholder="••••••"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Username (optional)</label>
+                  <input
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value.slice(0, 20))}
+                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    placeholder="Leave blank for random"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Button onClick={handleJoinRoom}>Join room</Button>
+                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
+              </div>
+            </section>
+          )}
+
+          {screen === 'rooms' && (
+            <section className="space-y-6">
+              <div className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
+                <div className="text-xs text-muted-foreground">Search by emoji ID</div>
+                <div className="mt-3">
+                  <EmojiSelector selected={roomSearchEmojis} onChange={setRoomSearchEmojis} compact />
+                </div>
+              </div>
+
+              <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">All rooms</div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {loadingRooms ? 'Refreshing...' : `${filteredRooms.length} match`}
+                  </span>
+                </div>
+                <div className="mt-4 max-h-[460px] space-y-3 overflow-y-auto pr-1">
+                  {filteredRooms.length === 0 && !loadingRooms && (
+                    <div className="text-xs text-muted-foreground">No matching rooms right now.</div>
+                  )}
+                  {filteredRooms.map((room) => {
                     const remaining = Math.max(0, Math.floor(room.expires_at - Date.now() / 1000));
                     return (
                       <div key={room.room_hash} className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
@@ -668,174 +900,87 @@ export default function App() {
                   })}
                 </div>
               </section>
-
-              <footer className="mt-10 text-center text-xs text-muted-foreground">
-                Built for low-bandwidth, censorship-resistant chat.
-                <div className="mt-2 text-[10px] text-muted-foreground">
-                  Directory refresh:
-                  {' '}
-                  workers in {lastWorkersRefresh ? Math.max(0, Math.ceil((WORKERS_REFRESH_MS - (nowTick - lastWorkersRefresh)) / 1000)) : '—'}s
-                  {' · '}
-                  rooms in {lastRoomsRefresh ? Math.max(0, Math.ceil((ROOMS_REFRESH_MS - (nowTick - lastRoomsRefresh)) / 1000)) : '—'}s
-                </div>
-              </footer>
-
-              {showAddWorker && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                  <div className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg">
-                    <div className="text-sm font-semibold">Add worker</div>
-                    <p className="mt-1 text-xs text-muted-foreground">Paste a worker URL and add it to the list.</p>
-                    <input
-                      value={manualWorkerUrl}
-                      onChange={(e) => setManualWorkerUrl(e.target.value)}
-                      className="mt-3 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                      placeholder="https://your-worker.workers.dev"
-                    />
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setShowAddWorker(false)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const value = manualWorkerUrl.trim();
-                          if (!value) return;
-                          setWorkers((prev) => {
-                            if (prev.some((w) => w.url === value)) return prev;
-                            return [
-                              ...prev,
-                              { url: value, last_seen: 0, last_ok: 0, fail_count: 0 }
-                            ];
-                          });
-                          setManualWorkerUrl('');
-                          setShowAddWorker(false);
-                          pingAndUpdateWorker(value);
-                        }}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {screen === 'create' && (
-            <section className="space-y-6">
-              <div>
-                <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Create</div>
-                <h2 className="mt-2 text-2xl font-semibold">New room</h2>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="text-xs text-muted-foreground">Room emojis</div>
-                <div className="mt-3">
-                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">Username (optional)</label>
-                  <input
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                    placeholder="Leave blank for random"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">PIN</label>
-                  <input
-                    value={createPin}
-                    onChange={(e) => setCreatePin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
-                    placeholder="Enter 6-digit PIN"
-                  />
-                </div>
-                {selectedEmojis.length === 6 && (
-                  <div className="text-xs text-muted-foreground">
-                    {selectedEmojis.map((e) => EMOJI_PHONETICS[e]).join(' · ')}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">Room description (optional)</label>
-                  <textarea
-                    value={roomDescription}
-                    onChange={(e) => setRoomDescription(e.target.value.slice(0, 140))}
-                    className="mt-2 min-h-[88px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    placeholder="Short description, include PIN if you want it public"
-                  />
-                  <div className="mt-2 text-[10px] text-muted-foreground">{roomDescription.length}/140</div>
-                </div>
-              </div>
-
-              {status && (
-                <div className={`rounded-md border px-3 py-2 text-sm ${status.type === 'error' ? 'border-red-500/50 text-red-500' : 'border-border text-muted-foreground'}`}>
-                  {status.message}
-                </div>
-              )}
-
-              <div className="grid gap-2">
-                <Button onClick={handleCreateRoom}>Create room</Button>
-                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
-              </div>
             </section>
           )}
 
-          {screen === 'join' && (
+          {screen === 'nodes' && (
             <section className="space-y-6">
-              <div>
-                <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Join</div>
-                <h2 className="mt-2 text-2xl font-semibold">Existing room</h2>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                {selectedRoomDescription ? selectedRoomDescription : 'No description provided.'}
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="text-xs text-muted-foreground">Room emojis</div>
-                <div className="mt-3">
-                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
+              <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Connected node</div>
+                    <div className="mt-1 text-sm font-medium text-foreground/90">
+                      {relayUrl.replace('http://', '').replace('https://', '')}
+                    </div>
+                  </div>
+                  <span className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    {connected ? 'Ready' : 'Offline'}
+                  </span>
                 </div>
-              </div>
 
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">PIN</label>
-                  <input
-                    value={joinPin}
-                    onChange={(e) => setJoinPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
-                    placeholder="••••••"
-                  />
+                <div className="mt-6 space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Nodes</div>
+                    <Button size="sm" variant="outline" onClick={() => setShowAddWorker(true)}>
+                      Add node
+                    </Button>
+                  </div>
+                  {loadingWorkers && <div className="text-xs text-muted-foreground">Checking nodes...</div>}
+                  {!loadingWorkers && workers.length === 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      No nodes reachable from genesis. Add a node URL if you have one.
+                    </div>
+                  )}
+                  <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                    {workers.map((worker) => (
+                      <div key={worker.url} className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/70 px-2.5 py-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-medium text-foreground/90">
+                            {worker.url.replace('http://', '').replace('https://', '')}
+                          </div>
+                          <div className="truncate text-[10px] text-muted-foreground">
+                            {worker.is_genesis ? 'Genesis · ' : ''}
+                            {worker.online ? 'Online' : 'Offline'}
+                            {worker.latency_ms ? ` · ${worker.latency_ms}ms` : ''}
+                            {worker.fail_count ? ` · fails ${worker.fail_count}` : ''}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <div
+                            className={`flex h-4 w-3 items-end justify-center gap-0.5 ${worker.online ? 'text-foreground' : 'text-muted-foreground'}`}
+                            title={worker.latency_ms ? `${worker.latency_ms}ms` : worker.online ? 'Online' : 'Offline'}
+                          >
+                            <span className={`h-1 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 120 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
+                            <span className={`h-1.5 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 200 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
+                            <span className={`h-2 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 350 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
+                            <span className={`h-2.5 w-0.5 rounded-full ${worker.latency_ms && worker.latency_ms < 500 ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`} />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setRelayUrl(worker.url)}
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
+                              relayUrl === worker.url
+                                ? 'border-primary/30 bg-primary/15 text-primary'
+                                : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                            title={relayUrl === worker.url ? 'Connected node' : 'Connect node'}
+                          >
+                            {relayUrl === worker.url ? <Check className="h-3.5 w-3.5" /> : <PlugZap className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Username (optional)</label>
-                  <input
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-                    className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                    placeholder="Leave blank for random"
-                  />
-                </div>
-              </div>
+              </section>
 
-              {status && (
-                <div className={`rounded-md border px-3 py-2 text-sm ${status.type === 'error' ? 'border-red-500/50 text-red-500' : 'border-border text-muted-foreground'}`}>
-                  {status.message}
-                </div>
-              )}
-
-              <div className="grid gap-2">
-                <Button onClick={handleJoinRoom}>Join room</Button>
-                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
-              </div>
+              <footer className="text-center text-xs text-muted-foreground">
+                Node directory refresh:
+                {' '}
+                nodes in {lastWorkersRefresh ? Math.max(0, Math.ceil((NODES_REFRESH_MS - (nowTick - lastWorkersRefresh)) / 1000)) : '—'}s
+                {' · '}
+                rooms in {lastRoomsRefresh ? Math.max(0, Math.ceil((ROOMS_REFRESH_MS - (nowTick - lastRoomsRefresh)) / 1000)) : '—'}s
+              </footer>
             </section>
           )}
 
@@ -844,8 +989,7 @@ export default function App() {
               <div className="mb-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Room</div>
-                    <div className="mt-1 text-lg font-semibold">{roomEmojis.join(' ')}</div>
+                    <div className="text-lg font-semibold">{roomEmojis.join(' ')}</div>
                     <div className="text-xs text-muted-foreground">{membersCount} online · {roomHash}</div>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleLeave}>Leave</Button>
@@ -913,7 +1057,123 @@ export default function App() {
               </Chat>
             </section>
           )}
+
+          {status && (
+            <div className={`mt-4 rounded-md border px-3 py-2 text-sm ${status.type === 'error' ? 'border-red-500/50 text-red-500' : 'border-border text-muted-foreground'}`}>
+              {status.message}
+            </div>
+          )}
+
+          {showAddWorker && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg">
+                <div className="text-sm font-semibold">Add node</div>
+                <p className="mt-1 text-xs text-muted-foreground">Paste a node URL and add it to your list.</p>
+                <input
+                  value={manualWorkerUrl}
+                  onChange={(e) => setManualWorkerUrl(e.target.value)}
+                  className="mt-3 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  placeholder="https://your-node.workers.dev"
+                />
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowAddWorker(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const value = manualWorkerUrl.trim();
+                      if (!value) return;
+                      setWorkers((prev) => {
+                        if (prev.some((w) => w.url === value)) return prev;
+                        return [...prev, { url: value, last_seen: 0, last_ok: 0, fail_count: 0 }];
+                      });
+                      setManualWorkerUrl('');
+                      setShowAddWorker(false);
+                      pingAndUpdateWorker(value);
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
+
+        {showBottomTabs && (
+          <div className="fixed inset-x-0 bottom-0 z-40 px-5 pb-4">
+            <nav className="mx-auto grid w-full max-w-md grid-cols-4 gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-2xl shadow-black/10 backdrop-blur">
+              {(['home', 'rooms', 'nodes'] as TabScreen[]).map((tab) => {
+                const active = screen === tab;
+                const Icon = tab === 'home' ? Home : tab === 'rooms' ? Search : Network;
+                const label = tab === 'home' ? 'Home' : tab === 'rooms' ? 'Rooms' : 'Nodes';
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setTab(tab)}
+                    aria-label={label}
+                    title={label}
+                    className={[
+                      'inline-flex h-11 items-center justify-center rounded-xl transition-all duration-200',
+                      active
+                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
+                        : 'bg-background/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ].join(' ')}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={startCreate}
+                aria-label="Create room"
+                title="Create room"
+                className={[
+                  'inline-flex h-11 items-center justify-center rounded-xl transition-all duration-200',
+                  screen === 'create'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25'
+                    : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                ].join(' ')}
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </nav>
+          </div>
+        )}
+
+        {showInstallModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-base font-semibold">Install this app</div>
+                <button
+                  type="button"
+                  onClick={dismissInstallPromptTemporarily}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Close install prompt"
+                  title="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Add DNSCloak Chat to your device for a faster, app-like experience.
+              </p>
+              {installMessage && <p className="mt-2 text-xs text-muted-foreground">{installMessage}</p>}
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={hideInstallPromptForever}>
+                  Don&apos;t show again
+                </Button>
+                <Button onClick={installPwa}>
+                  Install
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ThemeProvider>
   );

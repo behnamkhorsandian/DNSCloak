@@ -3,9 +3,10 @@ import { EMOJI_PHONETICS, EMOJI_SET } from '@/lib/sos-crypto';
 type Props = {
   selected: string[];
   onChange: (next: string[]) => void;
+  compact?: boolean;
 };
 
-export default function EmojiSelector({ selected, onChange }: Props) {
+export default function EmojiSelector({ selected, onChange, compact = false }: Props) {
   const addEmoji = (emoji: string) => {
     if (selected.length >= 6) return;
     onChange([...selected, emoji]);
@@ -22,7 +23,7 @@ export default function EmojiSelector({ selected, onChange }: Props) {
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-border bg-card p-3">
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className={`flex flex-wrap items-center justify-center ${compact ? 'gap-2' : 'gap-3'}`}>
           {selected.length === 0 ? (
             <span className="text-sm text-muted-foreground">Pick 6 emojis</span>
           ) : (
@@ -31,7 +32,9 @@ export default function EmojiSelector({ selected, onChange }: Props) {
                 key={`${emoji}-${idx}`}
                 type="button"
                 onClick={() => removeAt(idx)}
-                className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-background text-2xl transition hover:bg-muted"
+                className={`flex items-center justify-center rounded-lg border border-border bg-background transition hover:bg-muted ${
+                  compact ? 'h-9 w-9 text-lg' : 'h-12 w-12 text-2xl'
+                }`}
                 title="Tap to remove"
               >
                 {emoji}
