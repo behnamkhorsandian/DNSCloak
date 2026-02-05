@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "AradVF";
+  src: url("/fonts/AradVF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: 0 0% 98%;
   --foreground: 222 47% 11%;
@@ -35,6 +43,10 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+.lang-fa body {
+  font-family: "AradVF", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * {

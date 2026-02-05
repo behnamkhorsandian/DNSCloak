@@ -4,9 +4,22 @@ type Props = {
   selected: string[];
   onChange: (next: string[]) => void;
   compact?: boolean;
+  labels?: {
+    pickEmojis: string;
+    tapToRemove: string;
+    more: (count: number) => string;
+    clear: string;
+  };
 };
 
-export default function EmojiSelector({ selected, onChange, compact = false }: Props) {
+export default function EmojiSelector({ selected, onChange, compact = false, labels }: Props) {
+  const resolvedLabels = labels ?? {
+    pickEmojis: 'Pick 6 emojis',
+    tapToRemove: 'Tap to remove',
+    more: (count: number) => `${count} more`,
+    clear: 'Clear'
+  };
+
   const addEmoji = (emoji: string) => {
     if (selected.length >= 6) return;
     onChange([...selected, emoji]);
@@ -25,7 +38,7 @@ export default function EmojiSelector({ selected, onChange, compact = false }: P
       <div className="rounded-lg border border-border bg-card p-3">
         <div className={`flex flex-wrap items-center justify-center ${compact ? 'gap-2' : 'gap-3'}`}>
           {selected.length === 0 ? (
-            <span className="text-sm text-muted-foreground">Pick 6 emojis</span>
+            <span className="text-sm text-muted-foreground">{resolvedLabels.pickEmojis}</span>
           ) : (
             selected.map((emoji, idx) => (
               <button
@@ -35,14 +48,14 @@ export default function EmojiSelector({ selected, onChange, compact = false }: P
                 className={`flex items-center justify-center rounded-lg border border-border bg-background transition hover:bg-muted ${
                   compact ? 'h-9 w-9 text-lg' : 'h-12 w-12 text-2xl'
                 }`}
-                title="Tap to remove"
+                title={resolvedLabels.tapToRemove}
               >
                 {emoji}
               </button>
             ))
           )}
           {selected.length > 0 && selected.length < 6 && (
-            <span className="text-sm text-muted-foreground">{6 - selected.length} more</span>
+            <span className="text-sm text-muted-foreground">{resolvedLabels.more(6 - selected.length)}</span>
           )}
         </div>
       </div>
@@ -67,7 +80,7 @@ export default function EmojiSelector({ selected, onChange, compact = false }: P
           onClick={clearAll}
           className="text-xs text-muted-foreground underline"
         >
-          Clear
+          {resolvedLabels.clear}
         </button>
       </div>
     </div>

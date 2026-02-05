@@ -27,6 +27,7 @@ import {
   encryptMessage
 } from '@/lib/sos-crypto';
 import type { ChatMessage, RoomMode } from '@/lib/sos-types';
+import { getInitialLang, isRtl, LANG_KEY, type Lang, t } from '@/lib/i18n';
 import {
   createRoomWithDirectory,
   getRoomInfo,
@@ -146,6 +147,7 @@ const mergeWorkerLists = (primary: WorkerStatus[], fallback: WorkerStatus[]) => 
 export default function App() {
   const [screen, setScreen] = React.useState<Screen>('home');
   const [status, setStatus] = React.useState<Status>(null);
+  const [lang, setLang] = React.useState<Lang>(() => getInitialLang());
   const [relayUrl, setRelayUrl] = React.useState(() => readStoredRelay() || RELAY_DEFAULT);
   const [workers, setWorkers] = React.useState<WorkerStatus[]>(() => readStoredWorkers());
   const [rooms, setRooms] = React.useState<RoomDirectoryEntry[]>([]);
@@ -183,6 +185,17 @@ export default function App() {
   const [installMessage, setInstallMessage] = React.useState('');
   const [installDismissClicks, setInstallDismissClicks] = React.useState(0);
 
+  const tr = React.useCallback((key: string, ...args: any[]) => t(lang, key, ...args), [lang]);
+  const emojiLabels = React.useMemo(
+    () => ({
+      pickEmojis: tr('pick_emojis'),
+      tapToRemove: tr('tap_to_remove'),
+      more: (count: number) => tr('more_remaining', count),
+      clear: tr('clear')
+    }),
+    [tr]
+  );
+
   const lastMessageTsRef = React.useRef(0);
   const encryptionKeyRef = React.useRef<Uint8Array | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
@@ -204,6 +217,14 @@ export default function App() {
   React.useEffect(() => {
     saveStoredRelay(relayUrl);
   }, [relayUrl]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(LANG_KEY, lang);
+    document.documentElement.lang = lang === 'fa' ? 'fa' : 'en';
+    document.documentElement.dir = isRtl(lang) ? 'rtl' : 'ltr';
+    document.documentElement.classList.toggle('lang-fa', lang === 'fa');
+  }, [lang]);
 
   React.useEffect(() => {
     saveStoredWorkers(workers);
@@ -425,7 +446,7 @@ export default function App() {
           newMessages.push({
             id: msg.id,
             sender: msg.sender,
-            content: decrypted ?? '[Could not decrypt]',
+            content: decrypted ?? tr('could_not_decrypt'),
             timestamp: msg.timestamp,
             own: msg.sender === nickname
           });
@@ -501,6 +522,10 @@ export default function App() {
     setScreen('guide');
   };
 
+  const toggleLanguage = () => {
+    setLang((prev) => (prev === 'en' ? 'fa' : 'en'));
+  };
+
   const joinFromDirectory = (room: RoomDirectoryEntry) => {
     setStatus(null);
     setScreen('join');
@@ -508,21 +533,21 @@ export default function App() {
     setJoinPin('');
     setSelectedRoomDescription(room.description || null);
     if (!room.emojis || room.emojis.length !== 6) {
-      setStatus({ type: 'error', message: 'Room listing missing emojis. Ask the creator for the 6-emoji ID.' });
+      setStatus({ type: 'error', message: tr('room_list_missing_emojis') });
     }
   };
 
   const handleCreateRoom = async () => {
     if (selectedEmojis.length !== 6) {
-      setStatus({ type: 'error', message: 'Pick all 6 emojis.' });
+      setStatus({ type: 'error', message: tr('pick_all_emojis') });
       return;
     }
     if (createPin.length !== 6) {
-      setStatus({ type: 'error', message: 'Enter a 6-digit PIN.' });
+      setStatus({ type: 'error', message: tr('pin_length_create') });
       return;
     }
 
-    setStatus({ type: 'info', message: 'Creating room...' });
+    setStatus({ type: 'info', message: tr('creating_room') });
     try {
       const hash = await roomIdToHash(selectedEmojis);
       const chosenName = nickname.trim() || generateNickname();
@@ -550,23 +575,23 @@ export default function App() {
 
       setScreen('chat');
       setStatus(null);
-      addSystemMessage('Room created. Messages are end-to-end encrypted.');
+      addSystemMessage(tr('room_created'));
     } catch (err) {
-      setStatus({ type: 'error', message: (err as Error).message || 'Failed to create room.' });
+      setStatus({ type: 'error', message: (err as Error).message || tr('failed_create') });
     }
   };
 
   const handleJoinRoom = async () => {
     if (selectedEmojis.length !== 6) {
-      setStatus({ type: 'error', message: 'Pick all 6 emojis.' });
+      setStatus({ type: 'error', message: tr('pick_all_emojis') });
       return;
     }
     if (joinPin.length !== 6) {
-      setStatus({ type: 'error', message: 'Enter the 6-digit PIN.' });
+      setStatus({ type: 'error', message: tr('pin_length_join') });
       return;
     }
 
-    setStatus({ type: 'info', message: 'Joining room...' });
+    setStatus({ type: 'info', message: tr('joining_room') });
     try {
       const hash = await roomIdToHash(selectedEmojis);
       await getRoomInfo(relayUrl, hash);
@@ -588,9 +613,9 @@ export default function App() {
 
       setScreen('chat');
       setStatus(null);
-      addSystemMessage('You joined the room. Messages are end-to-end encrypted.');
+      addSystemMessage(tr('room_joined'));
     } catch (err) {
-      setStatus({ type: 'error', message: (err as Error).message || 'Failed to join room.' });
+      setStatus({ type: 'error', message: (err as Error).message || tr('failed_join') });
     }
   };
 
@@ -598,7 +623,7 @@ export default function App() {
     const trimmed = content.trim();
     if (!trimmed || !roomHash || !encryptionKeyRef.current) return;
     if (trimmed.length > SOS_CONFIG.MAX_MESSAGE_LENGTH) {
-      setStatus({ type: 'error', message: 'Message too long.' });
+      setStatus({ type: 'error', message: tr('message_too_long') });
       return;
     }
 
@@ -609,7 +634,7 @@ export default function App() {
       await sendMessageApi(relayUrl, roomHash, encoded, nickname || 'anon', memberId);
       setDraft('');
     } catch (err) {
-      setStatus({ type: 'error', message: (err as Error).message || 'Send failed.' });
+      setStatus({ type: 'error', message: (err as Error).message || tr('send_failed') });
     } finally {
       setSending(false);
     }
@@ -668,7 +693,7 @@ export default function App() {
 
   const installPwa = async () => {
     if (!installPromptEvent) {
-      setInstallMessage('Install is not available yet on this browser.');
+      setInstallMessage(tr('install_unavailable'));
       return;
     }
     await installPromptEvent.prompt();
@@ -699,45 +724,55 @@ export default function App() {
 
   const pageLabel =
     screen === 'create'
-      ? 'Create Room'
+      ? tr('create_room')
       : screen === 'join'
-        ? 'Join Room'
+        ? tr('join_room')
         : screen === 'rooms'
-          ? 'Rooms'
+          ? tr('rooms')
           : screen === 'nodes'
-            ? 'Nodes'
+            ? tr('nodes')
             : screen === 'chat'
-              ? 'Chat'
+              ? tr('chat')
               : screen === 'guide'
-                ? 'Guide'
-                : 'Home';
+                ? tr('guide')
+                : tr('home');
 
   const showBottomTabs = screen !== 'chat';
 
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-muted/40 via-background to-background text-foreground">
-        <Navbar pageLabel={pageLabel} onGuideClick={startGuide} guideActive={screen === 'guide'} />
+        <Navbar
+          pageLabel={pageLabel}
+          onGuideClick={startGuide}
+          guideActive={screen === 'guide'}
+          onLanguageToggle={toggleLanguage}
+          languageLabel={tr('language_toggle')}
+          appName={tr('app_name')}
+          tagline={tr('tagline')}
+          guideLabel={tr('guide')}
+          themeToggleLabel={tr('toggle_theme')}
+        />
         <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-md flex-col px-5 py-8 pb-28">
           {screen === 'home' && (
             <section className="space-y-6">
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={startCreate}>Create room</Button>
-                  <Button variant="outline" onClick={startJoin}>Join room</Button>
+                  <Button onClick={startCreate}>{tr('create_room')}</Button>
+                  <Button variant="outline" onClick={startJoin}>{tr('join_room')}</Button>
                 </div>
               </section>
 
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
                 <div className="flex items-center justify-between">
-                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Latest rooms</div>
+                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('latest_rooms')}</div>
                   <span className="text-[10px] text-muted-foreground">
-                    {loadingRooms ? 'Refreshing...' : `${rooms.length} listed`}
+                    {loadingRooms ? tr('refreshing') : tr('listed', rooms.length)}
                   </span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {latestRooms.length === 0 && !loadingRooms && (
-                    <div className="text-xs text-muted-foreground">No active rooms shared yet.</div>
+                    <div className="text-xs text-muted-foreground">{tr('no_active_rooms')}</div>
                   )}
                   {latestRooms.map((room) => {
                     const remaining = Math.max(0, Math.floor(room.expires_at - Date.now() / 1000));
@@ -749,14 +784,14 @@ export default function App() {
                               {room.emojis && room.emojis.length === 6 ? room.emojis.join(' ') : room.room_hash}
                             </div>
                             <div className="mt-1 text-[11px] text-muted-foreground">
-                              {room.description ? room.description : 'No description provided.'}
+                              {room.description ? room.description : tr('no_description')}
                             </div>
                             <div className="text-[10px] text-muted-foreground">
                               {Math.floor(remaining / 60)}m {remaining % 60}s
                             </div>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => joinFromDirectory(room)}>
-                            Join
+                            {tr('join')}
                           </Button>
                         </div>
                       </div>
@@ -770,58 +805,58 @@ export default function App() {
           {screen === 'guide' && (
             <section className="space-y-6">
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-sm font-semibold">Quick guide</div>
+                <div className="text-sm font-semibold">{tr('quick_guide')}</div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  This app lets you make private chat rooms using a 6-emoji ID and a 6-digit PIN. Everything is end-to-end encrypted.
+                  {tr('guide_intro')}
                 </p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Create a room</div>
-                <p>Tap <strong>Create room</strong>, pick 6 emojis, and set a 6-digit PIN.</p>
-                <p>Optional: add a short description so others know what the room is for.</p>
-                <p>Optional: add a username. If you leave it blank, we make a random one.</p>
-                <p>Share the 6 emojis and the PIN with people you want to invite.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_create_title')}</div>
+                <p>{tr('guide_create_1')}</p>
+                <p>{tr('guide_create_2')}</p>
+                <p>{tr('guide_create_3')}</p>
+                <p>{tr('guide_create_4')}</p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Join a room</div>
-                <p>Tap <strong>Join room</strong> and enter the same 6 emojis.</p>
-                <p>Enter the 6-digit PIN from the creator.</p>
-                <p>Pick a username or leave it blank for a random one.</p>
-                <p>If the room was listed, you can also join from the <strong>Rooms</strong> list.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_join_title')}</div>
+                <p>{tr('guide_join_1')}</p>
+                <p>{tr('guide_join_2')}</p>
+                <p>{tr('guide_join_3')}</p>
+                <p>{tr('guide_join_4')}</p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Descriptions and PINs</div>
-                <p>The description is public in the room list. Keep it short.</p>
-                <p>Never post a PIN unless you want anyone to join.</p>
-                <p>The PIN is required to decrypt messages.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_desc_title')}</div>
+                <p>{tr('guide_desc_1')}</p>
+                <p>{tr('guide_desc_2')}</p>
+                <p>{tr('guide_desc_3')}</p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Chat</div>
-                <p>Type your message and press <strong>Send</strong>.</p>
-                <p>You will see the room emojis, member count, and time left.</p>
-                <p>Use <strong>Leave</strong> to exit the room.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_chat_title')}</div>
+                <p>{tr('guide_chat_1')}</p>
+                <p>{tr('guide_chat_2')}</p>
+                <p>{tr('guide_chat_3')}</p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Rooms list</div>
-                <p>The <strong>Rooms</strong> tab shows public rooms shared with a description.</p>
-                <p>You can filter rooms by emoji ID.</p>
-                <p>Rooms expire automatically, so they may disappear.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_rooms_title')}</div>
+                <p>{tr('guide_rooms_1')}</p>
+                <p>{tr('guide_rooms_2')}</p>
+                <p>{tr('guide_rooms_3')}</p>
               </section>
 
               <section className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5 text-sm text-muted-foreground shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Nodes</div>
-                <p>The <strong>Nodes</strong> tab shows available relay nodes.</p>
-                <p>Tap a node to connect to it.</p>
-                <p>Use <strong>Add node</strong> if you have a custom node URL.</p>
+                <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('guide_nodes_title')}</div>
+                <p>{tr('guide_nodes_1')}</p>
+                <p>{tr('guide_nodes_2')}</p>
+                <p>{tr('guide_nodes_3')}</p>
               </section>
 
               <div className="grid gap-2">
-                <Button onClick={() => setScreen('home')}>Back to home</Button>
+                <Button onClick={() => setScreen('home')}>{tr('back_home')}</Button>
               </div>
             </section>
           )}
@@ -829,38 +864,38 @@ export default function App() {
           {screen === 'create' && (
             <section className="space-y-6">
               <div className="rounded-xl border border-border bg-card p-4">
-                <div className="text-xs text-muted-foreground">Room emojis</div>
+                <div className="text-xs text-muted-foreground">{tr('room_emojis')}</div>
                 <div className="mt-3">
-                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
+                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} labels={emojiLabels} />
                 </div>
               </div>
 
               <div className="space-y-3 rounded-xl border border-border bg-card p-4">
                 <div>
-                  <label className="text-xs text-muted-foreground">Username (optional)</label>
+                  <label className="text-xs text-muted-foreground">{tr('username_optional')}</label>
                   <input
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value.slice(0, 20))}
                     className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                    placeholder="Leave blank for random"
+                    placeholder={tr('username_placeholder')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">PIN</label>
+                  <label className="text-xs text-muted-foreground">{tr('pin')}</label>
                   <input
                     value={createPin}
                     onChange={(e) => setCreatePin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
-                    placeholder="Enter 6-digit PIN"
+                    placeholder={tr('pin_placeholder')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Room description (optional)</label>
+                  <label className="text-xs text-muted-foreground">{tr('description_label')}</label>
                   <textarea
                     value={roomDescription}
                     onChange={(e) => setRoomDescription(e.target.value.slice(0, 140))}
                     className="mt-2 min-h-[88px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                    placeholder="Short description, include PIN if you want it public"
+                    placeholder={tr('description_placeholder')}
                   />
                   <div className="mt-2 text-[10px] text-muted-foreground">{roomDescription.length}/140</div>
                 </div>
@@ -872,8 +907,8 @@ export default function App() {
               </div>
 
               <div className="grid gap-2">
-                <Button onClick={handleCreateRoom}>Create room</Button>
-                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
+                <Button onClick={handleCreateRoom}>{tr('create')}</Button>
+                <Button variant="outline" onClick={() => setScreen('home')}>{tr('back')}</Button>
               </div>
             </section>
           )}
@@ -881,40 +916,40 @@ export default function App() {
           {screen === 'join' && (
             <section className="space-y-6">
               <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                {selectedRoomDescription ? selectedRoomDescription : 'No description provided.'}
+                {selectedRoomDescription ? selectedRoomDescription : tr('no_description')}
               </div>
 
               <div className="rounded-xl border border-border bg-card p-4">
-                <div className="text-xs text-muted-foreground">Room emojis</div>
+                <div className="text-xs text-muted-foreground">{tr('room_emojis')}</div>
                 <div className="mt-3">
-                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} />
+                  <EmojiSelector selected={selectedEmojis} onChange={setSelectedEmojis} labels={emojiLabels} />
                 </div>
               </div>
 
               <div className="space-y-3 rounded-xl border border-border bg-card p-4">
                 <div>
-                  <label className="text-xs text-muted-foreground">PIN</label>
+                  <label className="text-xs text-muted-foreground">{tr('pin')}</label>
                   <input
                     value={joinPin}
                     onChange={(e) => setJoinPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm tracking-[0.3em]"
-                    placeholder="••••••"
+                    placeholder={tr('pin_placeholder')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Username (optional)</label>
+                  <label className="text-xs text-muted-foreground">{tr('username_optional')}</label>
                   <input
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value.slice(0, 20))}
                     className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                    placeholder="Leave blank for random"
+                    placeholder={tr('username_placeholder')}
                   />
                 </div>
               </div>
 
               <div className="grid gap-2">
-                <Button onClick={handleJoinRoom}>Join room</Button>
-                <Button variant="outline" onClick={() => setScreen('home')}>Back</Button>
+                <Button onClick={handleJoinRoom}>{tr('join_action')}</Button>
+                <Button variant="outline" onClick={() => setScreen('home')}>{tr('back')}</Button>
               </div>
             </section>
           )}
@@ -922,22 +957,22 @@ export default function App() {
           {screen === 'rooms' && (
             <section className="space-y-6">
               <div className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
-                <div className="text-xs text-muted-foreground">Search by emoji ID</div>
+                <div className="text-xs text-muted-foreground">{tr('search_by_emoji')}</div>
                 <div className="mt-3">
-                  <EmojiSelector selected={roomSearchEmojis} onChange={setRoomSearchEmojis} compact />
+                  <EmojiSelector selected={roomSearchEmojis} onChange={setRoomSearchEmojis} compact labels={emojiLabels} />
                 </div>
               </div>
 
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
                 <div className="flex items-center justify-between">
-                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">All rooms</div>
+                  <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('all_rooms')}</div>
                   <span className="text-[10px] text-muted-foreground">
-                    {loadingRooms ? 'Refreshing...' : `${filteredRooms.length} match`}
+                    {loadingRooms ? tr('refreshing') : tr('match', filteredRooms.length)}
                   </span>
                 </div>
                 <div className="mt-4 max-h-[460px] space-y-3 overflow-y-auto pr-1">
                   {filteredRooms.length === 0 && !loadingRooms && (
-                    <div className="text-xs text-muted-foreground">No matching rooms right now.</div>
+                    <div className="text-xs text-muted-foreground">{tr('no_matching_rooms')}</div>
                   )}
                   {filteredRooms.map((room) => {
                     const remaining = Math.max(0, Math.floor(room.expires_at - Date.now() / 1000));
@@ -949,7 +984,7 @@ export default function App() {
                               {room.emojis && room.emojis.length === 6 ? room.emojis.join(' ') : room.room_hash}
                             </div>
                             <div className="mt-1 text-[11px] text-muted-foreground">
-                              {room.description ? room.description : 'No description provided.'}
+                              {room.description ? room.description : tr('no_description')}
                             </div>
                             <div className="text-[10px] text-muted-foreground">
                               {room.worker.replace('http://', '').replace('https://', '')}
@@ -958,7 +993,7 @@ export default function App() {
                             </div>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => joinFromDirectory(room)}>
-                            Join
+                            {tr('join')}
                           </Button>
                         </div>
                       </div>
@@ -974,27 +1009,27 @@ export default function App() {
               <section className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Connected node</div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{tr('connected_node')}</div>
                     <div className="mt-1 text-sm font-medium text-foreground/90">
                       {relayUrl.replace('http://', '').replace('https://', '')}
                     </div>
                   </div>
                   <span className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {connected ? 'Ready' : 'Offline'}
+                    {connected ? tr('ready') : tr('offline')}
                   </span>
                 </div>
 
                 <div className="mt-6 space-y-3 border-t border-border pt-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Nodes</div>
+                    <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">{tr('nodes_label')}</div>
                     <Button size="sm" variant="outline" onClick={() => setShowAddWorker(true)}>
-                      Add node
+                      {tr('add_node')}
                     </Button>
                   </div>
-                  {loadingWorkers && <div className="text-xs text-muted-foreground">Checking nodes...</div>}
+                  {loadingWorkers && <div className="text-xs text-muted-foreground">{tr('checking_nodes')}</div>}
                   {!loadingWorkers && workers.length === 0 && (
                     <div className="text-xs text-muted-foreground">
-                      No nodes reachable from genesis. Add a node URL if you have one.
+                      {tr('no_nodes')}
                     </div>
                   )}
                   <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
@@ -1006,9 +1041,9 @@ export default function App() {
                           </div>
                           <div className="truncate text-[10px] text-muted-foreground">
                             {worker.is_genesis ? 'Genesis · ' : ''}
-                            {worker.online ? 'Online' : 'Offline'}
+                            {worker.online ? tr('online') : tr('offline')}
                             {worker.latency_ms ? ` · ${worker.latency_ms}ms` : ''}
-                            {worker.fail_count ? ` · fails ${worker.fail_count}` : ''}
+                            {worker.fail_count ? ` · ${tr('fails', worker.fail_count)}` : ''}
                           </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
@@ -1029,7 +1064,7 @@ export default function App() {
                                 ? 'border-primary/30 bg-primary/15 text-primary'
                                 : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
                             }`}
-                            title={relayUrl === worker.url ? 'Connected node' : 'Connect node'}
+                            title={relayUrl === worker.url ? tr('connected_node') : tr('connect_node')}
                           >
                             {relayUrl === worker.url ? <Check className="h-3.5 w-3.5" /> : <PlugZap className="h-3.5 w-3.5" />}
                           </button>
@@ -1041,11 +1076,13 @@ export default function App() {
               </section>
 
               <footer className="text-center text-xs text-muted-foreground">
-                Node directory refresh:
+                {tr('node_directory_refresh')}
                 {' '}
-                nodes in {lastWorkersRefresh ? Math.max(0, Math.ceil((NODES_REFRESH_MS - (nowTick - lastWorkersRefresh)) / 1000)) : '—'}s
+                {tr('nodes_in')}{' '}
+                {lastWorkersRefresh ? Math.max(0, Math.ceil((NODES_REFRESH_MS - (nowTick - lastWorkersRefresh)) / 1000)) : '—'}s
                 {' · '}
-                rooms in {lastRoomsRefresh ? Math.max(0, Math.ceil((ROOMS_REFRESH_MS - (nowTick - lastRoomsRefresh)) / 1000)) : '—'}s
+                {tr('rooms_in')}{' '}
+                {lastRoomsRefresh ? Math.max(0, Math.ceil((ROOMS_REFRESH_MS - (nowTick - lastRoomsRefresh)) / 1000)) : '—'}s
               </footer>
             </section>
           )}
@@ -1056,20 +1093,20 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-lg font-semibold">{roomEmojis.join(' ')}</div>
-                    <div className="text-xs text-muted-foreground">{membersCount} online · {roomHash}</div>
+                    <div className="text-xs text-muted-foreground">{tr('members_online', membersCount)} · {roomHash}</div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleLeave}>Leave</Button>
+                  <Button variant="outline" size="sm" onClick={handleLeave}>{tr('leave')}</Button>
                 </div>
 
                 <div className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
-                  <div>Mode: fixed</div>
-                  <div>PIN: {createPin || joinPin}</div>
-                  {expiresIn !== null && <div>Expires in: {Math.floor(expiresIn / 60)}m {expiresIn % 60}s</div>}
+                  <div>{tr('mode_fixed')}</div>
+                  <div>{tr('pin')}: {createPin || joinPin}</div>
+                  {expiresIn !== null && <div>{tr('expires_in')} {Math.floor(expiresIn / 60)}m {expiresIn % 60}s</div>}
                 </div>
 
                 {!connected && (
                   <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-500">
-                    Connection lost. Retrying...
+                    {tr('connection_lost')}
                   </div>
                 )}
               </div>
@@ -1078,7 +1115,7 @@ export default function App() {
                 <ChatViewport className="h-[460px]">
                   <ChatMessages className="py-4">
                     {messages.length === 0 && (
-                      <div className="text-center text-xs text-muted-foreground">No messages yet</div>
+                      <div className="text-center text-xs text-muted-foreground">{tr('no_messages')}</div>
                     )}
                     {messages.map((msg) => {
                       if (msg.system) {
@@ -1111,12 +1148,12 @@ export default function App() {
                   <ChatInputArea>
                     <ChatInputField
                       multiline
-                      placeholder="Type a message"
+                      placeholder={tr('type_message')}
                       value={draft}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(e.target.value)}
                     />
                     <ChatInputSubmit disabled={sending || !draft.trim()}>
-                      Send
+                      {tr('send')}
                     </ChatInputSubmit>
                   </ChatInputArea>
                 </div>
@@ -1133,17 +1170,17 @@ export default function App() {
           {showAddWorker && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
               <div className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg">
-                <div className="text-sm font-semibold">Add node</div>
-                <p className="mt-1 text-xs text-muted-foreground">Paste a node URL and add it to your list.</p>
+                <div className="text-sm font-semibold">{tr('add_node_title')}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{tr('add_node_help')}</p>
                 <input
                   value={manualWorkerUrl}
                   onChange={(e) => setManualWorkerUrl(e.target.value)}
                   className="mt-3 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  placeholder="https://your-node.workers.dev"
+                  placeholder={tr('add_node_placeholder')}
                 />
                 <div className="mt-4 flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowAddWorker(false)}>
-                    Cancel
+                    {tr('cancel')}
                   </Button>
                   <Button
                     size="sm"
@@ -1159,7 +1196,7 @@ export default function App() {
                       pingAndUpdateWorker(value);
                     }}
                   >
-                    Add
+                    {tr('add')}
                   </Button>
                 </div>
               </div>
@@ -1167,13 +1204,13 @@ export default function App() {
           )}
         </main>
 
-        {showBottomTabs && (
+          {showBottomTabs && (
           <div className="fixed inset-x-0 bottom-0 z-40 px-5 pb-4">
             <nav className="mx-auto grid w-full max-w-md grid-cols-4 gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-2xl shadow-black/10 backdrop-blur">
               {(['home', 'rooms', 'nodes'] as TabScreen[]).map((tab) => {
                 const active = screen === tab;
                 const Icon = tab === 'home' ? Home : tab === 'rooms' ? Search : Network;
-                const label = tab === 'home' ? 'Home' : tab === 'rooms' ? 'Rooms' : 'Nodes';
+                const label = tab === 'home' ? tr('home') : tab === 'rooms' ? tr('rooms') : tr('nodes');
                 return (
                   <button
                     key={tab}
@@ -1195,8 +1232,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={startCreate}
-                aria-label="Create room"
-                title="Create room"
+                aria-label={tr('create_room')}
+                title={tr('create_room')}
                 className={[
                   'inline-flex h-11 items-center justify-center rounded-xl transition-all duration-200',
                   screen === 'create'
@@ -1214,27 +1251,27 @@ export default function App() {
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-base font-semibold">Install this app</div>
+                <div className="text-base font-semibold">{tr('install_title')}</div>
                 <button
                   type="button"
                   onClick={dismissInstallPromptTemporarily}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label="Close install prompt"
-                  title="Close"
+                  aria-label={tr('close')}
+                  title={tr('close')}
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Add DNSCloak Chat to your device for a faster, app-like experience.
+                {tr('install_body')}
               </p>
               {installMessage && <p className="mt-2 text-xs text-muted-foreground">{installMessage}</p>}
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={hideInstallPromptForever}>
-                  Don&apos;t show again
+                  {tr('dont_show_again')}
                 </Button>
                 <Button onClick={installPwa}>
-                  Install
+                  {tr('install')}
                 </Button>
               </div>
             </div>

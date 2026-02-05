@@ -4,19 +4,35 @@ type Props = {
   pageLabel?: string;
   onGuideClick?: () => void;
   guideActive?: boolean;
+  onLanguageToggle?: () => void;
+  languageLabel?: string;
+  appName?: string;
+  tagline?: string;
+  guideLabel?: string;
+  themeToggleLabel?: string;
 };
 
-export default function Navbar({ pageLabel, onGuideClick, guideActive }: Props) {
+export default function Navbar({
+  pageLabel,
+  onGuideClick,
+  guideActive,
+  onLanguageToggle,
+  languageLabel,
+  appName,
+  tagline,
+  guideLabel,
+  themeToggleLabel
+}: Props) {
   return (
     <nav className="sticky top-0 z-10 border-b border-border/60 bg-background/80 backdrop-blur">
       <div className="mx-auto flex w-full max-w-md items-center justify-between px-5 py-4">
         <div className="flex min-w-0 items-center gap-2">
           <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
           <div className="min-w-0">
-            <div className="text-sm font-semibold uppercase tracking-[0.22em]">DNSCloak</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em]">{appName ?? 'DNSCloak'}</div>
             <div className="truncate text-[10px] text-muted-foreground">
               {pageLabel ? `${pageLabel} · ` : ''}
-              Uncensored and Decentralized
+              {tagline ?? 'Uncensored and Decentralized'}
             </div>
           </div>
         </div>
@@ -31,9 +47,16 @@ export default function Navbar({ pageLabel, onGuideClick, guideActive }: Props) 
                 : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
             ].join(' ')}
           >
-            Guide
+            {guideLabel ?? 'Guide'}
           </button>
-          <ThemeToggle />
+          <button
+            type="button"
+            onClick={onLanguageToggle}
+            className="h-10 rounded-md border border-border bg-background px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            {languageLabel}
+          </button>
+          <ThemeToggle label={themeToggleLabel} />
         </div>
       </div>
     </nav>
