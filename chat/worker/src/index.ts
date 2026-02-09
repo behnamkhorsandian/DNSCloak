@@ -6,8 +6,9 @@ const GOSSIP_INTERVAL_SECONDS = 30;
 const WORKER_FAIL_LIMIT = 5;
 const MAX_GOSSIP_WORKERS = 200;
 const MAX_GOSSIP_ROOMS = 200;
+
 const GENESIS_WORKERS = [
-    'https://lionsun.workers.dev',
+    'https://dnscloak-sos-chat.lionsun.workers.dev',
     'https://node1.dnscloak.net'
 ];
 
