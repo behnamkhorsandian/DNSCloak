@@ -1,6 +1,6 @@
 export const SOS_CONFIG = {
   GENESIS_WORKERS: [
-      'https://dnscloak-sos-chat.lionsun.workers.dev',
+      'https://lionsun-node1.lionsun.workers.dev',
       'https://node1.dnscloak.net'
   ],
   RELAY_URL: 'https://node1.dnscloak.net',

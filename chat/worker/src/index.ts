@@ -8,7 +8,7 @@ const MAX_GOSSIP_WORKERS = 200;
 const MAX_GOSSIP_ROOMS = 200;
 
 const GENESIS_WORKERS = [
-    'https://dnscloak-sos-chat.lionsun.workers.dev',
+    'https://lionsun-node1.lionsun.workers.dev/',
     'https://node1.dnscloak.net'
 ];
 
