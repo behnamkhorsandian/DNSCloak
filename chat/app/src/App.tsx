@@ -40,11 +40,12 @@ import {
 } from '@/lib/sos-api';
 
 const RELAY_DEFAULT = SOS_CONFIG.RELAY_URL;
+const GENESIS_DEFAULT = SOS_CONFIG.GENESIS_WORKERS[0] || RELAY_DEFAULT;
 const FIXED_MODE: RoomMode = 'fixed';
 const NODES_REFRESH_MS = 15000;
 const ROOMS_REFRESH_MS = 10000;
 const STORAGE_KEYS = {
-  workers: 'sos_workers',
+  manualWorkers: 'sos_manual_workers',
   relayUrl: 'sos_relay_url',
   hideInstallPrompt: 'sos_hide_install_prompt'
 };
@@ -77,47 +78,50 @@ type RoomDirectoryEntry = {
   worker: string;
 };
 
-type StoredWorker = { url: string; is_genesis?: boolean };
+type StoredManualWorker = { url: string };
 
-const readStoredRelay = () => {
-  if (typeof window === 'undefined') return null;
+const normalizeWorkerUrl = (value: string): string | null => {
+  const input = value.trim();
+  if (!input) return null;
   try {
-    const value = window.localStorage.getItem(STORAGE_KEYS.relayUrl);
-    return value && value.startsWith('http') ? value : null;
+    const parsed = new URL(input);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    return parsed.origin.toLowerCase();
   } catch {
     return null;
   }
 };
 
-const readStoredWorkers = (): WorkerStatus[] => {
+const readStoredManualWorkers = (): StoredManualWorker[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEYS.workers);
+    const raw = window.localStorage.getItem(STORAGE_KEYS.manualWorkers);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredWorker[];
+    const parsed = JSON.parse(raw) as StoredManualWorker[];
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((entry) => entry && typeof entry.url === 'string')
-      .map((entry) => ({
-        url: entry.url,
-        is_genesis: entry.is_genesis,
-        last_seen: 0,
-        last_ok: 0,
-        fail_count: 0
-      }));
+    const deduped = new Map<string, StoredManualWorker>();
+    for (const entry of parsed) {
+      if (!entry || typeof entry.url !== 'string') continue;
+      const normalized = normalizeWorkerUrl(entry.url);
+      if (!normalized) continue;
+      deduped.set(normalized, { url: normalized });
+    }
+    return Array.from(deduped.values());
   } catch {
     return [];
   }
 };
 
-const saveStoredWorkers = (workers: WorkerStatus[]) => {
+const saveStoredManualWorkers = (workers: StoredManualWorker[]) => {
   if (typeof window === 'undefined') return;
   try {
-    const payload = workers.map((worker) => ({
-      url: worker.url,
-      is_genesis: worker.is_genesis
-    }));
-    window.localStorage.setItem(STORAGE_KEYS.workers, JSON.stringify(payload));
+    const deduped = new Map<string, StoredManualWorker>();
+    for (const worker of workers) {
+      const normalized = normalizeWorkerUrl(worker.url);
+      if (!normalized) continue;
+      deduped.set(normalized, { url: normalized });
+    }
+    window.localStorage.setItem(STORAGE_KEYS.manualWorkers, JSON.stringify(Array.from(deduped.values())));
   } catch {
     // ignore storage failures
   }
@@ -135,11 +139,15 @@ const saveStoredRelay = (relayUrl: string) => {
 const mergeWorkerLists = (primary: WorkerStatus[], fallback: WorkerStatus[]) => {
   const merged = new Map<string, WorkerStatus>();
   for (const worker of fallback) {
-    merged.set(worker.url, worker);
+    const normalized = normalizeWorkerUrl(worker.url);
+    if (!normalized) continue;
+    merged.set(normalized, { ...worker, url: normalized });
   }
   for (const worker of primary) {
-    const existing = merged.get(worker.url);
-    merged.set(worker.url, { ...existing, ...worker, url: worker.url });
+    const normalized = normalizeWorkerUrl(worker.url);
+    if (!normalized) continue;
+    const existing = merged.get(normalized);
+    merged.set(normalized, { ...existing, ...worker, url: normalized });
   }
   return Array.from(merged.values());
 };
@@ -148,8 +156,8 @@ export default function App() {
   const [screen, setScreen] = React.useState<Screen>('home');
   const [status, setStatus] = React.useState<Status>(null);
   const [lang, setLang] = React.useState<Lang>(() => getInitialLang());
-  const [relayUrl, setRelayUrl] = React.useState(() => readStoredRelay() || RELAY_DEFAULT);
-  const [workers, setWorkers] = React.useState<WorkerStatus[]>(() => readStoredWorkers());
+  const [relayUrl, setRelayUrl] = React.useState(GENESIS_DEFAULT);
+  const [workers, setWorkers] = React.useState<WorkerStatus[]>([]);
   const [rooms, setRooms] = React.useState<RoomDirectoryEntry[]>([]);
   const [loadingWorkers, setLoadingWorkers] = React.useState(false);
   const [loadingRooms, setLoadingRooms] = React.useState(false);
@@ -200,6 +208,8 @@ export default function App() {
   const encryptionKeyRef = React.useRef<Uint8Array | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const workersRef = React.useRef<WorkerStatus[]>([]);
+  const userSelectedRelayRef = React.useRef(false);
+  const autoSelectedRelayRef = React.useRef(false);
   const installReminderTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
@@ -225,10 +235,6 @@ export default function App() {
     document.documentElement.dir = isRtl(lang) ? 'rtl' : 'ltr';
     document.documentElement.classList.toggle('lang-fa', lang === 'fa');
   }, [lang]);
-
-  React.useEffect(() => {
-    saveStoredWorkers(workers);
-  }, [workers]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -296,16 +302,39 @@ export default function App() {
   }, []);
 
   const fetchWorkersFromGenesis = React.useCallback(async () => {
-    const genesis = SOS_CONFIG.GENESIS_WORKERS;
+    const genesis = SOS_CONFIG.GENESIS_WORKERS.map((url) => normalizeWorkerUrl(url)).filter(
+      (url): url is string => Boolean(url)
+    );
+    const genesisSet = new Set(genesis);
+    const base = genesis.map((url) => ({
+      url,
+      is_genesis: true,
+      last_seen: 0,
+      last_ok: 0,
+      fail_count: 0
+    }));
+    let discovered = base;
+    let reachedAnyGenesis = false;
     for (const url of genesis) {
       try {
         const response = await getWorkers(url);
-        return mergeWorkerLists(response.workers, readStoredWorkers());
+        reachedAnyGenesis = true;
+        const normalized = response.workers.map((worker) => ({
+          ...worker,
+          is_genesis: worker.is_genesis || genesisSet.has(normalizeWorkerUrl(worker.url) || '')
+        }));
+        discovered = mergeWorkerLists(normalized, discovered);
       } catch {
         // try next genesis
       }
     }
-    return readStoredWorkers();
+    const manual = readStoredManualWorkers().map((worker) => ({
+      ...worker,
+      last_seen: 0,
+      last_ok: 0,
+      fail_count: 0
+    }));
+    return mergeWorkerLists(discovered, manual.length > 0 || reachedAnyGenesis ? manual : []);
   }, []);
 
   const pingWorker = React.useCallback(async (url: string) => {
@@ -385,6 +414,14 @@ export default function App() {
 
   React.useEffect(() => {
     workersRef.current = workers;
+  }, [workers]);
+
+  React.useEffect(() => {
+    if (autoSelectedRelayRef.current || userSelectedRelayRef.current || workers.length === 0) return;
+    const onlineGenesis = workers.find((worker) => worker.is_genesis && worker.online)?.url;
+    const preferredGenesis = onlineGenesis || GENESIS_DEFAULT;
+    setRelayUrl(preferredGenesis);
+    autoSelectedRelayRef.current = true;
   }, [workers]);
 
   React.useEffect(() => {
@@ -722,6 +759,8 @@ export default function App() {
     });
   }, [sortedRooms, roomSearchEmojis]);
 
+  const onlineWorkers = React.useMemo(() => workers.filter((worker) => worker.online), [workers]);
+
   const pageLabel =
     screen === 'create'
       ? tr('create_room')
@@ -1027,13 +1066,13 @@ export default function App() {
                     </Button>
                   </div>
                   {loadingWorkers && <div className="text-xs text-muted-foreground">{tr('checking_nodes')}</div>}
-                  {!loadingWorkers && workers.length === 0 && (
+                  {!loadingWorkers && onlineWorkers.length === 0 && (
                     <div className="text-xs text-muted-foreground">
                       {tr('no_nodes')}
                     </div>
                   )}
                   <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-                    {workers.map((worker) => (
+                    {onlineWorkers.map((worker) => (
                       <div key={worker.url} className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/70 px-2.5 py-2">
                         <div className="min-w-0">
                           <div className="truncate text-xs font-medium text-foreground/90">
@@ -1058,7 +1097,10 @@ export default function App() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => setRelayUrl(worker.url)}
+                            onClick={() => {
+                              userSelectedRelayRef.current = true;
+                              setRelayUrl(worker.url);
+                            }}
                             className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
                               relayUrl === worker.url
                                 ? 'border-primary/30 bg-primary/15 text-primary'
@@ -1185,15 +1227,19 @@ export default function App() {
                   <Button
                     size="sm"
                     onClick={() => {
-                      const value = manualWorkerUrl.trim();
-                      if (!value) return;
+                      const normalized = normalizeWorkerUrl(manualWorkerUrl);
+                      if (!normalized) return;
+                      const manual = readStoredManualWorkers();
+                      if (!manual.some((worker) => worker.url === normalized)) {
+                        saveStoredManualWorkers([...manual, { url: normalized }]);
+                      }
                       setWorkers((prev) => {
-                        if (prev.some((w) => w.url === value)) return prev;
-                        return [...prev, { url: value, last_seen: 0, last_ok: 0, fail_count: 0 }];
+                        if (prev.some((w) => w.url === normalized)) return prev;
+                        return [...prev, { url: normalized, last_seen: 0, last_ok: 0, fail_count: 0 }];
                       });
                       setManualWorkerUrl('');
                       setShowAddWorker(false);
-                      pingAndUpdateWorker(value);
+                      pingAndUpdateWorker(normalized);
                     }}
                   >
                     {tr('add')}
