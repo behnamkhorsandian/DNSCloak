@@ -275,10 +275,13 @@ validate_username() {
     local username="$1"
     [[ -z "$username" ]] && return 1
     [[ ${#username} -gt 128 ]] && return 1
-    # Reject newlines, null bytes, control characters
+    # Reject newlines, carriage returns, control characters
     [[ "$username" == *$'\n'* ]] && return 1
     [[ "$username" == *$'\r'* ]] && return 1
-    [[ "$username" == *$'\0'* ]] && return 1
+    # Reject null bytes (check via printf since bash can't hold \0 in strings)
+    if printf '%s' "$username" | grep -qP '\x00' 2>/dev/null; then
+        return 1
+    fi
     return 0
 }
 
@@ -440,6 +443,9 @@ random_hex() {
     head -c $((length / 2)) /dev/urandom | xxd -p | tr -d '\n'
 }
 
+# Aliases for backward compatibility
+generate_secret() { random_hex "$@"; }
+
 # Generate UUID
 random_uuid() {
     if command -v uuidgen &>/dev/null; then
@@ -448,6 +454,9 @@ random_uuid() {
         cat /proc/sys/kernel/random/uuid
     fi
 }
+
+# Alias for backward compatibility
+generate_uuid() { random_uuid "$@"; }
 
 # Generate x25519 keypair
 # Returns: "private_key public_key"

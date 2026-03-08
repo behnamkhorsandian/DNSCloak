@@ -17,6 +17,33 @@ XRAY_CONFIG="$DNSCLOAK_DIR/xray/config.json"
 XRAY_BIN="/usr/local/bin/xray"
 
 #-------------------------------------------------------------------------------
+# Config Initialization
+#-------------------------------------------------------------------------------
+
+xray_init_config() {
+    mkdir -p "$(dirname "$XRAY_CONFIG")"
+    if [[ ! -f "$XRAY_CONFIG" ]]; then
+        cat > "$XRAY_CONFIG" <<'XEOF'
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    }
+  ],
+  "routing": {
+    "rules": []
+  }
+}
+XEOF
+    fi
+}
+
+#-------------------------------------------------------------------------------
 # Config Validation
 #-------------------------------------------------------------------------------
 
