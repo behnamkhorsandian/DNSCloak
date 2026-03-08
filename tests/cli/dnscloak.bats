@@ -36,17 +36,17 @@ teardown() {
 @test "cli shows help with no arguments" {
     run bash "$CLI"
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]] || [[ "$output" == *"help"* ]]
+    [[ "$output" == *"USAGE"* ]] || [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]] || [[ "$output" == *"help"* ]]
 }
 
 @test "cli shows help with --help flag" {
     run bash "$CLI" --help
-    [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]]
+    [[ "$output" == *"USAGE"* ]] || [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]]
 }
 
 @test "cli shows help with help command" {
     run bash "$CLI" help
-    [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]] || [[ "$output" == *"add"* ]]
+    [[ "$output" == *"USAGE"* ]] || [[ "$output" == *"Usage"* ]] || [[ "$output" == *"usage"* ]] || [[ "$output" == *"add"* ]]
 }
 
 # =============================================================================

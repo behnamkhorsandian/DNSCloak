@@ -25,12 +25,12 @@
 
 set -e
 
-# Paths
-DNSCLOAK_DIR="/opt/dnscloak"
-DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
-LIB_DIR="$DNSCLOAK_DIR/lib"
-SERVICES_DIR="$DNSCLOAK_DIR/services"
-BANNERS_DIR="$DNSCLOAK_DIR/banners"
+# Paths (respect environment overrides for testing)
+DNSCLOAK_DIR="${DNSCLOAK_DIR:-/opt/dnscloak}"
+DNSCLOAK_USERS="${DNSCLOAK_USERS:-$DNSCLOAK_DIR/users.json}"
+LIB_DIR="${LIB_DIR:-$DNSCLOAK_DIR/lib}"
+SERVICES_DIR="${SERVICES_DIR:-$DNSCLOAK_DIR/services}"
+BANNERS_DIR="${BANNERS_DIR:-$DNSCLOAK_DIR/banners}"
 GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
 
 # Version
@@ -46,17 +46,27 @@ ALL_PROTOCOLS="reality ws wg dnstt mtp vray conduit"
 source_libs() {
     if [[ -f "$LIB_DIR/common.sh" ]]; then
         source "$LIB_DIR/common.sh"
-        source "$LIB_DIR/cloud.sh"
+        source "$LIB_DIR/cloud.sh" 2>/dev/null || true
         source "$LIB_DIR/xray.sh" 2>/dev/null || true
     else
-        # Download libs if not available
-        mkdir -p "$LIB_DIR"
-        curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
-        curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
-        curl -sL "$GITHUB_RAW/lib/xray.sh" -o "$LIB_DIR/xray.sh"
-        source "$LIB_DIR/common.sh"
-        source "$LIB_DIR/cloud.sh"
-        source "$LIB_DIR/xray.sh" 2>/dev/null || true
+        # Try repo-relative path (for development/testing)
+        local script_dir
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        local repo_lib="$script_dir/../lib"
+        if [[ -f "$repo_lib/common.sh" ]]; then
+            source "$repo_lib/common.sh"
+            source "$repo_lib/cloud.sh" 2>/dev/null || true
+            source "$repo_lib/xray.sh" 2>/dev/null || true
+        else
+            # Download libs if not available
+            mkdir -p "$LIB_DIR"
+            curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
+            curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
+            curl -sL "$GITHUB_RAW/lib/xray.sh" -o "$LIB_DIR/xray.sh"
+            source "$LIB_DIR/common.sh"
+            source "$LIB_DIR/cloud.sh" 2>/dev/null || true
+            source "$LIB_DIR/xray.sh" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -238,6 +248,38 @@ remove_user() {
     else
         error "Remove user not implemented for service: $service"
     fi
+}
+
+#-------------------------------------------------------------------------------
+# List Users
+#-------------------------------------------------------------------------------
+
+list_users() {
+    local service="$1"
+    source_libs
+    users_init
+
+    local users
+    users=$(user_list "$service")
+
+    echo ""
+    if [[ -n "$service" ]]; then
+        echo -e "${BOLD}Users ($service)${RESET}"
+    else
+        echo -e "${BOLD}All Users${RESET}"
+    fi
+    echo "================================================"
+
+    if [[ -z "$users" ]]; then
+        echo "  No users found"
+    else
+        while IFS= read -r username; do
+            local protocols
+            protocols=$(jq -r ".users[\"$username\"].protocols | keys | join(\", \")" "$DNSCLOAK_USERS" 2>/dev/null)
+            echo "  $username  [$protocols]"
+        done <<< "$users"
+    fi
+    echo ""
 }
 
 #-------------------------------------------------------------------------------
@@ -642,9 +684,12 @@ interactive_menu() {
 #-------------------------------------------------------------------------------
 
 main() {
-    # No arguments -> interactive TUI menu
+    # No arguments -> interactive TUI menu (requires root)
     if [[ $# -eq 0 ]]; then
-        require_root
+        if [[ $EUID -ne 0 ]]; then
+            show_help
+            exit 0
+        fi
         interactive_menu
         exit 0
     fi
