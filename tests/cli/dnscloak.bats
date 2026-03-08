@@ -15,7 +15,7 @@ setup() {
     
     # Initialize user database
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
-    init_user_db
+    users_init
     
     # Set server info for tests
     server_set "ip" "1.2.3.4"

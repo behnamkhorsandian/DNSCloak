@@ -17,7 +17,7 @@ setup() {
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     
     # Initialize empty user database
-    init_user_db
+    users_init
 }
 
 teardown() {
@@ -28,24 +28,24 @@ teardown() {
 # USER DATABASE INITIALIZATION
 # =============================================================================
 
-@test "init_user_db creates valid JSON structure" {
+@test "users_init creates valid JSON structure" {
     run jq '.' "$DNSCLOAK_USERS"
     [ "$status" -eq 0 ]
 }
 
-@test "init_user_db creates users object" {
+@test "users_init creates users object" {
     run jq -e '.users' "$DNSCLOAK_USERS"
     [ "$status" -eq 0 ]
 }
 
-@test "init_user_db creates server object" {
+@test "users_init creates server object" {
     run jq -e '.server' "$DNSCLOAK_USERS"
     [ "$status" -eq 0 ]
 }
 
-@test "init_user_db preserves existing database" {
+@test "users_init preserves existing database" {
     echo '{"users":{"existing":{"created":"2026-01-01"}},"server":{}}' > "$DNSCLOAK_USERS"
-    init_user_db
+    users_init
     run jq -e '.users.existing' "$DNSCLOAK_USERS"
     [ "$status" -eq 0 ]
 }

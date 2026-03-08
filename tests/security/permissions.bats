@@ -16,7 +16,7 @@ setup() {
     
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     
-    init_user_db
+    users_init
 }
 
 teardown() {
