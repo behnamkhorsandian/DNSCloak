@@ -1988,6 +1988,53 @@
               </div>
               <div class="protocol-cmd"><span class="prompt">$ </span>curl -sSL vray.dnscloak.net | sudo bash</div>
             </div>
+
+            <div class="protocol-item theme-sos-subtle">
+              <div class="protocol-header">
+                <span class="protocol-icon"><span class="material-symbols-outlined">sos</span></span>
+                <span class="protocol-name">SOS Emergency Chat</span>
+                <span class="protocol-status status-ready">READY</span>
+              </div>
+              <p class="protocol-desc">End-to-end encrypted chat over DNS tunnel. Works during total internet blackouts. No account needed.</p>
+              <div class="protocol-tags">
+                <span class="tag">emergency</span>
+                <span class="tag">e2e-encrypted</span>
+                <span class="tag">no-internet</span>
+              </div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl -sSL sos.dnscloak.net | sudo bash</div>
+              <div class="sos-download-dropdown" id="sos-dropdown">
+                <button class="sos-dropdown-btn" onclick="toggleSosDropdown()">
+                  <span>Download standalone client</span>
+                  <span class="material-symbols-outlined">expand_more</span>
+                </button>
+                <div class="sos-dropdown-menu">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-amd64">
+                    <span class="material-symbols-outlined">desktop_windows</span>
+                    <span>Linux (x86_64)<span class="dl-info"> - amd64</span></span>
+                  </a>
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-arm64">
+                    <span class="material-symbols-outlined">memory</span>
+                    <span>Linux (ARM64)<span class="dl-info"> - Raspberry Pi</span></span>
+                  </a>
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
+                    <span class="material-symbols-outlined">laptop_mac</span>
+                    <span>macOS (Apple Silicon)<span class="dl-info"> - M1/M2/M3/M4</span></span>
+                  </a>
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
+                    <span class="material-symbols-outlined">laptop_mac</span>
+                    <span>macOS (Intel)<span class="dl-info"> - x86_64</span></span>
+                  </a>
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-windows-amd64.exe">
+                    <span class="material-symbols-outlined">window</span>
+                    <span>Windows<span class="dl-info"> - x86_64</span></span>
+                  </a>
+                  <a class="sos-dropdown-item" onclick="showSocksPopup()" style="cursor:pointer;">
+                    <span class="material-symbols-outlined">public</span>
+                    <span>Web Chat (browser)<span class="dl-info"> - via SOCKS5 proxy</span></span>
+                  </a>
+                </div>
+              </div>
+            </div>
             
           </div>
         </div>
@@ -2091,7 +2138,7 @@
             <span class="material-symbols-outlined">globe_2_question</span>
             DNSCloak
           </a>
-          <div class="sidebar-version">v2.0.0 Documentation</div>
+          <div class="sidebar-version">v2.1.0 Documentation</div>
         </div>
         
         <nav>
