@@ -271,13 +271,18 @@ show_user_links() {
 _run_navigation() {
     local current_page="${START_PAGE:-main}"
     local current_proto="${START_PROTOCOL:-}"
+    local _dbg="/tmp/dnscloak-debug.log"
+    echo "[$(date)] _run_navigation: current_page=$current_page current_proto=$current_proto" >> "$_dbg"
 
     while true; do
+        echo "[$(date)] _run_navigation loop: page=$current_page" >> "$_dbg"
         case "$current_page" in
 
             main)
-                page_main_menu
+                echo "[$(date)] calling page_main_menu" >> "$_dbg"
+                page_main_menu 2>>"$_dbg"
                 local rc=$?
+                echo "[$(date)] page_main_menu returned rc=$rc SELECTED_PROTOCOL=${SELECTED_PROTOCOL:-}" >> "$_dbg"
 
                 if [[ $rc -ne 0 ]]; then
                     # Quit
@@ -430,6 +435,9 @@ _show_exit_banner() {
     printf '\n'
     printf '  %b*%b DNSCloak v%s\n' "$C_GREEN" "$C_RST" "$DNSCLOAK_VERSION"
     printf '  %bThe beacon remains lit.%b\n' "$C_DGRAY" "$C_RST"
+    if [[ -f /tmp/dnscloak-debug.log ]]; then
+        printf '  %bDebug log: /tmp/dnscloak-debug.log%b\n' "$C_DGRAY" "$C_RST"
+    fi
     printf '\n'
 }
 
@@ -438,18 +446,32 @@ _show_exit_banner() {
 #-------------------------------------------------------------------------------
 
 dnscloak_tui_main() {
+    # Debug log for troubleshooting
+    local _dbg="/tmp/dnscloak-debug.log"
+    echo "[$(date)] dnscloak_tui_main starting" > "$_dbg"
+    echo "[$(date)] BASH_VERSION=$BASH_VERSION" >> "$_dbg"
+    echo "[$(date)] TERM=$TERM EUID=$EUID" >> "$_dbg"
+    echo "[$(date)] SCRIPT_DIR=$SCRIPT_DIR" >> "$_dbg"
+    echo "[$(date)] START_PAGE=${START_PAGE:-} START_PROTOCOL=${START_PROTOCOL:-}" >> "$_dbg"
+
     _preflight
+    echo "[$(date)] _preflight done" >> "$_dbg"
 
     # Trap for clean exit
-    trap 'tui_cleanup 2>/dev/null; _show_exit_banner' EXIT
+    trap 'tui_cleanup 2>/dev/null; _show_exit_banner; echo "[$(date)] EXIT trap fired" >> /tmp/dnscloak-debug.log' EXIT
     trap 'tui_cleanup 2>/dev/null; exit 130' INT TERM
 
+    echo "[$(date)] calling tui_init" >> "$_dbg"
     tui_init || {
         printf '\033[31mError:\033[0m Failed to initialize TUI. Check terminal capabilities.\n'
+        echo "[$(date)] tui_init FAILED" >> "$_dbg"
         exit 1
     }
+    echo "[$(date)] tui_init succeeded, _TUI_ACTIVE=$_TUI_ACTIVE _TERM_COLS=$_TERM_COLS _TERM_ROWS=$_TERM_ROWS" >> "$_dbg"
 
-    _run_navigation
+    echo "[$(date)] calling _run_navigation" >> "$_dbg"
+    _run_navigation 2>>"$_dbg"
+    echo "[$(date)] _run_navigation returned $?" >> "$_dbg"
 
     tui_cleanup
     _show_exit_banner
