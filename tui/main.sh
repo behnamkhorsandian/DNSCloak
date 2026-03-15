@@ -440,6 +440,33 @@ _show_exit_banner() {
 #-------------------------------------------------------------------------------
 
 dnscloak_tui_main() {
+    # Parse arguments passed from start.sh or command line
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --page|-p)
+                START_PAGE="protocol"
+                START_PROTOCOL="$2"
+                shift 2
+                ;;
+            --status|-s)
+                START_PAGE="status"
+                shift
+                ;;
+            --users|-u)
+                START_PAGE="users"
+                shift
+                ;;
+            *)
+                # Treat bare argument as protocol name
+                if [[ " ${PROTOCOL_IDS[*]:-} " == *" $1 "* ]]; then
+                    START_PAGE="protocol"
+                    START_PROTOCOL="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+
     # Disable set -e inherited from lib/bootstrap.sh — TUI uses (( )) && patterns
     # that return non-zero legitimately and must not terminate the script
     set +e
