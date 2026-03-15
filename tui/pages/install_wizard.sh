@@ -34,67 +34,67 @@ define_wizard_steps() {
     case "$proto" in
         reality)
             WIZARD_STEPS=(
-                "info||VLESS + REALITY Setup|This will install Xray-core and configure a REALITY proxy that disguises your traffic as normal HTTPS. No domain name is needed. Port 443 must be available."
+                "info||VLESS + REALITY Setup||This will install Xray-core and configure a REALITY proxy that disguises your traffic as normal HTTPS. No domain name is needed. Port 443 must be available.|"
                 "choice|REALITY_TARGET_IDX|Select camouflage target|0|Your server will impersonate this website. Censors will see what looks like traffic to this site. All options work well.|www.google.com,www.microsoft.com,www.apple.com,www.cloudflare.com,www.mozilla.org,www.amazon.com"
-                "confirm|USE_DOMAIN|Use a domain instead of IP in client links?|n|If you have a domain pointing to this server (Cloudflare proxy OFF), you can use it in connection links. Otherwise your server IP will be used."
-                "input|CONNECTION_DOMAIN|Enter your domain|proxy.example.com|Create an A record pointing to your server IP. Make sure Cloudflare proxy is OFF (gray cloud). Leave empty to use server IP."
-                "input|FIRST_USERNAME|Create first username|user1|This will be the first user who can connect. You can add more users later from the management menu."
-                "action||Installing REALITY|install_reality_automated"
+                "confirm|USE_DOMAIN|Use a domain instead of IP in client links?|n|If you have a domain pointing to this server (Cloudflare proxy OFF), you can use it in connection links. Otherwise your server IP will be used.|"
+                "input|CONNECTION_DOMAIN|Enter your domain|proxy.example.com|Create an A record pointing to your server IP. Make sure Cloudflare proxy is OFF (gray cloud). Leave empty to use server IP.|"
+                "input|FIRST_USERNAME|Create first username|user1|This will be the first user who can connect. You can add more users later from the management menu.|"
+                "action||Installing REALITY||install_reality_automated|install_reality_automated"
             )
             ;;
         wg)
             WIZARD_STEPS=(
-                "info||WireGuard VPN Setup|This will install WireGuard and create a VPN tunnel. All device traffic will be routed through your server. UDP port 51820 must be open."
-                "input|FIRST_USERNAME|Create first username|user1|This will be the first VPN user. A config file and QR code will be generated for easy mobile setup."
-                "action||Installing WireGuard|install_wg_automated"
+                "info||WireGuard VPN Setup||This will install WireGuard and create a VPN tunnel. All device traffic will be routed through your server. UDP port 51820 must be open.|"
+                "input|FIRST_USERNAME|Create first username|user1|This will be the first VPN user. A config file and QR code will be generated for easy mobile setup.|"
+                "action||Installing WireGuard||install_wg_automated|install_wg_automated"
             )
             ;;
         ws)
             WIZARD_STEPS=(
-                "info||VLESS + WebSocket + CDN Setup|This routes traffic through Cloudflare's CDN, hiding your server IP. You need a domain name on Cloudflare (free plan works). Set Cloudflare SSL mode to 'Flexible'."
-                "input|WS_DOMAIN|Enter your domain|ws.example.com|Your domain must be on Cloudflare with the proxy enabled (orange cloud). SSL mode in Cloudflare must be set to 'Flexible'. The domain should resolve to your server IP."
-                "input|FIRST_USERNAME|Create first username|user1|This will be the first user. Connection links will use your Cloudflare-proxied domain."
-                "action||Installing WebSocket + CDN|install_ws_automated"
+                "info||VLESS + WebSocket + CDN Setup||This routes traffic through Cloudflare's CDN, hiding your server IP. You need a domain name on Cloudflare (free plan works). Set Cloudflare SSL mode to 'Flexible'.|"
+                "input|WS_DOMAIN|Enter your domain|ws.example.com|Your domain must be on Cloudflare with the proxy enabled (orange cloud). SSL mode in Cloudflare must be set to 'Flexible'. The domain should resolve to your server IP.|"
+                "input|FIRST_USERNAME|Create first username|user1|This will be the first user. Connection links will use your Cloudflare-proxied domain.|"
+                "action||Installing WebSocket + CDN||install_ws_automated|install_ws_automated"
             )
             ;;
         mtp)
             WIZARD_STEPS=(
-                "info||MTProto Proxy Setup|This installs a Telegram-specific proxy. Users won't need any extra apps - they just click a link in Telegram to connect."
-                "input|MTP_PORT|Select port for MTProto proxy|443|Port 443 is recommended (looks like HTTPS). If 443 is in use, try 8443. Any port works but 443 is least likely to be blocked."
+                "info||MTProto Proxy Setup||This installs a Telegram-specific proxy. Users won't need any extra apps - they just click a link in Telegram to connect.|"
+                "input|MTP_PORT|Select port for MTProto proxy|443|Port 443 is recommended (looks like HTTPS). If 443 is in use, try 8443. Any port works but 443 is least likely to be blocked.|"
                 "choice|MTP_MODE_IDX|Select proxy mode|0|Fake-TLS makes traffic look like real HTTPS. Secure mode uses random padding. Fake-TLS is recommended for most cases.|Fake-TLS (recommended),Secure (random padding)"
-                "input|MTP_TLS_DOMAIN|TLS camouflage domain|www.google.com|When using Fake-TLS mode, traffic will look like HTTPS to this domain. Use a popular website for best results."
-                "input|FIRST_USERNAME|Create first username|user1|A proxy link will be generated that users can click in Telegram to start using the proxy."
-                "action||Installing MTProto|install_mtp_automated"
+                "input|MTP_TLS_DOMAIN|TLS camouflage domain|www.google.com|When using Fake-TLS mode, traffic will look like HTTPS to this domain. Use a popular website for best results.|"
+                "input|FIRST_USERNAME|Create first username|user1|A proxy link will be generated that users can click in Telegram to start using the proxy.|"
+                "action||Installing MTProto||install_mtp_automated|install_mtp_automated"
             )
             ;;
         dnstt)
             WIZARD_STEPS=(
-                "info||DNS Tunnel Setup|DNSTT encodes traffic inside DNS queries. This is an EMERGENCY protocol - very slow (~50 KB/s) but nearly impossible to block. Use only when everything else fails."
-                "confirm|DNSTT_CONTINUE|This protocol is very slow. Continue?|y|DNSTT is designed for emergency situations where all other protocols are blocked. Normal browsing will be very slow. Consider installing Reality or WireGuard for daily use."
-                "input|DNSTT_DOMAIN|Enter your domain|example.com|You need a domain where you can set DNS records. Required: 1) A record for ns1.domain -> your server IP. 2) NS record for t.domain -> ns1.domain. The domain must NOT be behind Cloudflare proxy."
-                "action||Installing DNS Tunnel|install_dnstt_automated"
+                "info||DNS Tunnel Setup||DNSTT encodes traffic inside DNS queries. This is an EMERGENCY protocol - very slow (~50 KB/s) but nearly impossible to block. Use only when everything else fails.|"
+                "confirm|DNSTT_CONTINUE|This protocol is very slow. Continue?|y|DNSTT is designed for emergency situations where all other protocols are blocked. Normal browsing will be very slow. Consider installing Reality or WireGuard for daily use.|"
+                "input|DNSTT_DOMAIN|Enter your domain|example.com|You need a domain where you can set DNS records. Required: 1) A record for ns1.domain -> your server IP. 2) NS record for t.domain -> ns1.domain. The domain must NOT be behind Cloudflare proxy.|"
+                "action||Installing DNS Tunnel||install_dnstt_automated|install_dnstt_automated"
             )
             ;;
         conduit)
             WIZARD_STEPS=(
-                "info||Conduit (Psiphon Relay) Setup|This turns your server into a volunteer relay for the Psiphon network. You'll be helping users in censored regions access the internet. Docker will be installed if not present."
-                "input|CONDUIT_MAX_CLIENTS|Maximum connected clients|300|How many simultaneous users can relay through your server. More clients = more bandwidth used. Recommended: 200-1000."
-                "input|CONDUIT_BW_LIMIT|Bandwidth limit in Mbps (-1 = unlimited)|-1|Set a bandwidth cap to control costs. -1 means no limit. Set based on your VM's bandwidth allowance."
-                "action||Installing Conduit|install_conduit_automated"
+                "info||Conduit (Psiphon Relay) Setup||This turns your server into a volunteer relay for the Psiphon network. You'll be helping users in censored regions access the internet. Docker will be installed if not present.|"
+                "input|CONDUIT_MAX_CLIENTS|Maximum connected clients|300|How many simultaneous users can relay through your server. More clients = more bandwidth used. Recommended: 200-1000.|"
+                "input|CONDUIT_BW_LIMIT|Bandwidth limit in Mbps (-1 = unlimited)|-1|Set a bandwidth cap to control costs. -1 means no limit. Set based on your VM's bandwidth allowance.|"
+                "action||Installing Conduit||install_conduit_automated|install_conduit_automated"
             )
             ;;
         vray)
             WIZARD_STEPS=(
-                "info||VLESS + TLS Setup|This is a classic V2Ray setup with real TLS certificates from Let's Encrypt. Requires a domain name pointing to your server."
-                "input|VRAY_DOMAIN|Enter your domain|proxy.example.com|Your domain must have an A record pointing to this server. A free TLS certificate will be obtained from Let's Encrypt."
-                "input|FIRST_USERNAME|Create first username|user1|Connection links will use your domain with proper TLS encryption."
-                "action||Installing VLESS + TLS|install_vray_automated"
+                "info||VLESS + TLS Setup||This is a classic V2Ray setup with real TLS certificates from Let's Encrypt. Requires a domain name pointing to your server.|"
+                "input|VRAY_DOMAIN|Enter your domain|proxy.example.com|Your domain must have an A record pointing to this server. A free TLS certificate will be obtained from Let's Encrypt.|"
+                "input|FIRST_USERNAME|Create first username|user1|Connection links will use your domain with proper TLS encryption.|"
+                "action||Installing VLESS + TLS||install_vray_automated|install_vray_automated"
             )
             ;;
         sos)
             WIZARD_STEPS=(
-                "info||SOS Emergency Chat Setup|This installs the SOS relay daemon for encrypted emergency chat. Messages are encrypted end-to-end and travel through DNS tunnels. Requires DNSTT to be running first."
-                "action||Installing SOS Relay|install_sos_automated"
+                "info||SOS Emergency Chat Setup||This installs the SOS relay daemon for encrypted emergency chat. Messages are encrypted end-to-end and travel through DNS tunnels. Requires DNSTT to be running first.|"
+                "action||Installing SOS Relay||install_sos_automated|install_sos_automated"
             )
             ;;
     esac

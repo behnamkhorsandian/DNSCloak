@@ -5,5 +5,5 @@
     ▒▒▒▒▒▒╔╝▒▒║ ╚▒▒▒▒║▒▒▒▒▒▒▒║   ▒▒║      ▒▒║   
     ╚═════╝ ╚═╝  ╚═══╝╚══════╝   ╚═╝      ╚═╝   
 
-       DNS Tunnel - Emergency Protocol
+          DNS Tunnel - Emergency Protocol
        Works when everything else is blocked

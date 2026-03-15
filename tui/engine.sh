@@ -521,6 +521,10 @@ tui_read_line() {
 
     printf '\033[?25h'  # show cursor
 
+    # Flush any pending input from raw mode (stale escape sequences)
+    stty echo icanon <&3 2>/dev/null
+    while read -rsn1 -t 0.05 _ <&3 2>/dev/null; do :; done
+
     if [[ -n "$default" ]]; then
         printf '  %b[>]%b %s %b[%s]%b: ' \
             "$C_GREEN" "$C_RST" "$prompt" "$C_DGRAY" "$default" "$C_RST"
