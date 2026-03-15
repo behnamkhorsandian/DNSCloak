@@ -254,7 +254,7 @@ draw_box_row() {
     local pad=$(( inner - vlen - 1 ))  # -1 for leading space
     (( pad < 0 )) && pad=0
 
-    _m; printf '%b%s%b %s%*s%b%s%b\n' \
+    _m; printf '%b%s%b %b%*s%b%s%b\n' \
         "$bc" "$BOX_V" "$C_RST" \
         "$text" "$pad" "" \
         "$bc" "$BOX_V" "$C_RST"
@@ -352,7 +352,7 @@ draw_split_row() {
     (( left_pad < 0 )) && left_pad=0
     (( right_pad < 0 )) && right_pad=0
 
-    _m; printf '%b%s%b %s%*s%b%s%b %s%*s%b%s%b\n' \
+    _m; printf '%b%s%b %b%*s%b%s%b %b%*s%b%s%b\n' \
         "$bc" "$BOX_V" "$C_RST" \
         "$left_text" "$left_pad" "" \
         "$bc" "$BOX_V" "$C_RST" \
