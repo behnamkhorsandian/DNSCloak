@@ -12,7 +12,7 @@ At a high level:
 DNSCloak is split into delivery, install, runtime, and management layers.
 
 ### 1) Delivery Layer (Cloudflare Workers)
-- `workers/src/index.ts` serves install scripts by subdomain (e.g., `reality.dnscloak.net`).
+- `workers/src/index.ts` serves install scripts by subdomain (e.g., `dnscloak.net/reality`).
 - The worker fetches scripts from GitHub raw and returns them to `curl`.
 - Special endpoints: `/health`, `/info`, `/version`, and DNSTT client helpers.
 
@@ -40,7 +40,7 @@ DNSCloak is split into delivery, install, runtime, and management layers.
 
 ### Install Flow (one-line install)
 ```
-User runs: curl reality.dnscloak.net | sudo bash
+User runs: curl dnscloak.net/reality | sudo bash
     -> Cloudflare Worker routes by subdomain
     -> Worker fetches services/reality/install.sh from GitHub
     -> Script downloads lib/* helpers (if piped)
@@ -86,7 +86,7 @@ Client app -> UDP/51820
 ### 1) Pick a service and install on your VPS
 ```
 # Example: Reality (no domain required)
-curl reality.dnscloak.net | sudo bash
+curl dnscloak.net/reality | sudo bash
 ```
 
 ### 2) Manage users via CLI

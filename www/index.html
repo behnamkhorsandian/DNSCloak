@@ -1895,7 +1895,7 @@
                 <span class="tag">last-resort</span>
                 <span class="tag">slow</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnstt.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/dnstt | sudo bash</div>
             </div>
 
             <div class="protocol-item theme-purple">
@@ -1910,7 +1910,7 @@
                 <span class="tag">psiphon</span>
                 <span class="tag">no-domain</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl conduit.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/conduit | sudo bash</div>
             </div>
 
 
@@ -1927,7 +1927,7 @@
                 <span class="tag">fast</span>
                 <span class="tag">undetectable</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl reality.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/reality | sudo bash</div>
             </div>
             
             <div class="protocol-item">
@@ -1942,7 +1942,7 @@
                 <span class="tag">cdn</span>
                 <span class="tag">cloudflare</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl ws.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/ws | sudo bash</div>
             </div>
             
             <div class="protocol-item">
@@ -1957,7 +1957,7 @@
                 <span class="tag">native-apps</span>
                 <span class="tag">fast</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl wg.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/wg | sudo bash</div>
             </div>
             
             <div class="protocol-item">
@@ -1972,7 +1972,7 @@
                 <span class="tag">fake-tls</span>
                 <span class="tag">easy</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl mtp.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/mtp | sudo bash</div>
             </div>
             
             
@@ -1988,7 +1988,7 @@
                 <span class="tag">lets-encrypt</span>
                 <span class="tag">compatible</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl vray.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/vray | sudo bash</div>
             </div>
 
             <div class="protocol-item theme-sos-subtle">
@@ -2003,7 +2003,7 @@
                 <span class="tag">e2e-encrypted</span>
                 <span class="tag">no-internet</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl sos.dnscloak.net | sudo bash</div>
+              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/sos | sudo bash</div>
               <div class="sos-download-dropdown" id="sos-dropdown">
                 <button class="sos-dropdown-btn" onclick="toggleSosDropdown()">
                   <span>Download standalone client</span>
@@ -2770,14 +2770,14 @@
           <div class="socks-step-content">
             Run this command on your machine to start the DNS tunnel client:
             <div class="socks-cmd-box">
-              <code>curl dnstt.dnscloak.net/setup/$(uname -s | tr A-Z a-z) | bash</code>
-              <button class="socks-copy-btn" onclick="copySocksCmd('curl dnstt.dnscloak.net/setup/$(uname -s | tr A-Z a-z) | bash')">COPY</button>
+              <code>curl dnscloak.net/dnstt/setup/$(uname -s | tr A-Z a-z) | bash</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('curl dnscloak.net/dnstt/setup/$(uname -s | tr A-Z a-z) | bash')">COPY</button>
             </div>
             <p style="margin-top: 10px; color: var(--text-dim); font-size: 12px;">
               Or download directly: 
-              <a href="https://dnstt.dnscloak.net/setup/linux" style="color: var(--accent-blue);">Linux</a> | 
-              <a href="https://dnstt.dnscloak.net/setup/macos" style="color: var(--accent-blue);">macOS</a> | 
-              <a href="https://dnstt.dnscloak.net/setup/windows" style="color: var(--accent-blue);">Windows</a>
+              <a href="https://dnscloak.net/dnstt/setup/linux" style="color: var(--accent-blue);">Linux</a> | 
+              <a href="https://dnscloak.net/dnstt/setup/macos" style="color: var(--accent-blue);">macOS</a> | 
+              <a href="https://dnscloak.net/dnstt/setup/windows" style="color: var(--accent-blue);">Windows</a>
             </p>
           </div>
         </div>

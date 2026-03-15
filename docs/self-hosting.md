@@ -4,7 +4,7 @@ Complete guide to hosting your own DNSCloak platform with custom domain.
 
 ## Overview
 
-DNSCloak uses Cloudflare Workers to serve installation scripts from GitHub. When a user runs `curl reality.dnscloak.net | sudo bash`, the request goes to your Cloudflare Worker, which fetches the script from your GitHub repo.
+DNSCloak uses Cloudflare Workers to serve installation scripts from GitHub. When a user runs `curl dnscloak.net/reality | sudo bash`, the request goes to your Cloudflare Worker, which fetches the script from your GitHub repo.
 
 ```text
 User's VM                 Cloudflare Worker              GitHub

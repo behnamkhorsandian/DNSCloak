@@ -26,7 +26,7 @@ cmd_status() {
     
     if ! docker ps -a 2>/dev/null | grep -q conduit; then
         echo -e "  Status: ${RED}Not installed${NC}"
-        echo "  Run: curl conduit.dnscloak.net | sudo bash"
+        echo "  Run: curl dnscloak.net/conduit | sudo bash"
         echo ""
         return 1
     fi

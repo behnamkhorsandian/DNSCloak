@@ -392,7 +392,7 @@ show_dnstt_info() {
     domain=$(server_get "dnstt_domain")
     pubkey=$(server_get "dnstt_pubkey")
 
-    local setup_url="https://dnstt.dnscloak.net/client?key=${pubkey}&domain=t.${domain}"
+    local setup_url="https://dnscloak.net/dnstt/client?key=${pubkey}&domain=t.${domain}"
 
     echo ""
     echo -e "  ${BOLD}${WHITE}DNSTT Connection Info${RESET}"

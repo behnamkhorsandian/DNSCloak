@@ -4,8 +4,8 @@
 # https://github.com/behnamkhorsandian/DNSCloak
 #
 # USAGE:
-#   Client (users): curl sos.dnscloak.net | bash
-#   Server (admin): curl sos.dnscloak.net | sudo bash -s -- --server
+#   Client (users): curl dnscloak.net/sos | bash
+#   Server (admin): curl dnscloak.net/sos | sudo bash -s -- --server
 #
 # CLIENT MODE (default):
 #   Launches TUI for creating/joining encrypted chat rooms
@@ -564,7 +564,7 @@ show_server_status() {
     echo "     Then browse to: http://${public_ip}:${SOS_RELAY_PORT}/"
     echo ""
     echo -e "  ${GREEN}2. TUI Client${RESET}"
-    echo "     curl sos.dnscloak.net | bash"
+    echo "     curl dnscloak.net/sos | bash"
     echo ""
     echo -e "  ${GREEN}3. Direct (no censorship bypass)${RESET}"
     echo "     http://${public_ip}:${SOS_RELAY_PORT}/"

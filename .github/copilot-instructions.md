@@ -204,7 +204,7 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 
 ### VM Testing
 1. Spin up fresh Ubuntu 22.04 VM
-2. Run installer: `curl <service>.dnscloak.net | sudo bash`
+2. Run installer: `curl dnscloak.net/<service> | sudo bash`
 3. Add test user: `dnscloak add <service> testuser`
 4. Verify connection from client device
 5. Test user removal: `dnscloak remove <service> testuser`
@@ -230,7 +230,7 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 ## SOS Roadmap (Emergency Chat)
 
 ### Current State (v1.0 - Testing)
-- Cloudflare Worker serves install script at `sos.dnscloak.net`
+- Cloudflare Worker serves install script at `dnscloak.net/sos`
 - TUI client downloads via curl, then connects to relay via DNSTT
 - **Limitation**: Initial download CAN be blocked (uses Cloudflare HTTPS)
 
@@ -363,7 +363,7 @@ Architecture for Phase 2:
 - Both phases: Chat traffic goes through DNSTT, unblockable by DPI/IP blocks
 
 ### TLDR:
-1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'sos.dnscloak.net'
+1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'dnscloak.net/sos'
 2) as user i have two option, either use this url via curl on terminal, or just out it in my browser. and since its served over dnstt, it can never be blocked (even if the main website don't work, this subdomain always loads the instant chatroom.
 
 ## Current Session Context (Updated 2026-01-30)

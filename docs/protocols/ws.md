@@ -73,7 +73,7 @@ Route traffic through Cloudflare CDN. Hides server IP completely.
 ## Installation
 
 ```bash
-curl ws.dnscloak.net | sudo bash
+curl dnscloak.net/ws | sudo bash
 ```
 
 During setup:

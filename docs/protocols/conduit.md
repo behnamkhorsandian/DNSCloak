@@ -13,7 +13,7 @@ Conduit turns your server into a relay node for the [Psiphon network](https://ps
 ## Install
 
 ```bash
-curl conduit.dnscloak.net | sudo bash
+curl dnscloak.net/conduit | sudo bash
 ```
 
 That's it. The script will:
@@ -27,7 +27,7 @@ That's it. The script will:
 Run the same command again to open the dashboard:
 
 ```bash
-curl conduit.dnscloak.net | sudo bash
+curl dnscloak.net/conduit | sudo bash
 ```
 
 ```

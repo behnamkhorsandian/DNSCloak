@@ -1,8 +1,14 @@
 /**
  * DNSCloak - Unified Cloudflare Worker
  *
- * Main entry point: start.dnscloak.net -> serves start.sh (unified installer)
- * Per-protocol shortcuts: reality.dnscloak.net -> start.sh with DNSCLOAK_PROTOCOL="reality"
+ * Path-based routing (primary):
+ *   curl dnscloak.net            -> start.sh (interactive menu)
+ *   curl dnscloak.net/reality    -> start.sh with DNSCLOAK_PROTOCOL="reality"
+ *   curl dnscloak.net/dnstt/setup/linux -> DNSTT client setup script
+ *
+ * Subdomain routing (backward compat):
+ *   curl reality.dnscloak.net    -> same as dnscloak.net/reality
+ *
  * Stats relay: stats.dnscloak.net -> Durable Object
  */
 
@@ -84,7 +90,7 @@ const SERVICES: Record<string, ServiceConfig> = {
     description: 'Emergency backup for total blackouts. Very slow.',
     clientApps: {
       note: 'Requires native client binary.',
-      setup: 'https://dnstt.dnscloak.net/client',
+      setup: 'https://dnscloak.net/dnstt/client',
     },
   },
   conduit: {
@@ -139,13 +145,70 @@ export default {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
-    // Root domain: serve script for curl, redirect browsers to www
+    // Root domain: path-based protocol routing
+    // curl dnscloak.net/reality | sudo bash  →  start.sh with DNSCLOAK_PROTOCOL="reality"
+    // curl dnscloak.net | sudo bash          →  start.sh (interactive menu)
     if (hostname === 'dnscloak.net') {
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders });
+      }
+
+      if (url.pathname === '/health') {
+        return Response.json({ status: 'ok', timestamp: Date.now() }, { headers: corsHeaders });
+      }
+
+      const segments = url.pathname.slice(1).split('/').filter(Boolean);
+      const firstSegment = segments[0] || '';
+      const config = SERVICES[firstSegment];
+
+      // DNSTT special sub-routes: dnscloak.net/dnstt/client, dnscloak.net/dnstt/setup/<platform>
+      if (firstSegment === 'dnstt' && segments.length > 1) {
+        if (segments[1] === 'client') {
+          return new Response(getDnsttClientPage(
+            url.searchParams.get('key') || '',
+            url.searchParams.get('domain') || 't.example.com',
+          ), { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } });
+        }
+        if (segments[1] === 'setup' && segments[2]) {
+          const pubkey = url.searchParams.get('key') || '';
+          const domain = url.searchParams.get('domain') || '';
+          if (!pubkey || !domain) {
+            return new Response('Missing key or domain parameter', { status: 400 });
+          }
+          const script = getDnsttSetupScript(segments[2], pubkey, domain);
+          return script
+            ? new Response(script, { headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' } })
+            : new Response('Unknown platform', { status: 404 });
+        }
+      }
+
+      // Protocol info/version pages: dnscloak.net/reality/info
+      if (config && segments[1] === 'info') {
+        return new Response(getInfoPage(firstSegment, config), {
+          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+        });
+      }
+      if (config && segments[1] === 'version') {
+        return Response.json({
+          service: firstSegment, name: config.name,
+          repo: 'https://github.com/behnamkhorsandian/DNSCloak',
+        }, { headers: corsHeaders });
+      }
+
+      // CLI tools: serve start.sh
       const ua = (request.headers.get('User-Agent') || '').toLowerCase();
       const isCli = ua.includes('curl') || ua.includes('wget') || ua.includes('fetch');
       if (isCli) {
-        return serveStartScript();
+        return serveStartScript(config ? firstSegment : undefined);
       }
+
+      // Browsers: redirect to www
       return Response.redirect('https://www.dnscloak.net/', 301);
     }
 
@@ -180,12 +243,12 @@ export default {
       }, { headers: corsHeaders });
     }
 
-    // Main entry point: start.dnscloak.net -> serves start.sh (no protocol preset)
+    // Main entry point: start.dnscloak.net -> serves start.sh (backward compat)
     if (subdomain === 'start') {
       return serveStartScript();
     }
 
-    // Per-protocol info page
+    // Per-protocol (backward compat for subdomain URLs)
     const config = SERVICES[subdomain];
 
     if (config && url.pathname === '/info') {
@@ -241,9 +304,8 @@ export default {
       });
     }
 
-    // Per-protocol shortcut: curl reality.dnscloak.net | sudo bash
-    // Serves start.sh with DNSCLOAK_PROTOCOL pre-set for CLI tools
-    // Browsers get the info page instead
+    // Per-protocol shortcut (backward compat): curl reality.dnscloak.net | sudo bash
+    // Primary format is now: curl dnscloak.net/reality | sudo bash
     if (config) {
       const ua = (request.headers.get('User-Agent') || '').toLowerCase();
       const isCli = ua.includes('curl') || ua.includes('wget') || ua.includes('fetch');
@@ -384,20 +446,20 @@ function getInfoPage(service: string, config: ServiceConfig): string {
     <p class="description">${config.description}</p>
     
     <div class="services">
-      <a href="https://start.dnscloak.net/info">All Protocols</a>
-      <a href="https://reality.dnscloak.net/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
-      <a href="https://wg.dnscloak.net/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
-      <a href="https://mtp.dnscloak.net/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
-      <a href="https://vray.dnscloak.net/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
-      <a href="https://ws.dnscloak.net/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
-      <a href="https://dnstt.dnscloak.net/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
-      <a href="https://conduit.dnscloak.net/info" ${service === 'conduit' ? 'class="active"' : ''}>Conduit</a>
+      <a href="https://dnscloak.net/info">All Protocols</a>
+      <a href="https://dnscloak.net/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
+      <a href="https://dnscloak.net/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
+      <a href="https://dnscloak.net/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
+      <a href="https://dnscloak.net/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
+      <a href="https://dnscloak.net/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
+      <a href="https://dnscloak.net/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
+      <a href="https://dnscloak.net/conduit/info" ${service === 'conduit' ? 'class="active"' : ''}>Conduit</a>
     </div>
     
     <div class="install-box">
       <h2>Install on your VPS</h2>
       <p style="color:#8b949e;margin-bottom:10px;">Install this protocol directly:</p>
-      <code>curl ${service}.dnscloak.net | sudo bash</code>
+      <code>curl dnscloak.net/${service} | sudo bash</code>
       <p style="color:#8b949e;margin-top:15px;">Or install the full interactive menu:</p>
       <code>curl dnscloak.net | sudo bash</code>
     </div>
@@ -427,7 +489,7 @@ function getDnsttSetupScript(platform: string, pubkey: string, domain: string): 
     case 'linux':
       return `#!/bin/bash
 # DNSCloak DNSTT Client Setup - Linux
-# Run: curl "dnstt.dnscloak.net/setup/linux?key=${pubkey}&domain=${domain}" | bash
+# Run: curl "dnscloak.net/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash
 
 set -e
 echo "=== DNSCloak DNSTT Client Setup ==="
@@ -469,7 +531,7 @@ echo ""
     case 'macos':
       return `#!/bin/bash
 # DNSCloak DNSTT Client Setup - macOS
-# Run: curl "dnstt.dnscloak.net/setup/macos?key=${pubkey}&domain=${domain}" | bash
+# Run: curl "dnscloak.net/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash
 
 set -e
 echo "=== DNSCloak DNSTT Client Setup ==="
@@ -517,7 +579,7 @@ echo ""
 
     case 'windows':
       return `# DNSCloak DNSTT Client Setup - Windows PowerShell
-# Run in PowerShell: iex (iwr "dnstt.dnscloak.net/setup/windows?key=${pubkey}&domain=${domain}").Content
+# Run in PowerShell: iex (iwr "dnscloak.net/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content
 
 Write-Host "=== DNSCloak DNSTT Client Setup ===" -ForegroundColor Cyan
 
@@ -560,14 +622,14 @@ Write-Host ""
 function getDnsttClientPage(pubkey: string, domain: string): string {
   const hasConfig = pubkey && domain;
   const linuxCmd = hasConfig 
-    ? `curl "dnstt.dnscloak.net/setup/linux?key=${pubkey}&domain=${domain}" | bash`
-    : 'curl "dnstt.dnscloak.net/setup/linux?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
+    ? `curl "dnscloak.net/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash`
+    : 'curl "dnscloak.net/dnstt/setup/linux?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
   const macCmd = hasConfig
-    ? `curl "dnstt.dnscloak.net/setup/macos?key=${pubkey}&domain=${domain}" | bash`
-    : 'curl "dnstt.dnscloak.net/setup/macos?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
+    ? `curl "dnscloak.net/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash`
+    : 'curl "dnscloak.net/dnstt/setup/macos?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
   const winCmd = hasConfig
-    ? `iex (iwr "dnstt.dnscloak.net/setup/windows?key=${pubkey}&domain=${domain}").Content`
-    : 'iex (iwr "dnstt.dnscloak.net/setup/windows?key=YOUR_KEY&domain=t.yourdomain.com").Content';
+    ? `iex (iwr "dnscloak.net/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content`
+    : 'iex (iwr "dnscloak.net/dnstt/setup/windows?key=YOUR_KEY&domain=t.yourdomain.com").Content';
 
   return `<!DOCTYPE html>
 <html>

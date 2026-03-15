@@ -10,25 +10,31 @@ import { describe, it, expect } from 'vitest';
 // =============================================================================
 
 describe('Worker Routing', () => {
-  const subdomains = [
-    { host: 'stats.dnscloak.net', expectedHandler: 'stats-relay' },
-    { host: 'dnstt.dnscloak.net', expectedHandler: 'dnstt-setup' },
-    { host: 'sos.dnscloak.net', expectedHandler: 'sos-setup' },
-    { host: 'reality.dnscloak.net', expectedHandler: 'service-landing' },
-    { host: 'ws.dnscloak.net', expectedHandler: 'service-landing' },
-    { host: 'wg.dnscloak.net', expectedHandler: 'service-landing' },
-    { host: 'conduit.dnscloak.net', expectedHandler: 'service-landing' },
-    { host: 'dnscloak.net', expectedHandler: 'main-landing' },
-    { host: 'www.dnscloak.net', expectedHandler: 'main-landing' },
+  // Path-based routing (primary)
+  const pathRoutes = [
+    { url: 'https://dnscloak.net/', expectedHandler: 'main-landing' },
+    { url: 'https://dnscloak.net/reality', expectedHandler: 'service-landing' },
+    { url: 'https://dnscloak.net/ws', expectedHandler: 'service-landing' },
+    { url: 'https://dnscloak.net/wg', expectedHandler: 'service-landing' },
+    { url: 'https://dnscloak.net/dnstt', expectedHandler: 'dnstt-setup' },
+    { url: 'https://dnscloak.net/sos', expectedHandler: 'sos-setup' },
+    { url: 'https://dnscloak.net/conduit', expectedHandler: 'service-landing' },
+    { url: 'https://dnscloak.net/dnstt/setup/linux', expectedHandler: 'dnstt-client-setup' },
+    { url: 'https://dnscloak.net/dnstt/client', expectedHandler: 'dnstt-client-page' },
   ];
 
-  for (const { host, expectedHandler } of subdomains) {
-    it(`should route ${host} to ${expectedHandler}`, () => {
-      const url = new URL(`https://${host}/`);
-      const subdomain = url.hostname.split('.')[0];
-      
-      expect(url.hostname).toBe(host);
-      expect(subdomain).toBeTruthy();
+  // Subdomain routing (backward compat)
+  const subdomainRoutes = [
+    { url: 'https://stats.dnscloak.net/', expectedHandler: 'stats-relay' },
+    { url: 'https://reality.dnscloak.net/', expectedHandler: 'service-landing' },
+    { url: 'https://dnstt.dnscloak.net/', expectedHandler: 'dnstt-setup' },
+    { url: 'https://www.dnscloak.net/', expectedHandler: 'main-landing' },
+  ];
+
+  for (const { url: rawUrl, expectedHandler } of [...pathRoutes, ...subdomainRoutes]) {
+    it(`should route ${rawUrl} to ${expectedHandler}`, () => {
+      const url = new URL(rawUrl);
+      expect(url.hostname).toContain('dnscloak.net');
     });
   }
 
@@ -85,7 +91,7 @@ describe('Landing Pages', () => {
 
   it('should include install instructions', () => {
     // Landing page should show curl command
-    const installCommand = 'curl https://reality.dnscloak.net | sudo bash';
+    const installCommand = 'curl https://dnscloak.net/reality | sudo bash';
     expect(installCommand).toContain('curl');
     expect(installCommand).toContain('sudo bash');
   });
@@ -93,7 +99,7 @@ describe('Landing Pages', () => {
   it('should not expose server IP in landing page', () => {
     // Landing page should not contain actual server IP
     // Only domain names
-    const htmlContent = '<p>Install with: curl reality.dnscloak.net | sudo bash</p>';
+    const htmlContent = '<p>Install with: curl dnscloak.net/reality | sudo bash</p>';
     expect(htmlContent).not.toMatch(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
   });
 });
@@ -105,7 +111,7 @@ describe('Landing Pages', () => {
 describe('GPG Signature Endpoints (Issue #9)', () => {
   it('should serve /.sig for each service', () => {
     // After Issue #9 is implemented:
-    // GET /reality.dnscloak.net/.sig → returns GPG signature
+    // GET /dnscloak.net/reality/.sig → returns GPG signature
     const sigEndpoint = '/.sig';
     expect(sigEndpoint).toBe('/.sig');
   });

@@ -2,7 +2,7 @@
  * DNSCloak - Multi-Service Cloudflare Worker
  * 
  * Copy this entire code into Cloudflare Workers dashboard
- * Routes based on subdomain: reality.dnscloak.net, wg.dnscloak.net, etc.
+ * Routes based on subdomain: dnscloak.net/reality, dnscloak.net/wg, etc.
  */
 
 const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main';
@@ -246,12 +246,12 @@ function getLandingPage() {
     <p class="tagline">Multi-protocol censorship bypass platform</p>
     
     <div class="services">
-      <a href="https://reality.dnscloak.net/info">Reality</a>
-      <a href="https://wg.dnscloak.net/info">WireGuard</a>
-      <a href="https://mtp.dnscloak.net/info">MTProto</a>
-      <a href="https://vray.dnscloak.net/info">V2Ray</a>
-      <a href="https://ws.dnscloak.net/info">WS+CDN</a>
-      <a href="https://dnstt.dnscloak.net/info">DNStt</a>
+      <a href="https://dnscloak.net/reality/info">Reality</a>
+      <a href="https://dnscloak.net/wg/info">WireGuard</a>
+      <a href="https://dnscloak.net/mtp/info">MTProto</a>
+      <a href="https://dnscloak.net/vray/info">V2Ray</a>
+      <a href="https://dnscloak.net/ws/info">WS+CDN</a>
+      <a href="https://dnscloak.net/dnstt/info">DNStt</a>
     </div>
     
     <p class="footer">
@@ -383,17 +383,17 @@ function getInfoPage(service, config) {
     <p class="description">${config.description}</p>
     
     <div class="services">
-      <a href="https://reality.dnscloak.net/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
-      <a href="https://wg.dnscloak.net/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
-      <a href="https://mtp.dnscloak.net/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
-      <a href="https://vray.dnscloak.net/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
-      <a href="https://ws.dnscloak.net/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
-      <a href="https://dnstt.dnscloak.net/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
+      <a href="https://dnscloak.net/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
+      <a href="https://dnscloak.net/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
+      <a href="https://dnscloak.net/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
+      <a href="https://dnscloak.net/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
+      <a href="https://dnscloak.net/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
+      <a href="https://dnscloak.net/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
     </div>
     
     <div class="install-box">
       <h2>Install on your VPS</h2>
-      <code>curl ${service}.dnscloak.net | sudo bash</code>
+      <code>curl dnscloak.net/${service} | sudo bash</code>
     </div>
     
     <div class="apps">

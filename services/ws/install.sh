@@ -3,7 +3,7 @@
 # DNSCloak - VLESS + WebSocket + CDN Service Installer
 # https://github.com/behnamkhorsandian/DNSCloak
 #
-# Usage: curl ws.dnscloak.net | sudo bash
+# Usage: curl dnscloak.net/ws | sudo bash
 #
 # Requires:
 #   - Domain with Cloudflare DNS (free plan works)

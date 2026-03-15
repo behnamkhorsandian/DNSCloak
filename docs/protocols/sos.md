@@ -24,12 +24,12 @@ Before using the Web Client via DNSTT, you need to set up the DNSTT tunnel clien
 
 ### Linux
 ```bash
-curl dnstt.dnscloak.net/setup/linux | bash
+curl dnscloak.net/dnstt/setup/linux | bash
 ```
 
 ### macOS
 ```bash
-curl dnstt.dnscloak.net/setup/macos | bash
+curl dnscloak.net/dnstt/setup/macos | bash
 ```
 
 This creates a SOCKS5 proxy on `127.0.0.1:10800` that tunnels all traffic through DNS queries.
@@ -62,7 +62,7 @@ The web client features:
 
 Run directly in your terminal:
 ```bash
-curl sos.dnscloak.net | bash
+curl dnscloak.net/sos | bash
 ```
 
 This downloads the Python TUI client. Features:
@@ -113,12 +113,12 @@ If you have a VPS and want to host a relay for your community:
 
 **Step 1**: Ensure DNSTT is installed on your VM
 ```bash
-curl dnstt.dnscloak.net | sudo bash
+curl dnscloak.net/dnstt | sudo bash
 ```
 
 **Step 2**: Install SOS relay daemon (includes web client)
 ```bash
-curl sos.dnscloak.net | sudo bash -s -- --server
+curl dnscloak.net/sos | sudo bash -s -- --server
 ```
 
 This installs:
@@ -132,7 +132,7 @@ This installs:
 |--------|-----|-------|
 | **Web (via DNSTT)** | `http://YOUR_IP:8899/` | Through SOCKS5 proxy |
 | **Web (direct)** | `http://YOUR_IP:8899/` | No tunnel (less private) |
-| **TUI** | `SOS_RELAY_HOST=YOUR_IP curl sos.dnscloak.net \| bash` | Terminal client |
+| **TUI** | `SOS_RELAY_HOST=YOUR_IP curl dnscloak.net/sos \| bash` | Terminal client |
 
 ---
 
@@ -206,7 +206,7 @@ This installs:
 
 ### Creating a Room
 
-1. Run: `curl sos.dnscloak.net | bash`
+1. Run: `curl dnscloak.net/sos | bash`
 
 2. Select **key mode**:
    - **🔄 Rotating** (recommended) — PIN changes every 15 seconds
@@ -220,7 +220,7 @@ This installs:
 
 ### Joining a Room
 
-1. Run: `curl sos.dnscloak.net | bash`
+1. Run: `curl dnscloak.net/sos | bash`
 
 2. Press **Join Room**
 
@@ -287,7 +287,7 @@ Use these phonetic names when sharing room IDs verbally:
 ssh root@your-server-ip
 
 # Install SOS relay (requires DNSTT already running)
-curl sos.dnscloak.net | sudo bash -s -- --server
+curl dnscloak.net/sos | sudo bash -s -- --server
 ```
 
 This installs:
@@ -319,10 +319,10 @@ Users connect to your relay by setting environment variables:
 # Method 1: Environment variable
 export SOS_RELAY_HOST="your-dnstt-domain.com"
 export SOS_RELAY_PORT="8899"
-curl sos.dnscloak.net | bash
+curl dnscloak.net/sos | bash
 
 # Method 2: One-liner
-SOS_RELAY_HOST=your-domain.com curl sos.dnscloak.net | bash
+SOS_RELAY_HOST=your-domain.com curl dnscloak.net/sos | bash
 ```
 
 ---
@@ -377,7 +377,7 @@ To prevent abuse, room creation is rate-limited per IP:
 
 ## Troubleshooting
 
-### "Could not resolve host: sos.dnscloak.net"
+### "Could not resolve host: dnscloak.net/sos"
 
 Your local DNS may be slow to update. Try these workarounds:
 
@@ -386,7 +386,7 @@ Your local DNS may be slow to update. Try these workarounds:
 sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
 
 # Option 2: Force resolve via curl
-curl --resolve sos.dnscloak.net:443:188.114.97.6 https://sos.dnscloak.net | bash
+curl --resolve dnscloak.net/sos:443:188.114.97.6 https://dnscloak.net/sos | bash
 
 # Option 3: Use Google DNS
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf

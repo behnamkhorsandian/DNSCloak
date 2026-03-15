@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
 # DNSCloak - Conduit Installer
-# Usage: curl conduit.dnscloak.net | sudo bash
+# Usage: curl dnscloak.net/conduit | sudo bash
 #===============================================================================
 
 # Colors

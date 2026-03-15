@@ -75,7 +75,7 @@ MTProto Proxy with Fake-TLS makes Telegram accessible in restricted regions by d
 ## Installation
 
 ```bash
-curl mtp.dnscloak.net | sudo bash
+curl dnscloak.net/mtp | sudo bash
 ```
 
 ## User Management

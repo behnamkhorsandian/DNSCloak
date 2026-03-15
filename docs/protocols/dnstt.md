@@ -118,7 +118,7 @@ dig NS t.yourdomain.com
 ## Installation
 
 ```bash
-curl dnstt.dnscloak.net | sudo bash
+curl dnscloak.net/dnstt | sudo bash
 ```
 
 During setup:

@@ -5,7 +5,7 @@ Each DNSCloak service has its own Cloudflare Worker that serves the installation
 ## Worker Architecture
 
 ```text
-User runs: curl reality.dnscloak.net | sudo bash
+User runs: curl dnscloak.net/reality | sudo bash
                          |
                          v
             Cloudflare Worker (reality)
@@ -21,12 +21,12 @@ User runs: curl reality.dnscloak.net | sudo bash
 
 | Subdomain | Worker Name | Script Path |
 |-----------|-------------|-------------|
-| reality.dnscloak.net | dnscloak-reality | services/reality/install.sh |
-| wg.dnscloak.net | dnscloak-wg | services/wg/install.sh |
-| mtp.dnscloak.net | dnscloak-mtp | services/mtp/install.sh |
-| vray.dnscloak.net | dnscloak-vray | services/vray/install.sh |
-| ws.dnscloak.net | dnscloak-ws | services/ws/install.sh |
-| dnstt.dnscloak.net | dnscloak-dnstt | services/dnstt/install.sh |
+| dnscloak.net/reality | dnscloak-reality | services/reality/install.sh |
+| dnscloak.net/wg | dnscloak-wg | services/wg/install.sh |
+| dnscloak.net/mtp | dnscloak-mtp | services/mtp/install.sh |
+| dnscloak.net/vray | dnscloak-vray | services/vray/install.sh |
+| dnscloak.net/ws | dnscloak-ws | services/ws/install.sh |
+| dnscloak.net/dnstt | dnscloak-dnstt | services/dnstt/install.sh |
 
 ## Worker Endpoints
 
@@ -126,7 +126,7 @@ function getInfoHTML(): string {
   <p>VLESS + REALITY proxy. No domain required.</p>
   
   <h2>Install</h2>
-  <pre>curl reality.dnscloak.net | sudo bash</pre>
+  <pre>curl dnscloak.net/reality | sudo bash</pre>
   
   <h2>Client Apps</h2>
   <ul>
@@ -153,7 +153,7 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 routes = [
-  { pattern = "reality.dnscloak.net", custom_domain = true }
+  { pattern = "dnscloak.net/reality", custom_domain = true }
 ]
 ```
 
@@ -169,7 +169,7 @@ After first deploy:
 
 1. Go to Cloudflare Dashboard > Workers & Pages
 2. Select worker > Settings > Triggers
-3. Add Custom Domain: `reality.dnscloak.net`
+3. Add Custom Domain: `dnscloak.net/reality`
 4. Cloudflare auto-creates DNS record
 
 ## Deploying All Workers
@@ -271,8 +271,8 @@ The DNSTT worker includes a client setup page:
 
 | URL | Description |
 |-----|-------------|
-| `dnstt.dnscloak.net/client` | Interactive setup page |
-| `dnstt.dnscloak.net/client?key=PUBKEY&domain=t.example.com` | Pre-filled setup |
-| `dnstt.dnscloak.net/setup/linux?key=...&domain=...` | Linux setup script |
-| `dnstt.dnscloak.net/setup/macos?key=...&domain=...` | macOS setup script |
-| `dnstt.dnscloak.net/setup/windows?key=...&domain=...` | Windows PowerShell script |
+| `dnscloak.net/dnstt/client` | Interactive setup page |
+| `dnscloak.net/dnstt/client?key=PUBKEY&domain=t.example.com` | Pre-filled setup |
+| `dnscloak.net/dnstt/setup/linux?key=...&domain=...` | Linux setup script |
+| `dnscloak.net/dnstt/setup/macos?key=...&domain=...` | macOS setup script |
+| `dnscloak.net/dnstt/setup/windows?key=...&domain=...` | Windows PowerShell script |

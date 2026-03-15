@@ -97,32 +97,32 @@ recommend_services() {
     echo ""
     
     # Always recommend Reality (no domain needed)
-    echo "  [RECOMMENDED] Reality (reality.dnscloak.net)"
+    echo "  [RECOMMENDED] Reality (dnscloak.net/reality)"
     echo "      Best detection resistance, no domain needed"
     echo ""
     
     # Always recommend WireGuard
-    echo "  [RECOMMENDED] WireGuard (wg.dnscloak.net)"
+    echo "  [RECOMMENDED] WireGuard (dnscloak.net/wg)"
     echo "      Fast VPN, native app support"
     echo ""
     
     # MTP is always available
-    echo "  [AVAILABLE] MTProto (mtp.dnscloak.net)"
+    echo "  [AVAILABLE] MTProto (dnscloak.net/mtp)"
     echo "      Telegram only"
     echo ""
     
     if [[ "$has_domain" == "true" ]]; then
-        echo "  [AVAILABLE] V2Ray (vray.dnscloak.net)"
+        echo "  [AVAILABLE] V2Ray (dnscloak.net/vray)"
         echo "      Classic setup with Let's Encrypt cert"
         echo ""
         
         if [[ "$has_cloudflare" == "true" ]]; then
-            echo "  [AVAILABLE] WS+CDN (ws.dnscloak.net)"
+            echo "  [AVAILABLE] WS+CDN (dnscloak.net/ws)"
             echo "      Hide server IP behind Cloudflare"
             echo ""
         fi
         
-        echo "  [EMERGENCY] DNStt (dnstt.dnscloak.net)"
+        echo "  [EMERGENCY] DNStt (dnscloak.net/dnstt)"
         echo "      DNS tunnel for blackouts (slow)"
         echo ""
     else
@@ -165,16 +165,16 @@ select_service() {
     echo "Available Commands:"
     echo "-------------------"
     echo ""
-    echo "  curl reality.dnscloak.net | sudo bash"
-    echo "  curl wg.dnscloak.net | sudo bash"
-    echo "  curl mtp.dnscloak.net | sudo bash"
+    echo "  curl dnscloak.net/reality | sudo bash"
+    echo "  curl dnscloak.net/wg | sudo bash"
+    echo "  curl dnscloak.net/mtp | sudo bash"
     
     if [[ "$has_domain" == "true" ]]; then
-        echo "  curl vray.dnscloak.net | sudo bash"
+        echo "  curl dnscloak.net/vray | sudo bash"
         if [[ "$has_cloudflare" == "true" ]]; then
-            echo "  curl ws.dnscloak.net | sudo bash"
+            echo "  curl dnscloak.net/ws | sudo bash"
         fi
-        echo "  curl dnstt.dnscloak.net | sudo bash"
+        echo "  curl dnscloak.net/dnstt | sudo bash"
     fi
     
     echo ""

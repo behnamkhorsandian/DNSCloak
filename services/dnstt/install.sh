@@ -3,7 +3,7 @@
 # DNSCloak - DNSTT (DNS Tunnel) Service Installer
 # https://github.com/behnamkhorsandian/DNSCloak
 #
-# Usage: curl dnstt.dnscloak.net | sudo bash
+# Usage: curl dnscloak.net/dnstt | sudo bash
 #
 # Requires:
 #   - Domain with ability to set NS records
@@ -438,7 +438,7 @@ show_dnstt_info() {
     server_ip=$(server_get "ip")
     
     # URL-encode the pubkey and domain for the setup URL
-    local setup_url="https://dnstt.dnscloak.net/client?key=${pubkey}&domain=t.${domain}"
+    local setup_url="https://dnscloak.net/dnstt/client?key=${pubkey}&domain=t.${domain}"
     
     clear
     load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak DNSTT ===${RESET}\n"
