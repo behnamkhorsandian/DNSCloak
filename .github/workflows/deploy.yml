@@ -93,6 +93,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: pages deploy www --project-name=dnscloak --branch=main --commit-dirty=true
 
   # ============================================
