@@ -62,6 +62,10 @@ local-config.py
 .env
 workers/.env
 
+# Wrangler local cache
+.wrangler/
+**/.wrangler/
+
 # Private configuration files
 VPNS.txt
 sample.wrangler/
