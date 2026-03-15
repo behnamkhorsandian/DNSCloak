@@ -36,6 +36,10 @@ jobs:
       - name: Check script syntax
         run: |
           bash -n setup.sh
+          bash -n start.sh
+          for f in tui/*.sh tui/pages/*.sh; do
+            [ -f "$f" ] && bash -n "$f"
+          done
           echo "✓ Script syntax is valid"
 
       - name: Shellcheck
