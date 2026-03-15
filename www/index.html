@@ -322,7 +322,16 @@
       font-size: 11px;
       overflow-x: auto;
       white-space: nowrap;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s;
     }
+    .protocol-cmd:hover { border-color: var(--accent-green); }
+    .protocol-cmd .copied-toast {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      color: var(--accent-green); font-size: 10px; opacity: 0; transition: opacity 0.2s;
+    }
+    .protocol-cmd .copied-toast.show { opacity: 1; }
     
     .protocol-cmd.disabled { color: var(--text-dim); border-left-color: var(--text-dim); }
 
@@ -1895,7 +1904,7 @@
                 <span class="tag">last-resort</span>
                 <span class="tag">slow</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/dnstt | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/dnstt | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/dnstt | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
             <div class="protocol-item theme-purple">
@@ -1910,7 +1919,7 @@
                 <span class="tag">psiphon</span>
                 <span class="tag">no-domain</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/conduit | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/conduit | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/conduit | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
 
@@ -1927,7 +1936,7 @@
                 <span class="tag">fast</span>
                 <span class="tag">undetectable</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/reality | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/reality | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/reality | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -1942,7 +1951,7 @@
                 <span class="tag">cdn</span>
                 <span class="tag">cloudflare</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/ws | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/ws | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/ws | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -1957,7 +1966,7 @@
                 <span class="tag">native-apps</span>
                 <span class="tag">fast</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/wg | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/wg | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/wg | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -1972,7 +1981,7 @@
                 <span class="tag">fake-tls</span>
                 <span class="tag">easy</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/mtp | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/mtp | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/mtp | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             
@@ -1988,7 +1997,7 @@
                 <span class="tag">lets-encrypt</span>
                 <span class="tag">compatible</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/vray | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/vray | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/vray | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
             <div class="protocol-item theme-sos-subtle">
@@ -2003,7 +2012,7 @@
                 <span class="tag">e2e-encrypted</span>
                 <span class="tag">no-internet</span>
               </div>
-              <div class="protocol-cmd"><span class="prompt">$ </span>curl dnscloak.net/sos | sudo bash</div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/sos | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/sos | sudo bash<span class="copied-toast">copied!</span></div>
               <div class="sos-download-dropdown" id="sos-dropdown">
                 <button class="sos-dropdown-btn" onclick="toggleSosDropdown()">
                   <span>Download standalone client</span>
@@ -2202,6 +2211,13 @@
       navigator.clipboard.writeText(cmd);
       event.target.innerText = '[ DONE ]';
       setTimeout(() => event.target.innerText = '[ COPY ]', 2000);
+    }
+
+    function copyProtocolCmd(el, cmd) {
+      navigator.clipboard.writeText(cmd);
+      const toast = el.querySelector('.copied-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
     }
     
     function showHome() {
