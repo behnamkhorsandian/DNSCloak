@@ -116,7 +116,7 @@ tui_cleanup() {
 
 # Strip ANSI escape codes from a string
 strip_ansi() {
-    printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'
+    printf '%b' "$1" | sed 's/\x1b\[[0-9;]*m//g'
 }
 
 # Visible length of a string (ignoring ANSI codes)
@@ -151,7 +151,7 @@ pad_right() {
     local vlen
     vlen=$(visible_len "$text")
     local pad=$(( target_width - vlen ))
-    printf '%s' "$text"
+    printf '%b' "$text"
     (( pad > 0 )) && printf '%*s' "$pad" ""
 }
 
@@ -162,13 +162,13 @@ truncate_str() {
     local vlen
     vlen=$(visible_len "$text")
     if (( vlen <= max_width )); then
-        printf '%s' "$text"
+        printf '%b' "$text"
         return
     fi
     # Brute force: strip ANSI, truncate, lose colors at truncation point
     local stripped
     stripped=$(strip_ansi "$text")
-    printf '%s' "${stripped:0:$((max_width - 1))}.${C_RST}"
+    printf '%b' "${stripped:0:$((max_width - 1))}.${C_RST}"
 }
 
 # Move cursor to position
