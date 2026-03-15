@@ -499,56 +499,76 @@ install_sos_automated() {
     install_sos_service
 }
 
-# Source a protocol's install script (downloads if needed)
+# Source a protocol's function library (downloads if needed)
 _source_protocol() {
     local proto="$1"
-    local script_path=""
     local functions_sourced=0
+    local install_sourced=0
 
-    # Try local paths — prefer functions.sh (TUI-compatible non-interactive functions)
-    for dir in "/opt/dnscloak/services/$proto" \
-               "$(dirname "${BASH_SOURCE[0]}")/../../services/$proto" \
-               "/tmp/dnscloak-services/$proto"; do
-        if [[ -f "$dir/functions.sh" ]]; then
+    # Directories to check for already-present files
+    local search_dirs=(
+        "/opt/dnscloak/services/$proto"
+        "/tmp/dnscloak-services/$proto"
+    )
+
+    # Also check relative to the repo root (works when running from git checkout)
+    local repo_dir=""
+    if [[ -n "${TUI_DIR:-}" ]]; then
+        repo_dir="$(cd "$TUI_DIR/.." 2>/dev/null && pwd)"
+    else
+        repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)"
+    fi
+    [[ -n "$repo_dir" && -d "$repo_dir/services/$proto" ]] && \
+        search_dirs+=("$repo_dir/services/$proto")
+
+    # Pass 1: source from local paths
+    for dir in "${search_dirs[@]}"; do
+        if [[ $functions_sourced -eq 0 && -f "$dir/functions.sh" ]]; then
             source "$dir/functions.sh"
             functions_sourced=1
         fi
-        if [[ -f "$dir/install.sh" ]]; then
-            script_path="$dir/install.sh"
+        if [[ $install_sourced -eq 0 && -f "$dir/install.sh" ]]; then
+            # Source install.sh without running main()
+            main() { :; }
+            source "$dir/install.sh" 2>/dev/null
+            unset -f main 2>/dev/null
+            install_sourced=1
         fi
     done
 
-    # If we sourced functions.sh, that's sufficient — don't source install.sh
-    # which may contain interactive functions that conflict
+    # If functions.sh was found locally, we're done
     if [[ $functions_sourced -eq 1 ]]; then
         return 0
     fi
-
-    # No functions.sh found — try install.sh (standalone installer)
-    if [[ -z "$script_path" ]]; then
-        # Download from GitHub
-        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/services/$proto/install.sh"
-        mkdir -p "/tmp/dnscloak-services/$proto"
-        script_path="/tmp/dnscloak-services/$proto/install.sh"
-        curl -sL "$url" -o "$script_path" 2>/dev/null || {
-            printf '  %b[-]%b Failed to download %s installer\n' "$C_RED" "$C_RST" "$proto"
-            return 1
-        }
+    # install.sh alone is also acceptable (e.g. sos)
+    if [[ $install_sourced -eq 1 ]]; then
+        return 0
     fi
 
-    # Source without running main()
-    local _original_main=""
-    if type main &>/dev/null; then
-        _original_main=$(declare -f main)
+    # Pass 2: download from GitHub
+    local dl_dir="/tmp/dnscloak-services/$proto"
+    mkdir -p "$dl_dir"
+    local base_url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/services/$proto"
+
+    # Try functions.sh first (preferred — non-interactive)
+    if curl -sfL "$base_url/functions.sh" -o "$dl_dir/functions.sh" 2>/dev/null; then
+        source "$dl_dir/functions.sh"
+        functions_sourced=1
     fi
 
-    main() { :; }  # no-op main to prevent auto-execution
-    source "$script_path" 2>/dev/null
-    
-    # Restore original main if it existed
-    if [[ -n "$_original_main" ]]; then
-        eval "$_original_main"
-    else
-        unset -f main 2>/dev/null
+    # Also try install.sh (some protocols only have this, e.g. sos)
+    if [[ $functions_sourced -eq 0 ]]; then
+        if curl -sfL "$base_url/install.sh" -o "$dl_dir/install.sh" 2>/dev/null; then
+            main() { :; }
+            source "$dl_dir/install.sh" 2>/dev/null
+            unset -f main 2>/dev/null
+            install_sourced=1
+        fi
     fi
+
+    if [[ $functions_sourced -eq 0 && $install_sourced -eq 0 ]]; then
+        printf '  %b[-]%b Failed to load %s service functions\n' "$C_RED" "$C_RST" "$proto"
+        return 1
+    fi
+    return 0
 }
