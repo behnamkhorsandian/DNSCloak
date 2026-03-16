@@ -42,6 +42,8 @@ page_status() {
     _SIDEBAR_PAGE="status"
     _SIDEBAR_SEL=0
     _SIDEBAR_DIM=0
+    FRAME_BANNER="logo"
+    FRAME_BANNER_COLOR="$C_ORANGE"
 
     while true; do
         tui_get_size

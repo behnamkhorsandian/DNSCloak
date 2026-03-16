@@ -17,6 +17,8 @@ page_users() {
     _SIDEBAR_PAGE="users"
     _SIDEBAR_SEL=0
     _SIDEBAR_DIM=0
+    FRAME_BANNER="logo"
+    FRAME_BANNER_COLOR="$C_PURPLE"
 
     while true; do
         tui_get_size

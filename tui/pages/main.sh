@@ -242,6 +242,18 @@ page_main_menu() {
     _SIDEBAR_PAGE="protocols"
     _SIDEBAR_DIM=0
 
+    # Banner color per protocol
+    local -A _PROTO_BANNER_COLOR=(
+        [reality]="$C_GREEN"
+        [wg]="$C_BLUE"
+        [ws]="$C_ORANGE"
+        [mtp]="$C_PURPLE"
+        [dnstt]="$C_RED"
+        [conduit]="$C_PURPLE"
+        [vray]="$C_LGREEN"
+        [sos]="$C_RED"
+    )
+
     local focus="sidebar"   # "sidebar" or "content"
     local action_sel=0
     local proto_count=${#PROTOCOL_IDS[@]}
@@ -261,9 +273,14 @@ page_main_menu() {
 
     while true; do
         tui_get_size
-        tui_compute_layout
 
         local proto="${PROTOCOL_IDS[$_SIDEBAR_SEL]}"
+
+        # Set banner to selected protocol
+        FRAME_BANNER="$proto"
+        FRAME_BANNER_COLOR="${_PROTO_BANNER_COLOR[$proto]:-$C_GREEN}"
+
+        tui_compute_layout
 
         # Build content for selected protocol
         if [[ $focus == "content" ]]; then

@@ -48,8 +48,63 @@ _CONTENT_H=0          # Content area height (rows available)
 _COMPACT=0            # 1 = no sidebar (narrow terminal)
 _MARGIN=0             # Always 0 in new layout (edge-to-edge)
 
-# Chrome rows: top(1) + status(1) + split_top(1) + split_bottom(1) + footer(1) + bottom(1) = 6
+# Banner globals
+FRAME_BANNER=""              # Banner name to display (e.g., "reality", "logo")
+FRAME_BANNER_COLOR=""        # Color escape for banner text
+_BANNER_LINES=()             # Cached banner lines (array)
+_BANNER_H=0                  # Number of banner lines
+_BANNER_CACHE_NAME=""        # Last loaded banner name (for caching)
+
+# Base chrome rows: top(1) + status(1) + split_top(1) + split_bottom(1) + footer(1) + bottom(1) = 6
 _CHROME_ROWS=6
+
+#-------------------------------------------------------------------------------
+# Load banner file into _BANNER_LINES array
+# Caches by name — only reloads when FRAME_BANNER changes
+#-------------------------------------------------------------------------------
+_load_frame_banner() {
+    # No banner requested
+    if [[ -z "$FRAME_BANNER" ]]; then
+        _BANNER_LINES=()
+        _BANNER_H=0
+        _BANNER_CACHE_NAME=""
+        return
+    fi
+
+    # Already cached
+    [[ "$FRAME_BANNER" == "$_BANNER_CACHE_NAME" ]] && return
+
+    _BANNER_LINES=()
+    _BANNER_H=0
+    _BANNER_CACHE_NAME="$FRAME_BANNER"
+
+    local banner_text=""
+    local script_dir
+    script_dir="$(dirname "${BASH_SOURCE[0]}")"
+
+    if [[ -n "${BANNER_DIR:-}" && -f "${BANNER_DIR}/${FRAME_BANNER}.txt" ]]; then
+        banner_text=$(cat "${BANNER_DIR}/${FRAME_BANNER}.txt")
+    elif [[ -f "/opt/dnscloak/banners/${FRAME_BANNER}.txt" ]]; then
+        banner_text=$(cat "/opt/dnscloak/banners/${FRAME_BANNER}.txt")
+    elif [[ -f "/tmp/dnscloak-banners/${FRAME_BANNER}.txt" ]]; then
+        banner_text=$(cat "/tmp/dnscloak-banners/${FRAME_BANNER}.txt")
+    elif [[ -f "${script_dir}/../banners/${FRAME_BANNER}.txt" ]]; then
+        banner_text=$(cat "${script_dir}/../banners/${FRAME_BANNER}.txt")
+    else
+        mkdir -p /tmp/dnscloak-banners
+        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/banners/${FRAME_BANNER}.txt"
+        if curl -sL "$url" -o "/tmp/dnscloak-banners/${FRAME_BANNER}.txt" 2>/dev/null; then
+            banner_text=$(cat "/tmp/dnscloak-banners/${FRAME_BANNER}.txt")
+        fi
+    fi
+
+    [[ -z "$banner_text" ]] && return
+
+    while IFS= read -r line; do
+        _BANNER_LINES+=("$line")
+        (( _BANNER_H++ ))
+    done <<< "$banner_text"
+}
 
 tui_compute_layout() {
     _FRAME_W=$_TERM_COLS
@@ -63,6 +118,15 @@ tui_compute_layout() {
         _SIDEBAR_INNER_W=20
         # left border(1) + sidebar(20) + mid border(1) + content(?) + right border(1) = FRAME_W
         _CONTENT_INNER_W=$(( _FRAME_W - _SIDEBAR_INNER_W - 3 ))
+    fi
+
+    # Load banner and compute chrome
+    _load_frame_banner
+    if (( _BANNER_H > 0 )); then
+        # base(6) + separator(1) + banner_lines
+        _CHROME_ROWS=$(( 7 + _BANNER_H ))
+    else
+        _CHROME_ROWS=6
     fi
 
     _CONTENT_H=$(( _TERM_ROWS - _CHROME_ROWS ))
@@ -419,6 +483,31 @@ tui_render_frame() {
 
         # Row 2: Status bar
         _print_full_row "$status_text"
+
+        # Banner rows (if active)
+        if (( _BANNER_H > 0 )); then
+            # Separator between status bar and banner
+            printf '%b%s%s%s%b\n' "$bc" "$BOX_ML" "$h_full" "$BOX_MR" "$C_RST"
+
+            local bcolor="${FRAME_BANNER_COLOR:-$C_GREEN}"
+            local banner_inner=$(( _FRAME_W - 2 ))
+            local bi=0
+            while (( bi < _BANNER_H )); do
+                local bline="${_BANNER_LINES[$bi]:-}"
+                local bvlen=${#bline}
+                local bpad_l=$(( (banner_inner - bvlen) / 2 ))
+                local bpad_r=$(( banner_inner - bvlen - bpad_l ))
+                (( bpad_l < 0 )) && bpad_l=0
+                (( bpad_r < 0 )) && bpad_r=0
+                printf '%b%s%b%*s%b%s%b%*s%b%s%b\n' \
+                    "$bc" "$BOX_V" "$C_RST" \
+                    "$bpad_l" "" \
+                    "$bcolor" "$bline" "$C_RST" \
+                    "$bpad_r" "" \
+                    "$bc" "$BOX_V" "$C_RST"
+                (( bi++ ))
+            done
+        fi
 
         if (( _COMPACT )); then
             # Row 3: Separator
