@@ -44,10 +44,10 @@ _build_protocol_content() {
     fi
     FRAME_CONTENT+=("")
 
-    # Render markdown description if available
-    local md_path="${PROTOCOL_DESC_MD[$proto]:-}"
-    if [[ -n "$md_path" ]]; then
-        tui_render_markdown "$md_path"
+    # Render description from standalone txt file
+    local doc_file="${PROTOCOL_DESC_MD[$proto]:-}"
+    if [[ -n "$doc_file" ]]; then
+        _render_doc_file "$doc_file"
     else
         # Fallback to short description
         local desc="${PROTOCOL_DESC[$proto]}"
@@ -78,6 +78,58 @@ _build_protocol_content() {
             FRAME_CONTENT+=("${C_LGRAY}${line}${C_RST}")
         done <<< "$(printf '%b' "$clients")"
     fi
+}
+
+#-------------------------------------------------------------------------------
+# Load a standalone doc .txt file (fetched like banners if not local)
+# Renders basic markdown syntax into FRAME_CONTENT[]
+#-------------------------------------------------------------------------------
+
+_render_doc_file() {
+    local doc_file="$1"
+    local doc_text=""
+    local script_dir
+    script_dir="$(dirname "${BASH_SOURCE[0]}")/.."
+
+    # Normalize — ensure .txt extension
+    local dfile="$doc_file"
+    [[ "$dfile" != *.txt ]] && dfile="${dfile}.txt"
+
+    # Try local paths first
+    if [[ -f "${script_dir}/content/docs/${dfile}" ]]; then
+        doc_text=$(cat "${script_dir}/content/docs/${dfile}")
+    elif [[ -f "/opt/dnscloak/tui/content/docs/${dfile}" ]]; then
+        doc_text=$(cat "/opt/dnscloak/tui/content/docs/${dfile}")
+    elif [[ -f "/tmp/dnscloak-docs/${dfile}" ]]; then
+        doc_text=$(cat "/tmp/dnscloak-docs/${dfile}")
+    else
+        # Fetch from GitHub
+        mkdir -p /tmp/dnscloak-docs
+        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/tui/content/docs/${dfile}"
+        if curl -sL "$url" -o "/tmp/dnscloak-docs/${dfile}" 2>/dev/null; then
+            doc_text=$(cat "/tmp/dnscloak-docs/${dfile}")
+        fi
+    fi
+
+    if [[ -z "$doc_text" ]]; then
+        return 1
+    fi
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^###\  ]]; then
+            FRAME_CONTENT+=("${C_LGRAY}${line#\#\#\# }${C_RST}")
+        elif [[ "$line" =~ ^##\  ]]; then
+            FRAME_CONTENT+=("${C_ORANGE}${line#\#\# }${C_RST}")
+        elif [[ "$line" =~ ^#\  ]]; then
+            FRAME_CONTENT+=("${C_ORANGE}${C_BOLD}${line#\# }${C_RST}")
+        elif [[ "$line" =~ ^[[:space:]]*[-*]\  ]]; then
+            FRAME_CONTENT+=("${C_TEXT}${line}${C_RST}")
+        elif [[ -z "$line" ]]; then
+            FRAME_CONTENT+=("")
+        else
+            FRAME_CONTENT+=("${C_TEXT}${line}${C_RST}")
+        fi
+    done <<< "$doc_text"
 }
 
 #-------------------------------------------------------------------------------

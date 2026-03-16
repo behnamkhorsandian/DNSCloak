@@ -1,0 +1,35 @@
+# VLESS + TCP + TLS (V2Ray)
+
+Classic V2Ray setup with proper TLS certificates.
+Requires a domain name.
+
+## Why V2Ray/VLESS
+
+- Well-established protocol
+- Proper TLS (real certificates, not borrowed)
+- Good client support
+- Can use with Cloudflare (gray cloud)
+
+## When to Use
+
+- You have a domain name
+- REALITY is blocked (rare)
+- Need proper certificate for compliance
+- Prefer traditional TLS setup
+
+## How It Works
+
+Standard TLS connection with real Let's Encrypt
+certificate for your domain. VLESS protocol inside.
+
+  Client --> Your Server (TLS) --> Internet
+    |             |
+    |  Real cert  |  Let's Encrypt
+    |  VLESS auth |  for your domain
+
+## Setup Notes
+
+- Requires a domain pointing to your server
+- TLS certificate auto-obtained from Let's Encrypt
+- Port 443 must be open
+- Domain must have A record to server IP

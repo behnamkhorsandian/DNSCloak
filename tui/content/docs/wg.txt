@@ -1,0 +1,33 @@
+# WireGuard VPN
+
+Fast, modern VPN protocol with simple configuration
+and excellent performance.
+
+## Why WireGuard
+
+- Fastest VPN protocol available
+- Simple setup (vs OpenVPN)
+- Built into Linux kernel
+- Native apps on all platforms
+- Strong crypto (Curve25519, ChaCha20)
+
+## Limitations
+
+- UDP-based (may be blocked in some networks)
+- Distinctive handshake (detectable by DPI)
+- For heavy censorship, use REALITY instead
+
+## How It Works
+
+Full device tunnel through encrypted UDP.
+All traffic routes through your server.
+
+  Client (10.66.66.2) <===> Server (10.66.66.1)
+         Encrypted UDP tunnel (port 51820)
+
+## Setup Notes
+
+- UDP port 51820 must be open
+- No domain name required
+- QR code generated for mobile setup
+- Best for daily use when not censored

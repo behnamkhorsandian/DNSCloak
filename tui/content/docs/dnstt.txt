@@ -1,0 +1,42 @@
+# DNS Tunnel (DNSTT)
+
+Emergency protocol for extreme censorship.
+Tunnels data through DNS queries.
+
+## Why DNS Tunnel
+
+- Works when everything else is blocked
+- DNS usually stays open (required for basic internet)
+- Last resort during digital blackouts
+- Very difficult to block without breaking internet
+
+## Limitations
+
+- Very slow (50-150 kbps typical)
+- High latency (500ms+)
+- Requires domain with NS records
+- Not for daily use
+
+## When to Use
+
+- Total internet shutdown (except DNS)
+- All other protocols are blocked
+- Emergency communication only
+
+## How It Works
+
+Data is encoded inside DNS queries and responses.
+Appears as normal DNS traffic to censors.
+
+  Client --> ISP DNS --> Auth DNS --> Your Server
+    ^                                     |
+    +------------ DNS Response -----------+
+           (data encoded in DNS)
+
+## Setup Notes
+
+- Requires a domain you control
+- Set A record: ns1.domain --> server IP
+- Set NS record: t.domain --> ns1.domain
+- Domain must NOT be behind Cloudflare proxy
+- Port 53 must be open

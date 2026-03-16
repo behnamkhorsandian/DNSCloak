@@ -1,0 +1,36 @@
+# Conduit - Psiphon Volunteer Relay
+
+Help users in censored regions access the open internet
+by running a volunteer relay node.
+
+## What is Conduit?
+
+Conduit turns your server into a relay for the Psiphon
+network. Unlike other protocols that create personal VPNs,
+Conduit helps many users by relaying their traffic.
+
+You don't manage users. Psiphon handles everything.
+You just provide the bandwidth.
+
+## Why Run a Relay
+
+- Help people in censored countries
+- Easy setup (Docker-based)
+- Psiphon manages client connections
+- Monitor stats via dashboard
+
+## How It Works
+
+Your server joins the Psiphon relay network.
+Users connect via Psiphon apps automatically.
+
+  Psiphon Users --> Psiphon Network --> Your Server --> Internet
+       |                                    |
+       |  Managed by Psiphon               |  You provide bandwidth
+
+## Setup Notes
+
+- Docker will be installed if not present
+- Set max clients (200-1000 recommended)
+- Set bandwidth limit or unlimited
+- Monitor with: conduit status

@@ -1,0 +1,34 @@
+# MTProto Proxy
+
+Telegram-specific proxy with Fake-TLS that makes
+Telegram accessible in restricted regions.
+
+## Why MTProto
+
+- Native Telegram support (no extra apps)
+- Simple user experience (just click a link)
+- Built specifically for Telegram
+- Fake-TLS bypasses basic DPI
+
+## Limitations
+
+- Telegram only (not a general proxy)
+- Well-known protocol (targeted by censors)
+- May be blocked during heavy crackdowns
+
+## How It Works
+
+Traffic disguised as HTTPS to a popular domain.
+Users click a proxy link inside Telegram to connect.
+
+  Telegram App --> MTP Proxy --> Telegram Servers
+       |              |
+       |  Fake-TLS    |  Looks like HTTPS
+       |  (secret)    |  to google.com
+
+## Setup Notes
+
+- Port 443 recommended (looks like HTTPS)
+- No domain name required
+- Users connect via proxy link in Telegram
+- Choose Fake-TLS mode for best results

@@ -1,0 +1,42 @@
+# SOS - Emergency Secure Chat
+
+Encrypted chat rooms over DNS tunnel for emergency
+communication during internet blackouts.
+
+## Why SOS
+
+- Works during total internet blackouts
+- End-to-end encrypted (NaCl + Argon2id)
+- No account or registration needed
+- Emoji-based room codes (easy to share verbally)
+
+## How to Connect
+
+Three ways to use SOS:
+
+- Web Client via DNSTT - Maximum censorship resistance
+  Configure browser SOCKS5 proxy to DNSTT client,
+  then navigate to relay address
+
+- TUI Client - Terminal-based, quick setup
+  pip install and run from command line
+
+- Direct Web Access - For testing only
+  No censorship resistance
+
+## How It Works
+
+Messages travel through DNS tunnel (DNSTT).
+All messages encrypted client-side before sending.
+
+  Client --> DNSTT Tunnel --> SOS Relay --> Other Users
+    |            |               |
+    |  DNS only  |  Encrypted    |  E2E encrypted
+    |            |  in DNS       |  chat rooms
+
+## Setup Notes
+
+- Requires DNSTT service running first
+- Relay daemon listens on port 8899
+- Web client served at relay root URL
+- TUI and web clients share the same rooms
