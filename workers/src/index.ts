@@ -8,27 +8,11 @@
  *
  * Subdomain routing (backward compat):
  *   curl reality.vany.sh    -> same as vany.sh/reality
- *
- * Stats relay: stats.vany.sh -> Durable Object
  */
-
-// Re-export Durable Object class for stats relay
-export { StatsRelay } from './stats-relay';
-
-// Stub for SosRelay - being deleted via migration v3
-// Remove this export after the delete_classes migration has been applied
-export class SosRelay implements DurableObject {
-  constructor(private state: DurableObjectState, private env: Env) {}
-  async fetch() { return new Response('gone', { status: 410 }); }
-}
 
 const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main';
 
-// Environment bindings
-interface Env {
-  STATS_RELAY: DurableObjectNamespace;
-  SOS_RELAY: DurableObjectNamespace;
-}
+interface Env {}
 
 // Service configurations
 interface ServiceConfig {
@@ -214,13 +198,6 @@ export default {
 
     // Extract subdomain (e.g., "reality" from "reality.vany.sh")
     const subdomain = hostname.split('.')[0];
-
-    // Route stats subdomain to Durable Object
-    if (subdomain === 'stats') {
-      const id = env.STATS_RELAY.idFromName('singleton');
-      const stub = env.STATS_RELAY.get(id);
-      return stub.fetch(request);
-    }
 
     // CORS headers
     const corsHeaders = {

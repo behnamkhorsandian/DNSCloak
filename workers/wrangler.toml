@@ -2,7 +2,7 @@ name = "vany"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
-# Routes for all services
+# Routes - TUI serving and protocol info pages
 routes = [
   { pattern = "start.vany.sh", custom_domain = true },
   { pattern = "mtp.vany.sh", custom_domain = true },
@@ -12,24 +12,5 @@ routes = [
   { pattern = "ws.vany.sh", custom_domain = true },
   { pattern = "dnstt.vany.sh", custom_domain = true },
   { pattern = "conduit.vany.sh", custom_domain = true },
-  { pattern = "stats.vany.sh", custom_domain = true },
   { pattern = "vany.sh", custom_domain = true }
 ]
-
-# Durable Objects for live stats relay
-[[durable_objects.bindings]]
-name = "STATS_RELAY"
-class_name = "StatsRelay"
-
-# SosRelay - being deleted, binding kept until migration applies
-[[durable_objects.bindings]]
-name = "SOS_RELAY"
-class_name = "SosRelay"
-
-[[migrations]]
-tag = "v2"
-new_sqlite_classes = ["StatsRelay"]
-
-[[migrations]]
-tag = "v3"
-delete_classes = ["SosRelay"]
