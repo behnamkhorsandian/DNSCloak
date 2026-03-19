@@ -424,9 +424,8 @@ tui_init() {
     fi
 
     _TUI_OLD_STTY=$(stty -g <&3 2>/dev/null)
-    printf '\033[?1049h'   # alternate screen buffer
     printf '\033[?25l'     # hide cursor
-    printf '\033[2J'       # clear screen
+    printf '\033[2J\033[H' # clear screen
     _TUI_ACTIVE=1
     tui_get_size
 
@@ -451,7 +450,6 @@ tui_cleanup() {
         stty "$_TUI_OLD_STTY" <&3 2>/dev/null
     fi
     printf '\033[?25h'     # show cursor
-    printf '\033[?1049l'   # leave alternate screen
     exec 3<&- 2>/dev/null
     _TUI_ACTIVE=0
 }
@@ -678,9 +676,16 @@ tui_render_frame() {
     local status_text
     status_text=$(_build_status_text)
 
-    # --- Render all at once via subshell to reduce flicker ---
+    # Compute how many rows to render (all content, no clipping)
+    local total_sidebar=${#_SIDEBAR_LINES[@]}
+    local total_content=${#FRAME_CONTENT[@]}
+    local render_rows=$total_sidebar
+    (( total_content > render_rows )) && render_rows=$total_content
+    (( render_rows < 1 )) && render_rows=1
+
+    # --- Render all at once: clear screen then draw full frame ---
     {
-        printf '\033[H'  # cursor home (overwrite, no clear)
+        printf '\033[2J\033[H'  # clear screen + cursor home
 
         # Row 1: Top border
         printf '%b%s%s%s%b\n' "$bc" "$BOX_TL" "$h_full" "$BOX_TR" "$C_RST"
@@ -717,24 +722,10 @@ tui_render_frame() {
             # Row 3: Separator
             printf '%b%s%s%s%b\n' "$bc" "$BOX_ML" "$h_full" "$BOX_MR" "$C_RST"
 
-            # Compute scrolling
-            _compute_scroll_max
-
-            # Content rows (full-width, no sidebar)
+            # Content rows (full-width, no sidebar, all lines)
             local r=0
-            while (( r < _CONTENT_H )); do
-                local ci=$(( r + _SCROLL_OFFSET ))
-                local line="${FRAME_CONTENT[$ci]:-}"
-                # Scroll indicators
-                if (( r == 0 && _SCROLL_OFFSET > 0 )); then
-                    local indicator="  ${C_DGRAY}▲ more${C_RST}"
-                    _print_full_row "$indicator"
-                elif (( r == _CONTENT_H - 1 && _SCROLL_MAX > 0 && _SCROLL_OFFSET < _SCROLL_MAX )); then
-                    local indicator="  ${C_DGRAY}▼ more${C_RST}"
-                    _print_full_row "$indicator"
-                else
-                    _print_full_row " ${line}"
-                fi
+            while (( r < render_rows )); do
+                _print_full_row " ${FRAME_CONTENT[$r]:-}"
                 (( r++ ))
             done
 
@@ -744,21 +735,10 @@ tui_render_frame() {
             # Row 3: Split top (├──────┬──────┤)
             printf '%b%s%s%s%s%s%b\n' "$bc" "$BOX_ML" "$h_side" "$BOX_TJ" "$h_cont" "$BOX_MR" "$C_RST"
 
-            # Compute scrolling
-            _compute_scroll_max
-
-            # Content rows (sidebar | content)
+            # Content rows (sidebar | content, all lines)
             local r=0
-            while (( r < _CONTENT_H )); do
-                local ci=$(( r + _SCROLL_OFFSET ))
-                local content_line="${FRAME_CONTENT[$ci]:-}"
-                # Scroll indicators on content side
-                if (( r == 0 && _SCROLL_OFFSET > 0 )); then
-                    content_line="  ${C_DGRAY}▲ more${C_RST}"
-                elif (( r == _CONTENT_H - 1 && _SCROLL_MAX > 0 && _SCROLL_OFFSET < _SCROLL_MAX )); then
-                    content_line="  ${C_DGRAY}▼ more${C_RST}"
-                fi
-                _print_split_row " ${_SIDEBAR_LINES[$r]:-}" " ${content_line}"
+            while (( r < render_rows )); do
+                _print_split_row " ${_SIDEBAR_LINES[$r]:-}" " ${FRAME_CONTENT[$r]:-}"
                 (( r++ ))
             done
 

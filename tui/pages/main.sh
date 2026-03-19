@@ -216,13 +216,7 @@ page_main_menu() {
                 (( _SIDEBAR_SEL >= proto_count )) && _SIDEBAR_SEL=0
                 tui_scroll_reset
                 ;;
-            # Scroll content
-            LEFT)       tui_scroll_chunk_up ;;
-            RIGHT)      tui_scroll_chunk_down ;;
-            PGUP)       tui_scroll_page_up ;;
-            PGDN)       tui_scroll_page_down ;;
-            HOME)       tui_scroll_home ;;
-            END)        tui_scroll_end ;;
+
             # Direct action hotkeys
             i|I)
                 if [[ $is_installed -eq 0 ]]; then

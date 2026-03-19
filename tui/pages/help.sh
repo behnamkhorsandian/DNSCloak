@@ -19,8 +19,6 @@ page_help() {
     FRAME_BANNER="logo"
     FRAME_BANNER_COLOR="$C_ORANGE"
 
-    tui_scroll_reset
-
     while true; do
         tui_get_size
         tui_compute_layout
@@ -89,11 +87,7 @@ page_help() {
         FRAME_CONTENT+=("")
         FRAME_CONTENT+=("${C_DGRAY}DNSCloak v${DNSCLOAK_VERSION:-2.0.0}${C_RST}")
 
-        # Apply scroll
-        _compute_scroll_max
-
-        FRAME_FOOTER="${C_DGRAY}^/v${C_RST}${C_DIM} scroll${C_RST}  "
-        FRAME_FOOTER+="${C_DGRAY}Esc${C_RST}${C_DIM} back${C_RST}  "
+        FRAME_FOOTER="${C_DGRAY}Esc${C_RST}${C_DIM} back${C_RST}  "
         FRAME_FOOTER+="${C_DGRAY}q${C_RST}${C_DIM} quit${C_RST}"
 
         tui_render_frame
@@ -102,18 +96,11 @@ page_help() {
         key=$(tui_read_key)
 
         case "$key" in
-            UP|LEFT)    tui_scroll_chunk_up ;;
-            DOWN|RIGHT) tui_scroll_chunk_down ;;
-            PGUP)       tui_scroll_page_up ;;
-            PGDN)       tui_scroll_page_down ;;
-            HOME)       tui_scroll_home ;;
-            END)        tui_scroll_end ;;
+
             ESC|BACKSPACE|ENTER)
-                tui_scroll_reset
                 return 0
                 ;;
             q|Q)
-                tui_scroll_reset
                 return 1
                 ;;
         esac

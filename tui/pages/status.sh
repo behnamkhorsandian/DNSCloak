@@ -128,7 +128,6 @@ page_status() {
 
         # Footer
         FRAME_FOOTER="${C_DGRAY}r${C_RST}${C_DIM} refresh${C_RST}  "
-        FRAME_FOOTER+="${C_DGRAY}^/v${C_RST}${C_DIM} scroll${C_RST}  "
         FRAME_FOOTER+="${C_DGRAY}Esc${C_RST}${C_DIM} back${C_RST}  "
         FRAME_FOOTER+="${C_DGRAY}q${C_RST}${C_DIM} quit${C_RST}"
 
@@ -140,14 +139,7 @@ page_status() {
 
         case "$key" in
             r|R)    continue ;;
-            UP)     tui_scroll_chunk_up ;;
-            DOWN)   tui_scroll_chunk_down ;;
-            LEFT)   tui_scroll_chunk_up ;;
-            RIGHT)  tui_scroll_chunk_down ;;
-            PGUP)   tui_scroll_page_up ;;
-            PGDN)   tui_scroll_page_down ;;
-            HOME)   tui_scroll_home ;;
-            END)    tui_scroll_end ;;
+
             ESC|BACKSPACE)    return 0 ;;
             q|Q)    return 1 ;;
             *)      continue ;;
