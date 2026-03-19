@@ -68,7 +68,7 @@ REALITY is the most advanced censorship bypass protocol. It "borrows" TLS certif
 ## Installation
 
 ```bash
-curl dnscloak.net/reality | sudo bash
+curl vany.sh/reality | sudo bash
 ```
 
 ## Configuration
@@ -97,7 +97,7 @@ Requirements for target:
 
 Add user:
 ```bash
-dnscloak add reality username
+vany add reality username
 ```
 
 This generates:
@@ -151,7 +151,7 @@ vless://UUID@SERVER:443?
 
 ## Server Configuration
 
-Location: `/opt/dnscloak/xray/config.json`
+Location: `/opt/vany/xray/config.json`
 
 ```json
 {
@@ -161,7 +161,7 @@ Location: `/opt/dnscloak/xray/config.json`
     "protocol": "vless",
     "settings": {
       "clients": [
-        {"id": "uuid-here", "email": "user@dnscloak", "flow": "xtls-rprx-vision"}
+        {"id": "uuid-here", "email": "user@vany", "flow": "xtls-rprx-vision"}
       ],
       "decryption": "none"
     },
@@ -184,9 +184,9 @@ Location: `/opt/dnscloak/xray/config.json`
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Connection timeout | Firewall blocking 443 | Check `dnscloak firewall` |
+| Connection timeout | Firewall blocking 443 | Check `vany firewall` |
 | TLS handshake failed | Bad camouflage target | Try different target site |
-| Invalid user | Wrong UUID | Regenerate link with `dnscloak links user` |
+| Invalid user | Wrong UUID | Regenerate link with `vany links user` |
 | Slow connection | Target site slow from server | Pick closer target |
 
 ## Security Notes

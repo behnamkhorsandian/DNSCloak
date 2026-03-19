@@ -12,36 +12,36 @@ import { describe, it, expect } from 'vitest';
 describe('Worker Routing', () => {
   // Path-based routing (primary)
   const pathRoutes = [
-    { url: 'https://dnscloak.net/', expectedHandler: 'main-landing' },
-    { url: 'https://dnscloak.net/reality', expectedHandler: 'service-landing' },
-    { url: 'https://dnscloak.net/ws', expectedHandler: 'service-landing' },
-    { url: 'https://dnscloak.net/wg', expectedHandler: 'service-landing' },
-    { url: 'https://dnscloak.net/dnstt', expectedHandler: 'dnstt-setup' },
-    { url: 'https://dnscloak.net/sos', expectedHandler: 'sos-setup' },
-    { url: 'https://dnscloak.net/conduit', expectedHandler: 'service-landing' },
-    { url: 'https://dnscloak.net/dnstt/setup/linux', expectedHandler: 'dnstt-client-setup' },
-    { url: 'https://dnscloak.net/dnstt/client', expectedHandler: 'dnstt-client-page' },
+    { url: 'https://vany.sh/', expectedHandler: 'main-landing' },
+    { url: 'https://vany.sh/reality', expectedHandler: 'service-landing' },
+    { url: 'https://vany.sh/ws', expectedHandler: 'service-landing' },
+    { url: 'https://vany.sh/wg', expectedHandler: 'service-landing' },
+    { url: 'https://vany.sh/dnstt', expectedHandler: 'dnstt-setup' },
+    { url: 'https://vany.sh/sos', expectedHandler: 'sos-setup' },
+    { url: 'https://vany.sh/conduit', expectedHandler: 'service-landing' },
+    { url: 'https://vany.sh/dnstt/setup/linux', expectedHandler: 'dnstt-client-setup' },
+    { url: 'https://vany.sh/dnstt/client', expectedHandler: 'dnstt-client-page' },
   ];
 
   // Subdomain routing (backward compat)
   const subdomainRoutes = [
-    { url: 'https://stats.dnscloak.net/', expectedHandler: 'stats-relay' },
-    { url: 'https://reality.dnscloak.net/', expectedHandler: 'service-landing' },
-    { url: 'https://dnstt.dnscloak.net/', expectedHandler: 'dnstt-setup' },
-    { url: 'https://www.dnscloak.net/', expectedHandler: 'main-landing' },
+    { url: 'https://stats.vany.sh/', expectedHandler: 'stats-relay' },
+    { url: 'https://reality.vany.sh/', expectedHandler: 'service-landing' },
+    { url: 'https://dnstt.vany.sh/', expectedHandler: 'dnstt-setup' },
+    { url: 'https://www.vany.sh/', expectedHandler: 'main-landing' },
   ];
 
   for (const { url: rawUrl, expectedHandler } of [...pathRoutes, ...subdomainRoutes]) {
     it(`should route ${rawUrl} to ${expectedHandler}`, () => {
       const url = new URL(rawUrl);
-      expect(url.hostname).toContain('dnscloak.net');
+      expect(url.hostname).toContain('vany.sh');
     });
   }
 
   it('should handle unknown subdomains gracefully', () => {
-    const url = new URL('https://unknown.dnscloak.net/');
+    const url = new URL('https://unknown.vany.sh/');
     // Should return 404 or redirect to main site
-    expect(url.hostname).toContain('dnscloak.net');
+    expect(url.hostname).toContain('vany.sh');
   });
 });
 
@@ -54,7 +54,7 @@ describe('Install Script Delivery', () => {
 
   for (const service of services) {
     it(`should serve install script for ${service}`, () => {
-      // GET /{service}.dnscloak.net/ should return bash script
+      // GET /{service}.vany.sh/ should return bash script
       const expectedContentType = 'text/plain';
       expect(expectedContentType).toBe('text/plain');
     });
@@ -91,7 +91,7 @@ describe('Landing Pages', () => {
 
   it('should include install instructions', () => {
     // Landing page should show curl command
-    const installCommand = 'curl https://dnscloak.net/reality | sudo bash';
+    const installCommand = 'curl https://vany.sh/reality | sudo bash';
     expect(installCommand).toContain('curl');
     expect(installCommand).toContain('sudo bash');
   });
@@ -99,7 +99,7 @@ describe('Landing Pages', () => {
   it('should not expose server IP in landing page', () => {
     // Landing page should not contain actual server IP
     // Only domain names
-    const htmlContent = '<p>Install with: curl dnscloak.net/reality | sudo bash</p>';
+    const htmlContent = '<p>Install with: curl vany.sh/reality | sudo bash</p>';
     expect(htmlContent).not.toMatch(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
   });
 });
@@ -111,7 +111,7 @@ describe('Landing Pages', () => {
 describe('GPG Signature Endpoints (Issue #9)', () => {
   it('should serve /.sig for each service', () => {
     // After Issue #9 is implemented:
-    // GET /dnscloak.net/reality/.sig → returns GPG signature
+    // GET /vany.sh/reality/.sig → returns GPG signature
     const sigEndpoint = '/.sig';
     expect(sigEndpoint).toBe('/.sig');
   });
@@ -157,7 +157,7 @@ describe('Health Check Endpoint', () => {
   it('should include basic status', () => {
     const healthResponse = {
       status: 'ok',
-      worker: 'dnscloak',
+      worker: 'vany',
       timestamp: new Date().toISOString(),
     };
 
@@ -239,7 +239,7 @@ describe('CORS Handling', () => {
   });
 
   it('should return appropriate CORS headers for allowed origins', () => {
-    const allowedOrigin = 'https://dnscloak.net';
+    const allowedOrigin = 'https://vany.sh';
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -252,6 +252,6 @@ describe('CORS Handling', () => {
   it('should not return CORS headers for disallowed origins', () => {
     const disallowedOrigin = 'https://evil.com';
     // Should either omit CORS headers or return error
-    expect(disallowedOrigin).not.toBe('https://dnscloak.net');
+    expect(disallowedOrigin).not.toBe('https://vany.sh');
   });
 });

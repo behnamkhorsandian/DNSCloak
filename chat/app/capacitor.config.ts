@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'net.dnscloak.sos',
-  appName: 'DNSCloak SOS',
+  appId: 'sh.vany.sos',
+  appName: 'Vany SOS',
   webDir: 'dist',
   bundledWebRuntime: false
 };

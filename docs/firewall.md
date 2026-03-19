@@ -1,6 +1,6 @@
 # Firewall Configuration Guide
 
-DNSCloak auto-detects your cloud provider and configures firewall rules. This guide covers manual setup if needed.
+Vany auto-detects your cloud provider and configures firewall rules. This guide covers manual setup if needed.
 
 ## Required Ports
 
@@ -49,7 +49,7 @@ aws ec2 authorize-security-group-ingress --group-id $SG_ID \
 2. Create firewall rule:
 
 ```text
-Name: allow-dnscloak
+Name: allow-vany
 Direction: Ingress
 Targets: All instances / Specific tags
 Source: 0.0.0.0/0
@@ -58,7 +58,7 @@ Protocols: tcp:443, udp:51820, udp:53
 
 CLI method:
 ```bash
-gcloud compute firewall-rules create allow-dnscloak \
+gcloud compute firewall-rules create allow-vany \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
@@ -84,7 +84,7 @@ CLI method:
 az network nsg rule create \
   --resource-group <rg> \
   --nsg-name <nsg> \
-  --name allow-dnscloak \
+  --name allow-vany \
   --priority 100 \
   --destination-port-ranges 443 51820 53 \
   --protocol '*' \
@@ -106,7 +106,7 @@ UDP     53      All IPv4, All IPv6
 CLI method:
 ```bash
 doctl compute firewall create \
-  --name dnscloak \
+  --name vany \
   --inbound-rules "protocol:tcp,ports:443,address:0.0.0.0/0 \
                    protocol:udp,ports:51820,address:0.0.0.0/0 \
                    protocol:udp,ports:53,address:0.0.0.0/0"
@@ -130,10 +130,10 @@ UDP         53          0.0.0.0/0
 2. Create firewall with rules:
 
 ```bash
-hcloud firewall create --name dnscloak
-hcloud firewall add-rule dnscloak --direction in --protocol tcp --port 443 --source-ips 0.0.0.0/0
-hcloud firewall add-rule dnscloak --direction in --protocol udp --port 51820 --source-ips 0.0.0.0/0
-hcloud firewall add-rule dnscloak --direction in --protocol udp --port 53 --source-ips 0.0.0.0/0
+hcloud firewall create --name vany
+hcloud firewall add-rule vany --direction in --protocol tcp --port 443 --source-ips 0.0.0.0/0
+hcloud firewall add-rule vany --direction in --protocol udp --port 51820 --source-ips 0.0.0.0/0
+hcloud firewall add-rule vany --direction in --protocol udp --port 53 --source-ips 0.0.0.0/0
 ```
 
 ### Oracle Cloud
@@ -163,7 +163,7 @@ sudo netfilter-persistent save
 
 ## Fallback: Local Firewall (ufw/firewalld)
 
-If no cloud firewall detected, DNSCloak uses local firewall:
+If no cloud firewall detected, Vany uses local firewall:
 
 ### UFW (Ubuntu/Debian)
 ```bash
@@ -207,6 +207,6 @@ ss -ulnp | grep 51820
 | Issue | Solution |
 |-------|----------|
 | Connection timeout | Check cloud firewall rules exist |
-| Connection refused | Service not running, check `dnscloak status` |
+| Connection refused | Service not running, check `vany status` |
 | Works locally, not remotely | Cloud firewall blocking, not local |
 | Oracle Cloud specific | Remember to add iptables rules too |

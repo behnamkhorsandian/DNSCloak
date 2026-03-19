@@ -114,7 +114,7 @@ it('rejects push without HMAC signature', async () => {
 | Input Validation | Rejects all attack patterns above |
 | HMAC Auth | 401 without signature, 401 with wrong signature |
 | Rate Limiting | 429 after threshold, Retry-After header |
-| CORS | No `*`, only `dnscloak.net` origins |
+| CORS | No `*`, only `vany.sh` origins |
 | File Perms | 600 for secrets, 700 for dirs |
 | Error Handling | No stack traces, generic messages |
 

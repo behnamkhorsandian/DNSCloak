@@ -1,11 +1,11 @@
 # Cloudflare Workers Deployment
 
-Each DNSCloak service has its own Cloudflare Worker that serves the installation script.
+Each Vany service has its own Cloudflare Worker that serves the installation script.
 
 ## Worker Architecture
 
 ```text
-User runs: curl dnscloak.net/reality | sudo bash
+User runs: curl vany.sh/reality | sudo bash
                          |
                          v
             Cloudflare Worker (reality)
@@ -21,12 +21,12 @@ User runs: curl dnscloak.net/reality | sudo bash
 
 | Subdomain | Worker Name | Script Path |
 |-----------|-------------|-------------|
-| dnscloak.net/reality | dnscloak-reality | services/reality/install.sh |
-| dnscloak.net/wg | dnscloak-wg | services/wg/install.sh |
-| dnscloak.net/mtp | dnscloak-mtp | services/mtp/install.sh |
-| dnscloak.net/vray | dnscloak-vray | services/vray/install.sh |
-| dnscloak.net/ws | dnscloak-ws | services/ws/install.sh |
-| dnscloak.net/dnstt | dnscloak-dnstt | services/dnstt/install.sh |
+| vany.sh/reality | vany-reality | services/reality/install.sh |
+| vany.sh/wg | vany-wg | services/wg/install.sh |
+| vany.sh/mtp | vany-mtp | services/mtp/install.sh |
+| vany.sh/vray | vany-vray | services/vray/install.sh |
+| vany.sh/ws | vany-ws | services/ws/install.sh |
+| vany.sh/dnstt | vany-dnstt | services/dnstt/install.sh |
 
 ## Worker Endpoints
 
@@ -42,7 +42,7 @@ Each worker responds to:
 
 ### 1. Prerequisites
 
-- Cloudflare account with dnscloak.net domain
+- Cloudflare account with vany.sh domain
 - Node.js 18+ installed locally
 - Wrangler CLI: `npm install -g wrangler`
 
@@ -68,7 +68,7 @@ npm init -y
 Create `src/index.ts`:
 
 ```typescript
-const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main';
 const SERVICE = 'reality';
 
 export default {
@@ -113,7 +113,7 @@ function getInfoHTML(): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>DNSCloak - Reality</title>
+  <title>Vany - Reality</title>
   <style>
     body { font-family: system-ui; max-width: 600px; margin: 50px auto; padding: 20px; }
     code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
@@ -122,11 +122,11 @@ function getInfoHTML(): string {
   </style>
 </head>
 <body>
-  <h1>DNSCloak - Reality</h1>
+  <h1>Vany - Reality</h1>
   <p>VLESS + REALITY proxy. No domain required.</p>
   
   <h2>Install</h2>
-  <pre>curl dnscloak.net/reality | sudo bash</pre>
+  <pre>curl vany.sh/reality | sudo bash</pre>
   
   <h2>Client Apps</h2>
   <ul>
@@ -137,7 +137,7 @@ function getInfoHTML(): string {
   </ul>
   
   <h2>Source</h2>
-  <p><a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a></p>
+  <p><a href="https://github.com/behnamkhorsandian/Vanyshsh">GitHub</a></p>
 </body>
 </html>`;
 }
@@ -148,12 +148,12 @@ function getInfoHTML(): string {
 Create `wrangler.toml`:
 
 ```toml
-name = "dnscloak-reality"
+name = "vany-reality"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 routes = [
-  { pattern = "dnscloak.net/reality", custom_domain = true }
+  { pattern = "vany.sh/reality", custom_domain = true }
 ]
 ```
 
@@ -169,7 +169,7 @@ After first deploy:
 
 1. Go to Cloudflare Dashboard > Workers & Pages
 2. Select worker > Settings > Triggers
-3. Add Custom Domain: `dnscloak.net/reality`
+3. Add Custom Domain: `vany.sh/reality`
 4. Cloudflare auto-creates DNS record
 
 ## Deploying All Workers
@@ -200,7 +200,7 @@ wrangler secret put GITHUB_TOKEN
 
 View logs:
 ```bash
-wrangler tail dnscloak-reality
+wrangler tail vany-reality
 ```
 
 ## Troubleshooting
@@ -231,13 +231,13 @@ if (!response) {
 
 ## Landing Page (Cloudflare Pages)
 
-The main website at `www.dnscloak.net` is hosted on Cloudflare Pages.
+The main website at `www.vany.sh` is hosted on Cloudflare Pages.
 
 ### Deployment via Direct Upload
 
 1. Go to **Cloudflare Dashboard** → **Workers & Pages**
 2. Click **Create** → **Pages** → **Upload your static files**
-3. Name the project: `dnscloak-www`
+3. Name the project: `vany-www`
 4. Drag and drop the contents of the `www/` folder:
    - `index.html`
    - `_redirects`
@@ -248,7 +248,7 @@ The main website at `www.dnscloak.net` is hosted on Cloudflare Pages.
 After deployment:
 1. Go to the deployed Pages project
 2. Click **Custom domains** → **Set up a custom domain**
-3. Enter: `www.dnscloak.net`
+3. Enter: `www.vany.sh`
 4. Cloudflare will auto-configure DNS
 
 ### Files Structure
@@ -271,8 +271,8 @@ The DNSTT worker includes a client setup page:
 
 | URL | Description |
 |-----|-------------|
-| `dnscloak.net/dnstt/client` | Interactive setup page |
-| `dnscloak.net/dnstt/client?key=PUBKEY&domain=t.example.com` | Pre-filled setup |
-| `dnscloak.net/dnstt/setup/linux?key=...&domain=...` | Linux setup script |
-| `dnscloak.net/dnstt/setup/macos?key=...&domain=...` | macOS setup script |
-| `dnscloak.net/dnstt/setup/windows?key=...&domain=...` | Windows PowerShell script |
+| `vany.sh/dnstt/client` | Interactive setup page |
+| `vany.sh/dnstt/client?key=PUBKEY&domain=t.example.com` | Pre-filled setup |
+| `vany.sh/dnstt/setup/linux?key=...&domain=...` | Linux setup script |
+| `vany.sh/dnstt/setup/macos?key=...&domain=...` | macOS setup script |
+| `vany.sh/dnstt/setup/windows?key=...&domain=...` | Windows PowerShell script |

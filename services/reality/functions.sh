@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - VLESS + REALITY Functions
+# Vany - VLESS + REALITY Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
@@ -171,8 +171,8 @@ install_reality() {
     show_reality_links "$first_username"
 
     echo ""
-    print_info "Add more users: dnscloak add reality <username>"
-    print_info "View links: dnscloak links <username>"
+    print_info "Add more users: vany add reality <username>"
+    print_info "View links: vany links <username>"
     echo ""
 
     if confirm "Open management menu?"; then
@@ -200,7 +200,7 @@ add_reality_user() {
     local uuid
     uuid=$(random_uuid)
 
-    xray_add_client "reality-in" "$uuid" "${username}@dnscloak" "xtls-rprx-vision"
+    xray_add_client "reality-in" "$uuid" "${username}@vany" "xtls-rprx-vision"
     user_add "$username" "reality" "{\"uuid\": \"$uuid\", \"flow\": \"xtls-rprx-vision\"}"
     xray_reload
 
@@ -215,7 +215,7 @@ remove_reality_user() {
         return 1
     fi
 
-    xray_remove_client "reality-in" "${username}@dnscloak"
+    xray_remove_client "reality-in" "${username}@vany"
     user_remove "$username" "reality"
     xray_reload
 

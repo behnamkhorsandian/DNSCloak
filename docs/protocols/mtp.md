@@ -75,14 +75,14 @@ MTProto Proxy with Fake-TLS makes Telegram accessible in restricted regions by d
 ## Installation
 
 ```bash
-curl dnscloak.net/mtp | sudo bash
+curl vany.sh/mtp | sudo bash
 ```
 
 ## User Management
 
 Add user:
 ```bash
-dnscloak add mtp alice
+vany add mtp alice
 ```
 
 Generates:
@@ -127,7 +127,7 @@ Where `676f6f676c652e636f6d` is "google.com" in hex.
 
 ## Server Configuration
 
-Location: `/opt/dnscloak/mtp/config.py`
+Location: `/opt/vany/mtp/config.py`
 
 ```python
 PORT = 443
@@ -179,9 +179,9 @@ Requirements:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Proxy unavailable" | Firewall blocking | Open port 443 TCP |
-| Connection drops | IP changed | Run `dnscloak update-ip` |
+| Connection drops | IP changed | Run `vany update-ip` |
 | Using domain + CF orange cloud | CF proxying breaks MTP | Use gray cloud (DNS only) |
-| Link not working | Wrong secret format | Regenerate with `dnscloak links user` |
+| Link not working | Wrong secret format | Regenerate with `vany links user` |
 
 ## Comparison with Reality
 

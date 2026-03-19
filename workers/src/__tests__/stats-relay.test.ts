@@ -41,7 +41,7 @@ describe('Stats Push Authentication (Issue #4)', () => {
   });
 
   it('should reject requests without X-Signature header', async () => {
-    const request = new Request('https://stats.dnscloak.net/push', {
+    const request = new Request('https://stats.vany.sh/push', {
       method: 'POST',
       body: JSON.stringify({ status: 'healthy' }),
     });
@@ -55,7 +55,7 @@ describe('Stats Push Authentication (Issue #4)', () => {
 
   it('should reject requests with invalid HMAC signature', async () => {
     const body = JSON.stringify({ status: 'healthy', timestamp: Date.now() });
-    const request = new Request('https://stats.dnscloak.net/push', {
+    const request = new Request('https://stats.vany.sh/push', {
       method: 'POST',
       headers: {
         'X-Signature': 'invalid-signature',
@@ -74,7 +74,7 @@ describe('Stats Push Authentication (Issue #4)', () => {
     // Compute valid HMAC (this would be done by stats-pusher.sh)
     // const signature = computeHMAC(body, mockEnv.STATS_SECRET);
     
-    const request = new Request('https://stats.dnscloak.net/push', {
+    const request = new Request('https://stats.vany.sh/push', {
       method: 'POST',
       headers: {
         'X-Signature': 'valid-hmac-signature',
@@ -124,19 +124,19 @@ describe('Stats Push Authentication (Issue #4)', () => {
 
 describe('CORS Validation (Issue #6)', () => {
   const allowedOrigins = [
-    'https://dnscloak.net',
-    'https://www.dnscloak.net',
+    'https://vany.sh',
+    'https://www.vany.sh',
   ];
 
   const disallowedOrigins = [
     'https://evil.com',
-    'https://dnscloak.net.evil.com',
-    'https://subdomain.dnscloak.net', // Only main domain allowed
-    'http://dnscloak.net', // HTTP not allowed
+    'https://vany.sh.evil.com',
+    'https://subdomain.vany.sh', // Only main domain allowed
+    'http://vany.sh', // HTTP not allowed
     null, // Missing origin
   ];
 
-  it('should allow requests from dnscloak.net', () => {
+  it('should allow requests from vany.sh', () => {
     for (const origin of allowedOrigins) {
       expect(allowedOrigins.includes(origin)).toBe(true);
     }
@@ -160,7 +160,7 @@ describe('CORS Validation (Issue #6)', () => {
   });
 
   it('should validate Origin header for WebSocket connections', () => {
-    const wsRequest = new Request('wss://stats.dnscloak.net/ws', {
+    const wsRequest = new Request('wss://stats.vany.sh/ws', {
       headers: {
         'Origin': 'https://evil.com',
         'Upgrade': 'websocket',

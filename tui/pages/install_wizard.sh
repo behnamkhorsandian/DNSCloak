@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Step-by-Step Install Wizard
+# Vany TUI - Step-by-Step Install Wizard
 # Renders within unified frame with dimmed sidebar + scrolling log panel
 #===============================================================================
 
@@ -401,7 +401,7 @@ render_wizard_step() {
                 FRAME_CONTENT+=("")
 
                 # Show last lines of log if available
-                local logfile="/tmp/dnscloak-install-$$.log"
+                local logfile="/tmp/vany-install-$$.log"
                 if [[ -f "$logfile" ]]; then
                     FRAME_CONTENT+=("${C_LGRAY}Last output:${C_RST}")
                     while IFS= read -r line; do
@@ -629,7 +629,7 @@ _source_protocol() {
 
     # Directories to check for already-installed files (permanent locations only)
     local search_dirs=(
-        "/opt/dnscloak/services/$proto"
+        "/opt/vany/services/$proto"
     )
 
     # Also check relative to the repo root (works when running from git checkout)
@@ -664,10 +664,10 @@ _source_protocol() {
     fi
 
     # Pass 2: download fresh from GitHub (clear stale cache first)
-    local dl_dir="/tmp/dnscloak-services/$proto"
+    local dl_dir="/tmp/vany-services/$proto"
     rm -rf "$dl_dir"
     mkdir -p "$dl_dir"
-    local base_url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/services/$proto"
+    local base_url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main}/services/$proto"
 
     # Try functions.sh first (preferred — non-interactive)
     if curl -sfL "$base_url/functions.sh" -o "$dl_dir/functions.sh" 2>/dev/null; then

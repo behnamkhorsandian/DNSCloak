@@ -1,12 +1,12 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - VLESS + WebSocket + CDN Functions
+# Vany - VLESS + WebSocket + CDN Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
 SERVICE_NAME="ws"
 WS_PORT=80
-CERT_DIR="/opt/dnscloak/certs"
+CERT_DIR="/opt/vany/certs"
 
 #-------------------------------------------------------------------------------
 # Checks
@@ -257,7 +257,7 @@ install_ws() {
     "clients": [
       {
         "id": "$uuid",
-        "email": "${first_user}@dnscloak"
+        "email": "${first_user}@vany"
       }
     ],
     "decryption": "none"
@@ -313,7 +313,7 @@ EOF
     show_ws_user_links "$first_user"
 
     echo ""
-    print_info "Add more users: dnscloak add ws <username>"
+    print_info "Add more users: vany add ws <username>"
     echo ""
 
     if confirm "Open management menu?"; then
@@ -345,7 +345,7 @@ add_ws_user() {
     local uuid
     uuid=$(random_uuid)
 
-    xray_add_client "ws-in" "$uuid" "${username}@dnscloak"
+    xray_add_client "ws-in" "$uuid" "${username}@vany"
     user_add "$username" "ws" "{\"uuid\": \"$uuid\"}"
 
     systemctl reload xray 2>/dev/null || systemctl restart xray
@@ -377,7 +377,7 @@ remove_ws_user() {
         return 1
     fi
 
-    xray_remove_client "ws-in" "${username}@dnscloak"
+    xray_remove_client "ws-in" "${username}@vany"
     user_remove "$username" "ws"
     systemctl reload xray 2>/dev/null || systemctl restart xray
 

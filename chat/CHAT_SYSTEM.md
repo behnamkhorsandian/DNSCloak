@@ -1,4 +1,4 @@
-# DNSCloak SOS Chat: Decentralized Workers + Gossip
+# Vany SOS Chat: Decentralized Workers + Gossip
 
 This document describes the current chat architecture, decentralized worker gossip, and the web app behavior.
 
@@ -57,7 +57,7 @@ Configured in:
 
 Example:
 ```
-https://dnscloak-sos-chat.pouriashy11.workers.dev
+https://vany-sos-chat.pouriashy11.workers.dev
 ```
 
 ## Worker-to-Worker Gossip

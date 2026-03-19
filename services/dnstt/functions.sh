@@ -1,11 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - DNSTT (DNS Tunnel) Functions
+# Vany - DNSTT (DNS Tunnel) Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
 SERVICE_NAME="dnstt"
-DNSTT_DIR="$DNSCLOAK_DIR/dnstt"
+DNSTT_DIR="$VANY_DIR/dnstt"
 DNSTT_PORT=5300
 SOCKS_PORT=10800
 
@@ -327,7 +327,7 @@ install_dnstt() {
 
     local domain=""
     while true; do
-        get_input "Enter your domain (e.g., dnscloak.net)" "" domain
+        get_input "Enter your domain (e.g., vany.sh)" "" domain
 
         if [[ -z "$domain" ]]; then
             print_error "Domain cannot be empty"
@@ -392,7 +392,7 @@ show_dnstt_info() {
     domain=$(server_get "dnstt_domain")
     pubkey=$(server_get "dnstt_pubkey")
 
-    local setup_url="https://dnscloak.net/dnstt/client?key=${pubkey}&domain=t.${domain}"
+    local setup_url="https://vany.sh/dnstt/client?key=${pubkey}&domain=t.${domain}"
 
     echo ""
     echo -e "  ${BOLD}${WHITE}DNSTT Connection Info${RESET}"

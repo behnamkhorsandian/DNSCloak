@@ -1,6 +1,6 @@
 # Spot VM Auto-Recovery
 
-DNSCloak runs on a GCP Spot VM to save costs (~60% cheaper). Spot VMs can be preempted at any time, so we use GitHub Actions to automatically restart the VM when this happens.
+Vany runs on a GCP Spot VM to save costs (~60% cheaper). Spot VMs can be preempted at any time, so we use GitHub Actions to automatically restart the VM when this happens.
 
 ## Architecture
 
@@ -19,7 +19,7 @@ DNSCloak runs on a GCP Spot VM to save costs (~60% cheaper). Spot VMs can be pre
 │                              │                                               │
 │                              ▼                                               │
 │   ┌────────────────────────────────────────────────────────────────────┐    │
-│   │                    GCP Spot VM (dnscloak)                          │    │
+│   │                    GCP Spot VM (vany)                          │    │
 │   │  Zone: europe-west3-c                                              │    │
 │   │  Machine: n2d-highcpu-8                                            │    │
 │   │  IP: 34.185.221.241 (static)                                       │    │
@@ -35,7 +35,7 @@ DNSCloak runs on a GCP Spot VM to save costs (~60% cheaper). Spot VMs can be pre
 │                              │ POST /push (every 5 seconds)                 │
 │                              ▼                                               │
 │   ┌────────────────────────────────────────────────────────────────────┐    │
-│   │              Cloudflare Worker (stats.dnscloak.net)                │    │
+│   │              Cloudflare Worker (stats.vany.sh)                │    │
 │   │                                                                    │    │
 │   │  GET /health  → Aggregated health status                          │    │
 │   │  GET /current → Full stats JSON                                   │    │
@@ -44,7 +44,7 @@ DNSCloak runs on a GCP Spot VM to save costs (~60% cheaper). Spot VMs can be pre
 │                              │                                               │
 │                              ▼                                               │
 │   ┌────────────────────────────────────────────────────────────────────┐    │
-│   │              Website (dnscloak.net)                                │    │
+│   │              Website (vany.sh)                                │    │
 │   │                                                                    │    │
 │   │  Status popup shows:                                              │    │
 │   │  - Overall health (up/degraded/down)                              │    │
@@ -83,7 +83,7 @@ cat ~/github-gcp-key.json
 
 ### 2. Add Secret to GitHub
 
-1. Go to your repo: https://github.com/behnamkhorsandian/DNSCloak/settings/secrets/actions
+1. Go to your repo: https://github.com/behnamkhorsandian/Vanyshsh/settings/secrets/actions
 2. Click **New repository secret**
 3. Name: `GCP_SA_KEY`
 4. Value: Paste the entire JSON key from step 1
@@ -105,12 +105,12 @@ The VM runs a health pusher script that reports service status. To update it:
 ```bash
 # Copy the updated script to VM
 gcloud compute scp services/conduit/stats-pusher.sh \
-  dnscloak:/tmp/stats-pusher.sh \
+  vany:/tmp/stats-pusher.sh \
   --zone=europe-west3-c \
   --project=noteefy-85339
 
 # Install and restart
-gcloud compute ssh dnscloak \
+gcloud compute ssh vany \
   --zone=europe-west3-c \
   --project=noteefy-85339 \
   --command="sudo cp /tmp/stats-pusher.sh /opt/conduit/stats-pusher.sh && sudo systemctl restart conduit-stats"
@@ -138,7 +138,7 @@ gh workflow run spot-vm-watchdog.yml
 
 ```bash
 # Check aggregated health
-curl -s https://stats.dnscloak.net/health | jq .
+curl -s https://stats.vany.sh/health | jq .
 
 # Expected response:
 {
@@ -170,7 +170,7 @@ To test the auto-recovery:
 
 ```bash
 # Stop the VM (simulates preemption)
-gcloud compute instances stop dnscloak \
+gcloud compute instances stop vany \
   --zone=europe-west3-c \
   --project=noteefy-85339
 
@@ -229,7 +229,7 @@ All services are configured with `enable` in systemd. If they don't start:
 
 ```bash
 # SSH to VM and check
-gcloud compute ssh dnscloak --zone=europe-west3-c --project=noteefy-85339
+gcloud compute ssh vany --zone=europe-west3-c --project=noteefy-85339
 
 # Check service status
 sudo systemctl status xray dnstt wg-quick@wg0 conduit

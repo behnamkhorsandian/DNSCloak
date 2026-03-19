@@ -6,14 +6,14 @@ Help users in censored regions access the open internet by running a volunteer r
 
 ## What is Conduit?
 
-Conduit turns your server into a relay node for the [Psiphon network](https://psiphon.ca). Unlike other DNSCloak services that create personal VPNs, Conduit helps **many users** by relaying their traffic through the Psiphon network.
+Conduit turns your server into a relay node for the [Psiphon network](https://psiphon.ca). Unlike other Vany services that create personal VPNs, Conduit helps **many users** by relaying their traffic through the Psiphon network.
 
 **You don't manage users.** Psiphon handles everything—you just provide the bandwidth.
 
 ## Install
 
 ```bash
-curl dnscloak.net/conduit | sudo bash
+curl vany.sh/conduit | sudo bash
 ```
 
 That's it. The script will:
@@ -27,7 +27,7 @@ That's it. The script will:
 Run the same command again to open the dashboard:
 
 ```bash
-curl dnscloak.net/conduit | sudo bash
+curl vany.sh/conduit | sudo bash
 ```
 
 ```

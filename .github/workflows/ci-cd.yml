@@ -1,4 +1,4 @@
-# DNSCloak CI/CD Workflow
+# Vany CI/CD Workflow
 # 
 # Triggers:
 # - Push to main: Runs tests/validation only
@@ -100,15 +100,15 @@ jobs:
         with:
           name: Release ${{ steps.version.outputs.version }}
           body: |
-            ## DNSCloak ${{ steps.version.outputs.version }}
+            ## Vany ${{ steps.version.outputs.version }}
             
             ### Installation
             ```bash
-            bash <(curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh)
+            bash <(curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/setup.sh)
             ```
             
             ### What's New
-            See [README.md](https://github.com/behnamkhorsandian/DNSCloak#readme) for full documentation.
+            See [README.md](https://github.com/behnamkhorsandian/Vanyshsh#readme) for full documentation.
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, '-') && !contains(steps.version.outputs.version, '-lit') }}
           files: |
@@ -122,14 +122,14 @@ jobs:
           echo "Purging jsDelivr CDN cache for SOS files..."
           
           # Purge SOS web client files
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/www/app.js" || true
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/www/index.html" || true
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/relay.py" || true
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/src/sos/crypto.py" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/src/sos/www/app.js" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/src/sos/www/index.html" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/src/sos/relay.py" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/src/sos/crypto.py" || true
           
           # Purge install scripts
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/services/sos/install.sh" || true
-          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/setup.sh" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/services/sos/install.sh" || true
+          curl -s -X POST "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/setup.sh" || true
           
           echo "✓ CDN cache purged"
 
@@ -160,7 +160,7 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_SSH_PORT || 22 }}
           script: |
-            echo "🚀 Deploying DNSCloak ${{ steps.version.outputs.version }}"
+            echo "🚀 Deploying Vany ${{ steps.version.outputs.version }}"
             
             # Navigate to install directory or create it
             INSTALL_DIR="/opt/telegram-proxy"
@@ -175,7 +175,7 @@ jobs:
                 echo "✓ Config backed up"
               fi
               
-              # Pull latest mtprotoproxy (not DNSCloak repo)
+              # Pull latest mtprotoproxy (not Vany repo)
               if [ -d ".git" ]; then
                 git pull origin master || true
               fi
@@ -183,8 +183,8 @@ jobs:
             
             # Download latest setup script
             echo "Downloading latest setup.sh..."
-            curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/setup.sh -o /tmp/dnscloak-setup.sh
-            chmod +x /tmp/dnscloak-setup.sh
+            curl -Ls https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/setup.sh -o /tmp/vany-setup.sh
+            chmod +x /tmp/vany-setup.sh
             
             # Restart the service if it exists
             if systemctl is-active --quiet telegram-proxy; then

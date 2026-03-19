@@ -12,7 +12,7 @@ export const SOS_HTML = `<!DOCTYPE html>
   <style>
     /* ========================================
        SOS Emergency Chat - Minimal Dark Theme
-       Matching DNSCloak design language
+       Matching Vany design language
        ======================================== */
     
     :root {

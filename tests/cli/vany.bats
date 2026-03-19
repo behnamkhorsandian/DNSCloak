@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/cli/dnscloak.bats - CLI integration tests
+# tests/cli/vany.bats - CLI integration tests
 
 # =============================================================================
 # SETUP / TEARDOWN
@@ -7,11 +7,11 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
-    export DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
+    export VANY_DIR="$TEST_DIR/vany"
+    export VANY_USERS="$VANY_DIR/users.json"
     
-    mkdir -p "$DNSCLOAK_DIR/xray"
-    mkdir -p "$DNSCLOAK_DIR/wg/peers"
+    mkdir -p "$VANY_DIR/xray"
+    mkdir -p "$VANY_DIR/wg/peers"
     
     # Initialize user database
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
@@ -19,10 +19,10 @@ setup() {
     
     # Set server info for tests
     server_set "ip" "1.2.3.4"
-    server_set "domain" "test.dnscloak.net"
+    server_set "domain" "test.vany.sh"
     
     # CLI path
-    export CLI="$BATS_TEST_DIRNAME/../../cli/dnscloak.sh"
+    export CLI="$BATS_TEST_DIRNAME/../../cli/vany.sh"
 }
 
 teardown() {
@@ -146,7 +146,7 @@ teardown() {
 
 @test "cli list empty database shows message" {
     # Remove all users
-    jq '.users = {}' "$DNSCLOAK_USERS" > "$DNSCLOAK_USERS.tmp" && mv "$DNSCLOAK_USERS.tmp" "$DNSCLOAK_USERS"
+    jq '.users = {}' "$VANY_USERS" > "$VANY_USERS.tmp" && mv "$VANY_USERS.tmp" "$VANY_USERS"
     
     run bash "$CLI" list
     # Should show "no users" or similar, or empty output
@@ -216,17 +216,17 @@ teardown() {
 # ENVIRONMENT VARIABLES
 # =============================================================================
 
-@test "cli respects DNSCLOAK_DIR environment variable" {
-    export DNSCLOAK_DIR="$TEST_DIR/custom"
-    mkdir -p "$DNSCLOAK_DIR"
-    echo '{"users":{},"server":{}}' > "$DNSCLOAK_DIR/users.json"
+@test "cli respects VANY_DIR environment variable" {
+    export VANY_DIR="$TEST_DIR/custom"
+    mkdir -p "$VANY_DIR"
+    echo '{"users":{},"server":{}}' > "$VANY_DIR/users.json"
     
     run bash "$CLI" list
     [ "$status" -eq 0 ]
 }
 
 @test "cli creates directories if missing" {
-    export DNSCLOAK_DIR="$TEST_DIR/newdir"
+    export VANY_DIR="$TEST_DIR/newdir"
     # Don't create the directory
     
     run bash "$CLI" list

@@ -1,15 +1,15 @@
 /**
- * DNSCloak - Unified Cloudflare Worker
+ * Vany - Unified Cloudflare Worker
  *
  * Path-based routing (primary):
- *   curl dnscloak.net            -> start.sh (interactive menu)
- *   curl dnscloak.net/reality    -> start.sh with DNSCLOAK_PROTOCOL="reality"
- *   curl dnscloak.net/dnstt/setup/linux -> DNSTT client setup script
+ *   curl vany.sh            -> start.sh (interactive menu)
+ *   curl vany.sh/reality    -> start.sh with VANY_PROTOCOL="reality"
+ *   curl vany.sh/dnstt/setup/linux -> DNSTT client setup script
  *
  * Subdomain routing (backward compat):
- *   curl reality.dnscloak.net    -> same as dnscloak.net/reality
+ *   curl reality.vany.sh    -> same as vany.sh/reality
  *
- * Stats relay: stats.dnscloak.net -> Durable Object
+ * Stats relay: stats.vany.sh -> Durable Object
  */
 
 // Re-export Durable Object class for stats relay
@@ -22,7 +22,7 @@ export class SosRelay implements DurableObject {
   async fetch() { return new Response('gone', { status: 410 }); }
 }
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main';
 
 // Environment bindings
 interface Env {
@@ -90,7 +90,7 @@ const SERVICES: Record<string, ServiceConfig> = {
     description: 'Emergency backup for total blackouts. Very slow.',
     clientApps: {
       note: 'Requires native client binary.',
-      setup: 'https://dnscloak.net/dnstt/client',
+      setup: 'https://vany.sh/dnstt/client',
     },
   },
   conduit: {
@@ -104,7 +104,7 @@ const SERVICES: Record<string, ServiceConfig> = {
 };
 
 /**
- * Fetch start.sh from GitHub and optionally prepend DNSCLOAK_PROTOCOL env var.
+ * Fetch start.sh from GitHub and optionally prepend VANY_PROTOCOL env var.
  */
 async function serveStartScript(protocol?: string): Promise<Response> {
   const corsHeaders = {
@@ -125,7 +125,7 @@ async function serveStartScript(protocol?: string): Promise<Response> {
 
     // For per-protocol shortcuts, prepend export so start.sh auto-selects the protocol
     if (protocol) {
-      script = `export DNSCLOAK_PROTOCOL="${protocol}"\n${script}`;
+      script = `export VANY_PROTOCOL="${protocol}"\n${script}`;
     }
 
     return new Response(script, {
@@ -146,9 +146,9 @@ export default {
     const hostname = url.hostname;
 
     // Root domain: path-based protocol routing
-    // curl dnscloak.net/reality | sudo bash  →  start.sh with DNSCLOAK_PROTOCOL="reality"
-    // curl dnscloak.net | sudo bash          →  start.sh (interactive menu)
-    if (hostname === 'dnscloak.net') {
+    // curl vany.sh/reality | sudo bash  →  start.sh with VANY_PROTOCOL="reality"
+    // curl vany.sh | sudo bash          →  start.sh (interactive menu)
+    if (hostname === 'vany.sh') {
       const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -167,7 +167,7 @@ export default {
       const firstSegment = segments[0] || '';
       const config = SERVICES[firstSegment];
 
-      // DNSTT special sub-routes: dnscloak.net/dnstt/client, dnscloak.net/dnstt/setup/<platform>
+      // DNSTT special sub-routes: vany.sh/dnstt/client, vany.sh/dnstt/setup/<platform>
       if (firstSegment === 'dnstt' && segments.length > 1) {
         if (segments[1] === 'client') {
           return new Response(getDnsttClientPage(
@@ -188,7 +188,7 @@ export default {
         }
       }
 
-      // Protocol info/version pages: dnscloak.net/reality/info
+      // Protocol info/version pages: vany.sh/reality/info
       if (config && segments[1] === 'info') {
         return new Response(getInfoPage(firstSegment, config), {
           headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
@@ -197,7 +197,7 @@ export default {
       if (config && segments[1] === 'version') {
         return Response.json({
           service: firstSegment, name: config.name,
-          repo: 'https://github.com/behnamkhorsandian/DNSCloak',
+          repo: 'https://github.com/behnamkhorsandian/Vanyshsh',
         }, { headers: corsHeaders });
       }
 
@@ -209,10 +209,10 @@ export default {
       }
 
       // Browsers: redirect to www
-      return Response.redirect('https://www.dnscloak.net/', 301);
+      return Response.redirect('https://www.vany.sh/', 301);
     }
 
-    // Extract subdomain (e.g., "reality" from "reality.dnscloak.net")
+    // Extract subdomain (e.g., "reality" from "reality.vany.sh")
     const subdomain = hostname.split('.')[0];
 
     // Route stats subdomain to Durable Object
@@ -243,7 +243,7 @@ export default {
       }, { headers: corsHeaders });
     }
 
-    // Main entry point: start.dnscloak.net -> serves start.sh (backward compat)
+    // Main entry point: start.vany.sh -> serves start.sh (backward compat)
     if (subdomain === 'start') {
       return serveStartScript();
     }
@@ -265,7 +265,7 @@ export default {
       return Response.json({
         service: subdomain,
         name: config.name,
-        repo: 'https://github.com/behnamkhorsandian/DNSCloak',
+        repo: 'https://github.com/behnamkhorsandian/Vanyshsh',
       }, { headers: corsHeaders });
     }
 
@@ -304,8 +304,8 @@ export default {
       });
     }
 
-    // Per-protocol shortcut (backward compat): curl reality.dnscloak.net | sudo bash
-    // Primary format is now: curl dnscloak.net/reality | sudo bash
+    // Per-protocol shortcut (backward compat): curl reality.vany.sh | sudo bash
+    // Primary format is now: curl vany.sh/reality | sudo bash
     if (config) {
       const ua = (request.headers.get('User-Agent') || '').toLowerCase();
       const isCli = ua.includes('curl') || ua.includes('wget') || ua.includes('fetch');
@@ -338,7 +338,7 @@ function getInfoPage(service: string, config: ServiceConfig): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>DNSCloak - ${config.name}</title>
+  <title>Vany - ${config.name}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -442,26 +442,26 @@ function getInfoPage(service: string, config: ServiceConfig): string {
 </head>
 <body>
   <div class="container">
-    <h1>DNSCloak - ${config.name}</h1>
+    <h1>Vany - ${config.name}</h1>
     <p class="description">${config.description}</p>
     
     <div class="services">
-      <a href="https://dnscloak.net/info">All Protocols</a>
-      <a href="https://dnscloak.net/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
-      <a href="https://dnscloak.net/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
-      <a href="https://dnscloak.net/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
-      <a href="https://dnscloak.net/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
-      <a href="https://dnscloak.net/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
-      <a href="https://dnscloak.net/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
-      <a href="https://dnscloak.net/conduit/info" ${service === 'conduit' ? 'class="active"' : ''}>Conduit</a>
+      <a href="https://vany.sh/info">All Protocols</a>
+      <a href="https://vany.sh/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
+      <a href="https://vany.sh/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
+      <a href="https://vany.sh/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
+      <a href="https://vany.sh/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
+      <a href="https://vany.sh/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
+      <a href="https://vany.sh/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
+      <a href="https://vany.sh/conduit/info" ${service === 'conduit' ? 'class="active"' : ''}>Conduit</a>
     </div>
     
     <div class="install-box">
       <h2>Install on your VPS</h2>
       <p style="color:#8b949e;margin-bottom:10px;">Install this protocol directly:</p>
-      <code>curl dnscloak.net/${service} | sudo bash</code>
+      <code>curl vany.sh/${service} | sudo bash</code>
       <p style="color:#8b949e;margin-top:15px;">Or install the full interactive menu:</p>
-      <code>curl dnscloak.net | sudo bash</code>
+      <code>curl vany.sh | sudo bash</code>
     </div>
     
     <div class="apps">
@@ -473,8 +473,8 @@ function getInfoPage(service: string, config: ServiceConfig): string {
     
     <div class="footer">
       <p>
-        <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a> |
-        <a href="https://github.com/behnamkhorsandian/DNSCloak/blob/main/docs/protocols/${service}.md">Documentation</a>
+        <a href="https://github.com/behnamkhorsandian/Vanyshsh">GitHub</a> |
+        <a href="https://github.com/behnamkhorsandian/Vanyshsh/blob/main/docs/protocols/${service}.md">Documentation</a>
       </p>
     </div>
   </div>
@@ -488,11 +488,11 @@ function getDnsttSetupScript(platform: string, pubkey: string, domain: string): 
   switch (platform) {
     case 'linux':
       return `#!/bin/bash
-# DNSCloak DNSTT Client Setup - Linux
-# Run: curl "dnscloak.net/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash
+# Vany DNSTT Client Setup - Linux
+# Run: curl "vany.sh/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash
 
 set -e
-echo "=== DNSCloak DNSTT Client Setup ==="
+echo "=== Vany DNSTT Client Setup ==="
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -503,8 +503,8 @@ case "$ARCH" in
 esac
 
 # Create directory
-mkdir -p ~/.dnscloak
-cd ~/.dnscloak
+mkdir -p ~/.vany
+cd ~/.vany
 
 # Download client
 echo "Downloading dnstt-client..."
@@ -520,7 +520,7 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "To start the tunnel, run:"
-echo "  ~/.dnscloak/dnstt-client -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080"
+echo "  ~/.vany/dnstt-client -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080"
 echo ""
 echo "Then configure your apps to use SOCKS5 proxy:"
 echo "  Server: 127.0.0.1"
@@ -530,11 +530,11 @@ echo ""
 
     case 'macos':
       return `#!/bin/bash
-# DNSCloak DNSTT Client Setup - macOS
-# Run: curl "dnscloak.net/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash
+# Vany DNSTT Client Setup - macOS
+# Run: curl "vany.sh/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash
 
 set -e
-echo "=== DNSCloak DNSTT Client Setup ==="
+echo "=== Vany DNSTT Client Setup ==="
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -545,8 +545,8 @@ case "$ARCH" in
 esac
 
 # Create directory
-mkdir -p ~/.dnscloak
-cd ~/.dnscloak
+mkdir -p ~/.vany
+cd ~/.vany
 
 # Check if Go is installed
 if ! command -v go &>/dev/null; then
@@ -569,7 +569,7 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "To start the tunnel, run:"
-echo "  ~/.dnscloak/dnstt-client -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080"
+echo "  ~/.vany/dnstt-client -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080"
 echo ""
 echo "Then configure your apps to use SOCKS5 proxy:"
 echo "  Server: 127.0.0.1"
@@ -578,14 +578,14 @@ echo ""
 `;
 
     case 'windows':
-      return `# DNSCloak DNSTT Client Setup - Windows PowerShell
-# Run in PowerShell: iex (iwr "dnscloak.net/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content
+      return `# Vany DNSTT Client Setup - Windows PowerShell
+# Run in PowerShell: iex (iwr "vany.sh/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content
 
-Write-Host "=== DNSCloak DNSTT Client Setup ===" -ForegroundColor Cyan
+Write-Host "=== Vany DNSTT Client Setup ===" -ForegroundColor Cyan
 
-$dnscloak_dir = "$env:USERPROFILE\\.dnscloak"
-New-Item -ItemType Directory -Force -Path $dnscloak_dir | Out-Null
-Set-Location $dnscloak_dir
+$vany_dir = "$env:USERPROFILE\\.vany"
+New-Item -ItemType Directory -Force -Path $vany_dir | Out-Null
+Set-Location $vany_dir
 
 # Download Go
 Write-Host "Downloading Go..."
@@ -596,17 +596,17 @@ Remove-Item "go.zip"
 
 # Build client
 Write-Host "Building dnstt-client..."
-$env:GOPATH = "$dnscloak_dir\\gopath"
-$env:PATH = "$dnscloak_dir\\go\\bin;$env:PATH"
+$env:GOPATH = "$vany_dir\\gopath"
+$env:PATH = "$vany_dir\\go\\bin;$env:PATH"
 & go install www.bamsoftware.com/git/dnstt.git/dnstt-client@latest
-Move-Item "$dnscloak_dir\\gopath\\bin\\dnstt-client.exe" "$dnscloak_dir\\"
-Remove-Item -Recurse -Force "$dnscloak_dir\\go", "$dnscloak_dir\\gopath"
+Move-Item "$vany_dir\\gopath\\bin\\dnstt-client.exe" "$vany_dir\\"
+Remove-Item -Recurse -Force "$vany_dir\\go", "$vany_dir\\gopath"
 
 Write-Host ""
 Write-Host "=== Setup Complete ===" -ForegroundColor Green
 Write-Host ""
 Write-Host "To start the tunnel, run:"
-Write-Host "  $dnscloak_dir\\dnstt-client.exe -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080" -ForegroundColor Yellow
+Write-Host "  $vany_dir\\dnstt-client.exe -udp 8.8.8.8:53 -pubkey ${pubkey} ${domain} 127.0.0.1:1080" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Then configure your apps to use SOCKS5 proxy:"
 Write-Host "  Server: 127.0.0.1"
@@ -622,19 +622,19 @@ Write-Host ""
 function getDnsttClientPage(pubkey: string, domain: string): string {
   const hasConfig = pubkey && domain;
   const linuxCmd = hasConfig 
-    ? `curl "dnscloak.net/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash`
-    : 'curl "dnscloak.net/dnstt/setup/linux?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
+    ? `curl "vany.sh/dnstt/setup/linux?key=${pubkey}&domain=${domain}" | bash`
+    : 'curl "vany.sh/dnstt/setup/linux?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
   const macCmd = hasConfig
-    ? `curl "dnscloak.net/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash`
-    : 'curl "dnscloak.net/dnstt/setup/macos?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
+    ? `curl "vany.sh/dnstt/setup/macos?key=${pubkey}&domain=${domain}" | bash`
+    : 'curl "vany.sh/dnstt/setup/macos?key=YOUR_KEY&domain=t.yourdomain.com" | bash';
   const winCmd = hasConfig
-    ? `iex (iwr "dnscloak.net/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content`
-    : 'iex (iwr "dnscloak.net/dnstt/setup/windows?key=YOUR_KEY&domain=t.yourdomain.com").Content';
+    ? `iex (iwr "vany.sh/dnstt/setup/windows?key=${pubkey}&domain=${domain}").Content`
+    : 'iex (iwr "vany.sh/dnstt/setup/windows?key=YOUR_KEY&domain=t.yourdomain.com").Content';
 
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>DNSCloak - DNSTT Client Setup</title>
+  <title>Vany - DNSTT Client Setup</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -755,7 +755,7 @@ function getDnsttClientPage(pubkey: string, domain: string): string {
       <input type="text" id="pubkey" placeholder="0970668fb48c80d503f149a2d18ddbfd01101bc26f1e865f46ab7b2ab1280948">
       
       <label>Domain:</label>
-      <input type="text" id="domain" placeholder="t.dnscloak.net">
+      <input type="text" id="domain" placeholder="t.vany.sh">
       
       <button onclick="generateLinks()">Generate Setup Commands</button>
     </div>

@@ -1,9 +1,9 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - WireGuard VPN Service Installer
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - WireGuard VPN Service Installer
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
-# Usage: curl dnscloak.net/wg | sudo bash
+# Usage: curl vany.sh/wg | sudo bash
 #===============================================================================
 
 set -e
@@ -14,9 +14,9 @@ if [[ -f "${BASH_SOURCE[0]}" ]]; then
     LIB_DIR="$(dirname "$SCRIPT_DIR")/../lib"
 else
     # Piped execution - download libs
-    LIB_DIR="/tmp/dnscloak-lib"
+    LIB_DIR="/tmp/vany-lib"
     mkdir -p "$LIB_DIR"
-    GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+    GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
     curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
     curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
     curl -sL "$GITHUB_RAW/lib/bootstrap.sh" -o "$LIB_DIR/bootstrap.sh"
@@ -34,7 +34,7 @@ source "$LIB_DIR/bootstrap.sh"
 SERVICE_NAME="wg"
 WG_PORT=51820
 WG_INTERFACE="wg0"
-WG_DIR="$DNSCLOAK_DIR/wg"
+WG_DIR="$VANY_DIR/wg"
 WG_CONFIG="$WG_DIR/wg0.conf"
 WG_PEERS_DIR="$WG_DIR/peers"
 
@@ -126,7 +126,7 @@ create_wg_config() {
     chmod 700 "$WG_PEERS_DIR"
     
     cat > "$WG_CONFIG" <<EOF
-# DNSCloak WireGuard Configuration
+# Vany WireGuard Configuration
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 [Interface]
@@ -138,7 +138,7 @@ PrivateKey = ${SERVER_PRIVATE_KEY}
 PostUp = iptables -A FORWARD -i ${WG_INTERFACE} -j ACCEPT; iptables -t nat -A POSTROUTING -o ${main_iface} -j MASQUERADE
 PostDown = iptables -D FORWARD -i ${WG_INTERFACE} -j ACCEPT; iptables -t nat -D POSTROUTING -o ${main_iface} -j MASQUERADE
 
-# Peers are added below by dnscloak
+# Peers are added below by vany
 EOF
 
     chmod 600 "$WG_CONFIG"
@@ -158,9 +158,9 @@ get_next_ip() {
     local last_octet=1  # Server is .1
     
     # Find highest used IP
-    if [[ -f "$DNSCLOAK_USERS" ]]; then
+    if [[ -f "$VANY_USERS" ]]; then
         local ips
-        ips=$(jq -r '.users[].protocols.wg.ip // empty' "$DNSCLOAK_USERS" 2>/dev/null | sort -t. -k4 -n | tail -1)
+        ips=$(jq -r '.users[].protocols.wg.ip // empty' "$VANY_USERS" 2>/dev/null | sort -t. -k4 -n | tail -1)
         if [[ -n "$ips" ]]; then
             last_octet=$(echo "$ips" | cut -d. -f4)
         fi
@@ -315,7 +315,7 @@ regenerate_wg_config() {
     
     # Recreate base config
     cat > "$WG_CONFIG" <<EOF
-# DNSCloak WireGuard Configuration
+# Vany WireGuard Configuration
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 [Interface]
@@ -538,8 +538,8 @@ install_wg() {
     show_user_links "$first_username"
     
     echo ""
-    print_info "Add more users: dnscloak add wg <username>"
-    print_info "View config: dnscloak links <username>"
+    print_info "Add more users: vany add wg <username>"
+    print_info "View config: vany links <username>"
 }
 
 #-------------------------------------------------------------------------------

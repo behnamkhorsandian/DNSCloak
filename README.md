@@ -1,31 +1,31 @@
-# DNSCloak
-[![Build SOS Binaries](https://github.com/behnamkhorsandian/DNSCloak/actions/workflows/sos-build.yml/badge.svg)](https://github.com/behnamkhorsandian/DNSCloak/actions/workflows/sos-build.yml)
+# Vany
+[![Build SOS Binaries](https://github.com/behnamkhorsandian/Vanyshsh/actions/workflows/sos-build.yml/badge.svg)](https://github.com/behnamkhorsandian/Vanyshsh/actions/workflows/sos-build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Website](https://img.shields.io/website?down_color=red&down_message=offline&up_color=green&up_message=online&url=https%3A%2F%2Fdnscloak.net)](https://www.dnscloak.net)
+[![Website](https://img.shields.io/website?down_color=red&down_message=offline&up_color=green&up_message=online&url=https%3A%2F%2Fvany.sh)](https://www.vany.sh)
 
 Multi-protocol censorship bypass platform. Deploy proxy services on any VM with a single command.
 
-🌐 **Website:** [dnscloak.net](https://www.dnscloak.net)
+🌐 **Website:** [vany.sh](https://www.vany.sh)
 
 ## Services
 
 | Service | Status | Domain Required | Best For | Install Command |
 |---------|--------|-----------------|----------|-----------------|
-| Reality | ✅ Ready | No | Primary proxy (all countries) | `curl dnscloak.net/reality \| sudo bash` |
-| WS+CDN | ✅ Ready | Yes (Cloudflare) | IP hidden behind CDN | `curl dnscloak.net/ws \| sudo bash` |
-| DNStt | ✅ Ready | Yes (NS records) | Emergency during blackouts | `curl dnscloak.net/dnstt \| sudo bash` |
-| Conduit | 🧪 Experimental | No | Psiphon volunteer relay | `curl dnscloak.net/conduit \| sudo bash` |
-| SOS | 🧪 Experimental | Yes (NS) | Emergency encrypted chat | `curl dnscloak.net/sos \| bash` |
-| WireGuard | 🔜 Coming | No | Fast VPN tunnel | `curl dnscloak.net/wg \| sudo bash` |
-| MTP | 🔜 Coming | Optional | Telegram access | `curl dnscloak.net/mtp \| sudo bash` |
-| V2Ray | 🔜 Coming | Yes | Classic proxy with TLS | `curl dnscloak.net/vray \| sudo bash` |
+| Reality | ✅ Ready | No | Primary proxy (all countries) | `curl vany.sh/reality \| sudo bash` |
+| WS+CDN | ✅ Ready | Yes (Cloudflare) | IP hidden behind CDN | `curl vany.sh/ws \| sudo bash` |
+| DNStt | ✅ Ready | Yes (NS records) | Emergency during blackouts | `curl vany.sh/dnstt \| sudo bash` |
+| Conduit | 🧪 Experimental | No | Psiphon volunteer relay | `curl vany.sh/conduit \| sudo bash` |
+| SOS | 🧪 Experimental | Yes (NS) | Emergency encrypted chat | `curl vany.sh/sos \| bash` |
+| WireGuard | 🔜 Coming | No | Fast VPN tunnel | `curl vany.sh/wg \| sudo bash` |
+| MTP | 🔜 Coming | Optional | Telegram access | `curl vany.sh/mtp \| sudo bash` |
+| V2Ray | 🔜 Coming | Yes | Classic proxy with TLS | `curl vany.sh/vray \| sudo bash` |
 
 ## Quick Start
 
 SSH into your VPS and run:
 
 ```bash
-curl dnscloak.net/reality | sudo bash
+curl vany.sh/reality | sudo bash
 ```
 
 The script will:
@@ -44,16 +44,16 @@ The script will:
 
 ## User Management
 
-After installation, use the `dnscloak` CLI:
+After installation, use the `vany` CLI:
 
 ```bash
-dnscloak add reality alice      # Add user to Reality
-dnscloak add wg bob             # Add user to WireGuard
-dnscloak users                  # List all users
-dnscloak links alice            # Show all connection links for user
-dnscloak remove reality alice   # Remove user from Reality
-dnscloak status                 # Show all services status
-dnscloak uninstall reality      # Remove Reality service
+vany add reality alice      # Add user to Reality
+vany add wg bob             # Add user to WireGuard
+vany users                  # List all users
+vany links alice            # Show all connection links for user
+vany remove reality alice   # Remove user from Reality
+vany status                 # Show all services status
+vany uninstall reality      # Remove Reality service
 ```
 
 ## Client Apps
@@ -68,7 +68,7 @@ dnscloak uninstall reality      # Remove Reality service
 
 ## Documentation
 
-- [Self-Hosting Guide](docs/self-hosting.md) - Host your own DNSCloak platform
+- [Self-Hosting Guide](docs/self-hosting.md) - Host your own Vany platform
 - [Firewall Setup](docs/firewall.md) - Cloud provider firewall configuration
 - [DNS Setup](docs/dns.md) - Domain and DNS record configuration
 - [Workers Deployment](docs/workers.md) - Cloudflare Workers setup
@@ -102,7 +102,7 @@ dnscloak uninstall reality      # Remove Reality service
 - [ ] services/vray - VLESS+TCP+TLS
 
 ### Phase 3: CLI and Workers ✅
-- [ ] cli/dnscloak.sh - Unified CLI
+- [ ] cli/vany.sh - Unified CLI
 - [x] workers/* - Cloudflare Workers ✅ Deployed
 - [x] www/* - Landing page ✅ Ready
 

@@ -1,9 +1,9 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - DNSTT (DNS Tunnel) Service Installer
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - DNSTT (DNS Tunnel) Service Installer
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
-# Usage: curl dnscloak.net/dnstt | sudo bash
+# Usage: curl vany.sh/dnstt | sudo bash
 #
 # Requires:
 #   - Domain with ability to set NS records
@@ -12,12 +12,12 @@
 #===============================================================================
 
 # Cleanup old cached files for fresh install
-rm -rf /tmp/dnscloak-lib /tmp/dnscloak* 2>/dev/null || true
+rm -rf /tmp/vany-lib /tmp/vany* 2>/dev/null || true
 
 # Download and source libraries
-LIB_DIR="/tmp/dnscloak-lib"
+LIB_DIR="/tmp/vany-lib"
 mkdir -p "$LIB_DIR"
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
 
 echo "Downloading libraries..."
 
@@ -46,7 +46,7 @@ set -e
 #-------------------------------------------------------------------------------
 
 SERVICE_NAME="dnstt"
-DNSTT_DIR="$DNSCLOAK_DIR/dnstt"
+DNSTT_DIR="$VANY_DIR/dnstt"
 DNSTT_PORT=5300      # Internal port (53 redirected here)
 SOCKS_PORT=10800     # SOCKS5 proxy port for forwarded traffic
 DNSTT_VERSION="0.20220315.0"
@@ -319,7 +319,7 @@ EOF
 
 install_dnstt() {
     clear
-    load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak DNSTT ===${RESET}\n"
+    load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== Vany DNSTT ===${RESET}\n"
     
     # Check root
     check_root
@@ -358,7 +358,7 @@ install_dnstt() {
     
     local domain=""
     while true; do
-        get_input "Enter your domain (e.g., dnscloak.net)" "" domain
+        get_input "Enter your domain (e.g., vany.sh)" "" domain
         
         if [[ -z "$domain" ]]; then
             print_error "Domain cannot be empty"
@@ -438,10 +438,10 @@ show_dnstt_info() {
     server_ip=$(server_get "ip")
     
     # URL-encode the pubkey and domain for the setup URL
-    local setup_url="https://dnscloak.net/dnstt/client?key=${pubkey}&domain=t.${domain}"
+    local setup_url="https://vany.sh/dnstt/client?key=${pubkey}&domain=t.${domain}"
     
     clear
-    load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak DNSTT ===${RESET}\n"
+    load_banner "dnstt" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== Vany DNSTT ===${RESET}\n"
     
     echo ""
     echo -e "  ${BOLD}${WHITE}DNSTT Connection Info${RESET}"

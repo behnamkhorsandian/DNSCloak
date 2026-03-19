@@ -7,10 +7,10 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
-    export DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
+    export VANY_DIR="$TEST_DIR/vany"
+    export VANY_USERS="$VANY_DIR/users.json"
     
-    mkdir -p "$DNSCLOAK_DIR"
+    mkdir -p "$VANY_DIR"
     
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     
@@ -31,7 +31,7 @@ teardown() {
     
     # If it succeeds, the database should still be valid JSON
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
     # If it fails, that's also acceptable (input validation)
@@ -41,7 +41,7 @@ teardown() {
     run user_add 'test\user'
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -50,7 +50,7 @@ teardown() {
     run user_add "test'user"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -67,10 +67,10 @@ teardown() {
     
     if [ "$status" -eq 0 ]; then
         # Should be stored literally, not executed
-        run jq -r '.users | keys[]' "$DNSCLOAK_USERS"
+        run jq -r '.users | keys[]' "$VANY_USERS"
         [[ "$output" == *'$(whoami)'* ]]
         # And database should be valid
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -79,7 +79,7 @@ teardown() {
     run user_add '`whoami`'
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -89,7 +89,7 @@ teardown() {
     run user_add $'test\x00user'
     # Either rejected (status 1) or stored safely
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -100,10 +100,10 @@ teardown() {
     
     if [ "$status" -eq 0 ]; then
         # Database must remain valid JSON
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
         # And the injection should not have worked
-        run jq '.users | to_entries | .[0].value.protocols.hacked // false' "$DNSCLOAK_USERS"
+        run jq '.users | to_entries | .[0].value.protocols.hacked // false' "$VANY_USERS"
         [ "$output" = "false" ]
     fi
 }
@@ -115,7 +115,7 @@ teardown() {
     run user_set "testuser" "test" '{"uuid":"valid"},"injected":{"bad":"data"}'
     
     # Should either fail or properly handle
-    run jq '.' "$DNSCLOAK_USERS"
+    run jq '.' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
@@ -128,7 +128,7 @@ teardown() {
     run server_set "domain" "example.com; rm -rf /"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
         # Should be stored literally
         run server_get "domain"
@@ -140,7 +140,7 @@ teardown() {
     run server_set "domain" "example.com | cat /etc/passwd"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -153,7 +153,7 @@ teardown() {
     run user_add "../../../etc/passwd"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -162,7 +162,7 @@ teardown() {
     run user_add "/etc/passwd"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -175,7 +175,7 @@ teardown() {
     run user_add "tëst_üsér_日本語"
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -185,7 +185,7 @@ teardown() {
     run user_add $'test\xe2\x80\x8buser'
     
     if [ "$status" -eq 0 ]; then
-        run jq '.' "$DNSCLOAK_USERS"
+        run jq '.' "$VANY_USERS"
         [ "$status" -eq 0 ]
     fi
 }
@@ -206,7 +206,7 @@ teardown() {
     run user_set "testuser" "test" "{\"data\":\"$long_value\"}"
     
     # Should either reject or handle without crashing
-    run jq '.' "$DNSCLOAK_USERS"
+    run jq '.' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 

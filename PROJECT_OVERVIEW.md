@@ -1,7 +1,7 @@
-# DNSCloak Project Overview
+# Vany Project Overview
 
 ## Concept
-DNSCloak is a multi-protocol censorship bypass platform that lets you deploy proxy services on a VPS with a single command. It focuses on practical, resilient access methods (VLESS+REALITY, WebSocket via CDN, DNS tunneling, WireGuard, MTProto, Psiphon relay, SOS chat) and wraps them with a consistent install workflow, shared libraries, and a unified CLI for user management.
+Vany is a multi-protocol censorship bypass platform that lets you deploy proxy services on a VPS with a single command. It focuses on practical, resilient access methods (VLESS+REALITY, WebSocket via CDN, DNS tunneling, WireGuard, MTProto, Psiphon relay, SOS chat) and wraps them with a consistent install workflow, shared libraries, and a unified CLI for user management.
 
 At a high level:
 - One-line installer per service (served via Cloudflare Workers).
@@ -9,10 +9,10 @@ At a high level:
 - Multiple protocols so operators can choose the best path for the local network conditions.
 
 ## Architecture
-DNSCloak is split into delivery, install, runtime, and management layers.
+Vany is split into delivery, install, runtime, and management layers.
 
 ### 1) Delivery Layer (Cloudflare Workers)
-- `workers/src/index.ts` serves install scripts by subdomain (e.g., `dnscloak.net/reality`).
+- `workers/src/index.ts` serves install scripts by subdomain (e.g., `vany.sh/reality`).
 - The worker fetches scripts from GitHub raw and returns them to `curl`.
 - Special endpoints: `/health`, `/info`, `/version`, and DNSTT client helpers.
 
@@ -30,17 +30,17 @@ DNSCloak is split into delivery, install, runtime, and management layers.
   - Reality (VLESS+REALITY), V2Ray (VLESS+TLS), WS+CDN (VLESS+WS).
 - Non-Xray services run separately:
   - WireGuard (`wg-quick@wg0`), DNSTT, MTProto, Conduit (Psiphon relay), SOS.
-- Standard state paths live under `/opt/dnscloak`.
+- Standard state paths live under `/opt/vany`.
 
 ### 4) Management Layer (CLI)
-- `cli/dnscloak.sh` is the unified CLI for users, links, and service status.
-- User data is stored in `/opt/dnscloak/users.json`.
+- `cli/vany.sh` is the unified CLI for users, links, and service status.
+- User data is stored in `/opt/vany/users.json`.
 
 ## Flow
 
 ### Install Flow (one-line install)
 ```
-User runs: curl dnscloak.net/reality | sudo bash
+User runs: curl vany.sh/reality | sudo bash
     -> Cloudflare Worker routes by subdomain
     -> Worker fetches services/reality/install.sh from GitHub
     -> Script downloads lib/* helpers (if piped)
@@ -86,26 +86,26 @@ Client app -> UDP/51820
 ### 1) Pick a service and install on your VPS
 ```
 # Example: Reality (no domain required)
-curl dnscloak.net/reality | sudo bash
+curl vany.sh/reality | sudo bash
 ```
 
 ### 2) Manage users via CLI
 ```
 # Add user
-dnscloak add reality alice
+vany add reality alice
 
 # List users
-dnscloak list
+vany list
 
 # Show share link(s)
-dnscloak links alice
+vany links alice
 
 # Service status
-dnscloak status
+vany status
 ```
 
 ### 3) Client apps
-DNSCloak emits links/QRs for supported apps. Typical clients:
+Vany emits links/QRs for supported apps. Typical clients:
 - Hiddify, v2rayNG, Shadowrocket for VLESS-based services
 - WireGuard apps for WireGuard
 - Psiphon apps for Conduit
@@ -144,7 +144,7 @@ DNSCloak emits links/QRs for supported apps. Typical clients:
 ## Extra: Operational Notes
 - OS support: Ubuntu 20.04+ / Debian 11+.
 - Services have different DNS requirements; see `docs/dns.md`.
-- Xray config lives at `/opt/dnscloak/xray/config.json`.
+- Xray config lives at `/opt/vany/xray/config.json`.
 - The worker fetches scripts from GitHub raw, so updates are pulled automatically when users install.
 
 ## Extra: Implementation Status (from README)

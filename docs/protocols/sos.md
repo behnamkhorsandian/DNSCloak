@@ -24,12 +24,12 @@ Before using the Web Client via DNSTT, you need to set up the DNSTT tunnel clien
 
 ### Linux
 ```bash
-curl dnscloak.net/dnstt/setup/linux | bash
+curl vany.sh/dnstt/setup/linux | bash
 ```
 
 ### macOS
 ```bash
-curl dnscloak.net/dnstt/setup/macos | bash
+curl vany.sh/dnstt/setup/macos | bash
 ```
 
 This creates a SOCKS5 proxy on `127.0.0.1:10800` that tunnels all traffic through DNS queries.
@@ -49,7 +49,7 @@ This creates a SOCKS5 proxy on `127.0.0.1:10800` that tunnels all traffic throug
 
 2. **Navigate to relay**:
    ```
-   http://relay.dnscloak.net:8899/
+   http://relay.vany.sh:8899/
    ```
 
 The web client features:
@@ -62,11 +62,11 @@ The web client features:
 
 Run directly in your terminal:
 ```bash
-curl dnscloak.net/sos | bash
+curl vany.sh/sos | bash
 ```
 
 This downloads the Python TUI client. Features:
-- Auto-connects to `relay.dnscloak.net:8899`
+- Auto-connects to `relay.vany.sh:8899`
 - Auto-falls back to direct connection if DNSTT unavailable
 - Works in any terminal emulator
 
@@ -74,7 +74,7 @@ This downloads the Python TUI client. Features:
 
 For testing or when no censorship bypass is needed:
 ```
-http://relay.dnscloak.net:8899/
+http://relay.vany.sh:8899/
 ```
 
 > ⚠️ **Warning**: Direct access does NOT bypass censorship. Use only when the relay is directly accessible.
@@ -93,7 +93,7 @@ For maximum reliability, download the binary **before** an internet blackout:
 | **Linux** (64-bit) | `sos-linux-amd64` |
 | **Linux** (ARM64) | `sos-linux-arm64` |
 
-Download from: [GitHub Releases](https://github.com/behnamkhorsandian/DNSCloak/releases)
+Download from: [GitHub Releases](https://github.com/behnamkhorsandian/Vanyshsh/releases)
 
 **macOS Users**: Run this to bypass Gatekeeper:
 ```bash
@@ -101,7 +101,7 @@ cd ~/Downloads && xattr -d com.apple.quarantine sos-darwin-arm64 && chmod +x sos
 ```
 
 The binary:
-- **Auto-connects** to `relay.dnscloak.net:8899`
+- **Auto-connects** to `relay.vany.sh:8899`
 - **Auto-falls back** to direct connection if DNSTT tunnel unavailable
 - **Bundles DNSTT client** for maximum censorship resistance
 
@@ -113,17 +113,17 @@ If you have a VPS and want to host a relay for your community:
 
 **Step 1**: Ensure DNSTT is installed on your VM
 ```bash
-curl dnscloak.net/dnstt | sudo bash
+curl vany.sh/dnstt | sudo bash
 ```
 
 **Step 2**: Install SOS relay daemon (includes web client)
 ```bash
-curl dnscloak.net/sos | sudo bash -s -- --server
+curl vany.sh/sos | sudo bash -s -- --server
 ```
 
 This installs:
-- Relay daemon at `/opt/dnscloak/sos/relay.py`
-- Web client at `/opt/dnscloak/sos/www/`
+- Relay daemon at `/opt/vany/sos/relay.py`
+- Web client at `/opt/vany/sos/www/`
 - Systemd service `sos-relay`
 
 **Step 3**: Access methods for your users
@@ -132,7 +132,7 @@ This installs:
 |--------|-----|-------|
 | **Web (via DNSTT)** | `http://YOUR_IP:8899/` | Through SOCKS5 proxy |
 | **Web (direct)** | `http://YOUR_IP:8899/` | No tunnel (less private) |
-| **TUI** | `SOS_RELAY_HOST=YOUR_IP curl dnscloak.net/sos \| bash` | Terminal client |
+| **TUI** | `SOS_RELAY_HOST=YOUR_IP curl vany.sh/sos \| bash` | Terminal client |
 
 ---
 
@@ -150,7 +150,7 @@ This installs:
 │   └──────┬───────┘                           └───────┬──────┘       │
 │          │                                           │              │
 │          │  DNSTT Tunnel (SOCKS5 :10800)             │              │
-│          │  DNS queries to t.dnscloak.net            │              │
+│          │  DNS queries to t.vany.sh            │              │
 │          ▼                                           ▼              │
 │   ┌──────────────────────────────────────────────────────────┐      │
 │   │                    DNSTT SERVER (VM)                     │      │
@@ -206,7 +206,7 @@ This installs:
 
 ### Creating a Room
 
-1. Run: `curl dnscloak.net/sos | bash`
+1. Run: `curl vany.sh/sos | bash`
 
 2. Select **key mode**:
    - **🔄 Rotating** (recommended) — PIN changes every 15 seconds
@@ -220,7 +220,7 @@ This installs:
 
 ### Joining a Room
 
-1. Run: `curl dnscloak.net/sos | bash`
+1. Run: `curl vany.sh/sos | bash`
 
 2. Press **Join Room**
 
@@ -287,11 +287,11 @@ Use these phonetic names when sharing room IDs verbally:
 ssh root@your-server-ip
 
 # Install SOS relay (requires DNSTT already running)
-curl dnscloak.net/sos | sudo bash -s -- --server
+curl vany.sh/sos | sudo bash -s -- --server
 ```
 
 This installs:
-- `/opt/dnscloak/sos/relay.py` - Relay daemon
+- `/opt/vany/sos/relay.py` - Relay daemon
 - `/etc/systemd/system/sos-relay.service` - Systemd service
 - Dependencies: aiohttp, pynacl, argon2-cffi, redis
 
@@ -319,10 +319,10 @@ Users connect to your relay by setting environment variables:
 # Method 1: Environment variable
 export SOS_RELAY_HOST="your-dnstt-domain.com"
 export SOS_RELAY_PORT="8899"
-curl dnscloak.net/sos | bash
+curl vany.sh/sos | bash
 
 # Method 2: One-liner
-SOS_RELAY_HOST=your-domain.com curl dnscloak.net/sos | bash
+SOS_RELAY_HOST=your-domain.com curl vany.sh/sos | bash
 ```
 
 ---
@@ -377,7 +377,7 @@ To prevent abuse, room creation is rate-limited per IP:
 
 ## Troubleshooting
 
-### "Could not resolve host: dnscloak.net/sos"
+### "Could not resolve host: vany.sh/sos"
 
 Your local DNS may be slow to update. Try these workarounds:
 
@@ -386,7 +386,7 @@ Your local DNS may be slow to update. Try these workarounds:
 sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
 
 # Option 2: Force resolve via curl
-curl --resolve dnscloak.net/sos:443:188.114.97.6 https://dnscloak.net/sos | bash
+curl --resolve vany.sh/sos:443:188.114.97.6 https://vany.sh/sos | bash
 
 # Option 3: Use Google DNS
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
@@ -397,7 +397,7 @@ echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
 The standalone binary now **auto-falls back** to direct connection:
 
 1. **If DNSTT pubkey is embedded** (production build) → tries DNSTT tunnel first
-2. **If DNSTT fails or unavailable** → falls back to direct `relay.dnscloak.net:8899`
+2. **If DNSTT fails or unavailable** → falls back to direct `relay.vany.sh:8899`
 3. **If no pubkey** (dev build) → uses direct connection immediately
 
 **Connection flow:**
@@ -406,7 +406,7 @@ Binary Start
      │
      ▼
 ┌─────────────────────┐
-│ DNSTT pubkey set?   │──No──▶ Direct to relay.dnscloak.net:8899
+│ DNSTT pubkey set?   │──No──▶ Direct to relay.vany.sh:8899
 └─────────────────────┘
      │ Yes
      ▼
@@ -469,9 +469,9 @@ SOS works because DNS often remains functional when HTTP/HTTPS is blocked:
 
 ## Contributing
 
-SOS is part of the DNSCloak project:
+SOS is part of the Vany project:
 
-- **Repository**: https://github.com/behnamkhorsandian/DNSCloak
+- **Repository**: https://github.com/behnamkhorsandian/Vanyshsh
 - **Issues**: Report bugs or request features
 - **Pull requests**: Welcome!
 

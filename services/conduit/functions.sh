@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Conduit (Psiphon Relay) Functions
+# Vany - Conduit (Psiphon Relay) Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
@@ -98,7 +98,7 @@ MAX_CLIENTS=${CONDUIT_MAX_CLIENTS:-1000}
 BANDWIDTH=${CONDUIT_BANDWIDTH:--1}
 EOF
 
-    curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/services/conduit/monitoring-script.sh" \
+    curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/services/conduit/monitoring-script.sh" \
         -o /usr/local/bin/conduit
     chmod +x /usr/local/bin/conduit
 

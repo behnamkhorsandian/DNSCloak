@@ -1,19 +1,19 @@
-name = "dnscloak"
+name = "vany"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 # Routes for all services
 routes = [
-  { pattern = "start.dnscloak.net", custom_domain = true },
-  { pattern = "mtp.dnscloak.net", custom_domain = true },
-  { pattern = "reality.dnscloak.net", custom_domain = true },
-  { pattern = "wg.dnscloak.net", custom_domain = true },
-  { pattern = "vray.dnscloak.net", custom_domain = true },
-  { pattern = "ws.dnscloak.net", custom_domain = true },
-  { pattern = "dnstt.dnscloak.net", custom_domain = true },
-  { pattern = "conduit.dnscloak.net", custom_domain = true },
-  { pattern = "stats.dnscloak.net", custom_domain = true },
-  { pattern = "dnscloak.net", custom_domain = true }
+  { pattern = "start.vany.sh", custom_domain = true },
+  { pattern = "mtp.vany.sh", custom_domain = true },
+  { pattern = "reality.vany.sh", custom_domain = true },
+  { pattern = "wg.vany.sh", custom_domain = true },
+  { pattern = "vray.vany.sh", custom_domain = true },
+  { pattern = "ws.vany.sh", custom_domain = true },
+  { pattern = "dnstt.vany.sh", custom_domain = true },
+  { pattern = "conduit.vany.sh", custom_domain = true },
+  { pattern = "stats.vany.sh", custom_domain = true },
+  { pattern = "vany.sh", custom_domain = true }
 ]
 
 # Durable Objects for live stats relay

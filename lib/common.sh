@@ -1,17 +1,17 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Common Functions Library
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - Common Functions Library
+# https://github.com/behnamkhorsandian/Vanyshsh
 #===============================================================================
 
 # Version
-DNSCLOAK_VERSION="2.0.0"
+VANY_VERSION="2.0.0"
 
 # Paths (respect environment overrides for testing)
-DNSCLOAK_DIR="${DNSCLOAK_DIR:-/opt/dnscloak}"
-DNSCLOAK_USERS="${DNSCLOAK_USERS:-$DNSCLOAK_DIR/users.json}"
-DNSCLOAK_BIN="${DNSCLOAK_BIN:-/usr/local/bin/dnscloak}"
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+VANY_DIR="${VANY_DIR:-/opt/vany}"
+VANY_USERS="${VANY_USERS:-$VANY_DIR/users.json}"
+VANY_BIN="${VANY_BIN:-/usr/local/bin/vany}"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
 
 #-------------------------------------------------------------------------------
 # Colors (No emojis - ASCII only)
@@ -36,23 +36,23 @@ BOLD='\033[1m'
 # Usage: load_banner "setup" or load_banner "menu" or load_banner "reality"
 load_banner() {
     local banner_name="$1"
-    local banner_file="/opt/dnscloak/banners/${banner_name}.txt"
+    local banner_file="/opt/vany/banners/${banner_name}.txt"
     local banner_url="${GITHUB_RAW}/banners/${banner_name}.txt"
     
     # Try local file first
     if [[ -f "$banner_file" ]]; then
         cat "$banner_file"
     # Try temp directory (during installation)
-    elif [[ -f "/tmp/dnscloak-banners/${banner_name}.txt" ]]; then
-        cat "/tmp/dnscloak-banners/${banner_name}.txt"
+    elif [[ -f "/tmp/vany-banners/${banner_name}.txt" ]]; then
+        cat "/tmp/vany-banners/${banner_name}.txt"
     # Download from GitHub
     else
-        mkdir -p /tmp/dnscloak-banners
-        if curl -sL "$banner_url" -o "/tmp/dnscloak-banners/${banner_name}.txt" 2>/dev/null; then
-            cat "/tmp/dnscloak-banners/${banner_name}.txt"
+        mkdir -p /tmp/vany-banners
+        if curl -sL "$banner_url" -o "/tmp/vany-banners/${banner_name}.txt" 2>/dev/null; then
+            cat "/tmp/vany-banners/${banner_name}.txt"
         else
             # Fallback to hardcoded
-            echo "  DNSCloak v${DNSCLOAK_VERSION}"
+            echo "  Vany v${VANY_VERSION}"
         fi
     fi
 }
@@ -239,9 +239,9 @@ service_status() {
 
 # Initialize users.json if not exists
 users_init() {
-    if [[ ! -f "$DNSCLOAK_USERS" ]]; then
-        mkdir -p "$DNSCLOAK_DIR"
-        cat > "$DNSCLOAK_USERS" <<EOF
+    if [[ ! -f "$VANY_USERS" ]]; then
+        mkdir -p "$VANY_DIR"
+        cat > "$VANY_USERS" <<EOF
 {
   "version": "1.0",
   "server": {
@@ -252,7 +252,7 @@ users_init() {
   "users": {}
 }
 EOF
-        chmod 600 "$DNSCLOAK_USERS"
+        chmod 600 "$VANY_USERS"
     fi
 }
 
@@ -263,9 +263,9 @@ user_exists() {
     local protocol="${2:-}"
     
     if [[ -n "$protocol" ]]; then
-        jq -e ".users[\"$username\"].protocols[\"$protocol\"]" "$DNSCLOAK_USERS" >/dev/null 2>&1
+        jq -e ".users[\"$username\"].protocols[\"$protocol\"]" "$VANY_USERS" >/dev/null 2>&1
     else
-        jq -e ".users[\"$username\"]" "$DNSCLOAK_USERS" >/dev/null 2>&1
+        jq -e ".users[\"$username\"]" "$VANY_USERS" >/dev/null 2>&1
     fi
 }
 
@@ -304,7 +304,7 @@ user_add() {
         local tmp
         tmp=$(mktemp)
         jq ".users[\"$username\"] = {\"created\": \"$now\", \"protocols\": {}}" \
-            "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
+            "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
     fi
     
     # Add protocol credentials if provided
@@ -312,10 +312,10 @@ user_add() {
         local tmp
         tmp=$(mktemp)
         jq ".users[\"$username\"].protocols[\"$protocol\"] = $creds" \
-            "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
+            "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
     fi
     
-    chmod 600 "$DNSCLOAK_USERS"
+    chmod 600 "$VANY_USERS"
 }
 
 # Set/update protocol credentials for existing user
@@ -335,8 +335,8 @@ user_set() {
     local tmp
     tmp=$(mktemp)
     jq ".users[\"$username\"].protocols[\"$protocol\"] = $creds" \
-        "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
-    chmod 600 "$DNSCLOAK_USERS"
+        "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
+    chmod 600 "$VANY_USERS"
 }
 
 # Remove user from protocol or entirely
@@ -345,7 +345,7 @@ user_remove() {
     local username="$1"
     local protocol="${2:-}"
     
-    if [[ ! -f "$DNSCLOAK_USERS" ]]; then
+    if [[ ! -f "$VANY_USERS" ]]; then
         return 1
     fi
     
@@ -360,23 +360,23 @@ user_remove() {
     if [[ -n "$protocol" ]]; then
         # Remove from specific protocol
         jq "del(.users[\"$username\"].protocols[\"$protocol\"])" \
-            "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
+            "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
         
         # If no protocols left, remove user entirely
         local remaining
-        remaining=$(jq ".users[\"$username\"].protocols | length" "$DNSCLOAK_USERS")
+        remaining=$(jq ".users[\"$username\"].protocols | length" "$VANY_USERS")
         if [[ "$remaining" == "0" ]]; then
             tmp=$(mktemp)
             jq "del(.users[\"$username\"])" \
-                "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
+                "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
         fi
     else
         # Remove user entirely
         jq "del(.users[\"$username\"])" \
-            "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
+            "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
     fi
     
-    chmod 600 "$DNSCLOAK_USERS"
+    chmod 600 "$VANY_USERS"
 }
 
 # Get user credentials for protocol
@@ -387,9 +387,9 @@ user_get() {
     local key="${3:-}"
     
     if [[ -n "$key" ]]; then
-        jq -r ".users[\"$username\"].protocols[\"$protocol\"][\"$key\"]" "$DNSCLOAK_USERS" 2>/dev/null
+        jq -r ".users[\"$username\"].protocols[\"$protocol\"][\"$key\"]" "$VANY_USERS" 2>/dev/null
     else
-        jq -r ".users[\"$username\"].protocols[\"$protocol\"]" "$DNSCLOAK_USERS" 2>/dev/null
+        jq -r ".users[\"$username\"].protocols[\"$protocol\"]" "$VANY_USERS" 2>/dev/null
     fi
 }
 
@@ -398,15 +398,15 @@ user_get() {
 user_list() {
     local protocol="${1:-}"
     
-    if [[ ! -f "$DNSCLOAK_USERS" ]]; then
+    if [[ ! -f "$VANY_USERS" ]]; then
         return
     fi
     
     if [[ -n "$protocol" ]]; then
         jq -r ".users | to_entries[] | select(.value.protocols[\"$protocol\"]) | .key" \
-            "$DNSCLOAK_USERS" 2>/dev/null
+            "$VANY_USERS" 2>/dev/null
     else
-        jq -r ".users | keys[]" "$DNSCLOAK_USERS" 2>/dev/null
+        jq -r ".users | keys[]" "$VANY_USERS" 2>/dev/null
     fi
 }
 
@@ -421,15 +421,15 @@ server_set() {
     local tmp
     tmp=$(mktemp)
     jq ".server[\"$key\"] = \"$value\"" \
-        "$DNSCLOAK_USERS" > "$tmp" && mv "$tmp" "$DNSCLOAK_USERS"
-    chmod 600 "$DNSCLOAK_USERS"
+        "$VANY_USERS" > "$tmp" && mv "$tmp" "$VANY_USERS"
+    chmod 600 "$VANY_USERS"
 }
 
 # Get server info
 # Usage: server_get "key"
 server_get() {
     local key="$1"
-    jq -r ".server[\"$key\"] // empty" "$DNSCLOAK_USERS" 2>/dev/null
+    jq -r ".server[\"$key\"] // empty" "$VANY_USERS" 2>/dev/null
 }
 
 #-------------------------------------------------------------------------------
@@ -515,19 +515,19 @@ service_installed() {
     local service="$1"
     case "$service" in
         reality|vray|ws)
-            [[ -f "$DNSCLOAK_DIR/xray/config.json" ]] && \
-            grep -q "\"tag\": \"${service}-in\"" "$DNSCLOAK_DIR/xray/config.json" 2>/dev/null
+            [[ -f "$VANY_DIR/xray/config.json" ]] && \
+            grep -q "\"tag\": \"${service}-in\"" "$VANY_DIR/xray/config.json" 2>/dev/null
             ;;
         mtp)
-            [[ -f "$DNSCLOAK_DIR/mtp/config.py" ]] || \
+            [[ -f "$VANY_DIR/mtp/config.py" ]] || \
             systemctl is-active --quiet mtprotoproxy 2>/dev/null || \
             systemctl is-active --quiet telegram-proxy 2>/dev/null
             ;;
         wg)
-            [[ -f "$DNSCLOAK_DIR/wg/wg0.conf" ]]
+            [[ -f "$VANY_DIR/wg/wg0.conf" ]]
             ;;
         dnstt)
-            [[ -f "$DNSCLOAK_DIR/dnstt/server.key" ]]
+            [[ -f "$VANY_DIR/dnstt/server.key" ]]
             ;;
         conduit)
             docker ps -a 2>/dev/null | grep -q conduit
@@ -775,7 +775,7 @@ tui_menu() {
         
         # Print banner
         echo -e "${CYAN}"
-        load_banner "logo" 2>/dev/null || echo "  DNSCloak v${DNSCLOAK_VERSION}"
+        load_banner "logo" 2>/dev/null || echo "  Vany v${VANY_VERSION}"
         echo -e "${RESET}"
         echo ""
         

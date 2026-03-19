@@ -116,7 +116,7 @@ jobs:
           import re
           
           pubkey = os.environ.get('DNSTT_PUBKEY', '')
-          relay_host = os.environ.get('SOS_RELAY_HOST', 'relay.dnscloak.net:8899')
+          relay_host = os.environ.get('SOS_RELAY_HOST', 'relay.vany.sh:8899')
           
           # Update main.py
           with open('src/sos/main.py', 'r') as f:

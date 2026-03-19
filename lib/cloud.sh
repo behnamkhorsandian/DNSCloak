@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Cloud Provider Detection and Firewall Configuration
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - Cloud Provider Detection and Firewall Configuration
+# https://github.com/behnamkhorsandian/Vanyshsh
 #===============================================================================
 
 # Detect cloud provider via metadata endpoints
@@ -343,7 +343,7 @@ _gcp_open_port() {
     local protocol="$2"
     
     if command -v gcloud &>/dev/null; then
-        local rule_name="dnscloak-${protocol}-${port}"
+        local rule_name="vany-${protocol}-${port}"
         gcloud compute firewall-rules create "$rule_name" \
             --allow="${protocol}:${port}" \
             --source-ranges=0.0.0.0/0 \
@@ -450,7 +450,7 @@ _local_open_port() {
 }
 
 #-------------------------------------------------------------------------------
-# Open All DNSCloak Ports
+# Open All Vany Ports
 #-------------------------------------------------------------------------------
 
 cloud_configure_firewall() {

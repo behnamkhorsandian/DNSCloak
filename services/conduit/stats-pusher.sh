@@ -1,20 +1,20 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Health & Stats Pusher
-# Pushes live stats and service health to stats.dnscloak.net
+# Vany - Health & Stats Pusher
+# Pushes live stats and service health to stats.vany.sh
 # Monitors: Conduit, Xray (Reality/WS/VRAY), DNSTT, WireGuard, SOS
-# Usage: curl stats.dnscloak.net/setup | sudo bash
+# Usage: curl stats.vany.sh/setup | sudo bash
 #===============================================================================
 
 set -euo pipefail
 
 # Config
-STATS_ENDPOINT="https://stats.dnscloak.net/push"
+STATS_ENDPOINT="https://stats.vany.sh/push"
 PUSH_INTERVAL=5  # seconds
 LOG_FILE="/var/log/conduit-stats.log"
 
 #-------------------------------------------------------------------------------
-# Check health of all DNSCloak services
+# Check health of all Vany services
 #-------------------------------------------------------------------------------
 
 get_services_health() {
@@ -41,7 +41,7 @@ get_services_health() {
     # DNSTT
     if systemctl is-active dnstt &>/dev/null || pgrep -f "dnstt-server" &>/dev/null; then
         services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"up"/')
-    elif [[ -f /opt/dnscloak/dnstt/server.key ]]; then
+    elif [[ -f /opt/vany/dnstt/server.key ]]; then
         services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"down"/')
     else
         services=$(echo "$services" | sed 's/"dnstt":"unknown"/"dnstt":"not_installed"/')
@@ -50,7 +50,7 @@ get_services_health() {
     # WireGuard
     if systemctl is-active wg-quick@wg0 &>/dev/null || wg show wg0 &>/dev/null 2>&1; then
         services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"up"/')
-    elif [[ -f /opt/dnscloak/wg/wg0.conf ]] || [[ -f /etc/wireguard/wg0.conf ]]; then
+    elif [[ -f /opt/vany/wg/wg0.conf ]] || [[ -f /etc/wireguard/wg0.conf ]]; then
         services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"down"/')
     else
         services=$(echo "$services" | sed 's/"wireguard":"unknown"/"wireguard":"not_installed"/')
@@ -59,7 +59,7 @@ get_services_health() {
     # SOS Relay
     if systemctl is-active sos-relay &>/dev/null || pgrep -f "relay.py" &>/dev/null; then
         services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"up"/')
-    elif [[ -f /opt/dnscloak/sos/relay.py ]]; then
+    elif [[ -f /opt/vany/sos/relay.py ]]; then
         services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"down"/')
     else
         services=$(echo "$services" | sed 's/"sos":"unknown"/"sos":"not_installed"/')

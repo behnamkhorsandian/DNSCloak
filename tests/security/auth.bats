@@ -7,9 +7,9 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
+    export VANY_DIR="$TEST_DIR/vany"
     
-    mkdir -p "$DNSCLOAK_DIR"
+    mkdir -p "$VANY_DIR"
 }
 
 teardown() {
@@ -50,22 +50,22 @@ teardown() {
 # ISSUE #6: CORS VALIDATION
 # =============================================================================
 
-@test "SECURITY: only dnscloak.net origins should be allowed" {
+@test "SECURITY: only vany.sh origins should be allowed" {
     local allowed_origins=(
-        "https://dnscloak.net"
-        "https://www.dnscloak.net"
+        "https://vany.sh"
+        "https://www.vany.sh"
     )
     
     local disallowed_origins=(
         "https://evil.com"
-        "https://dnscloak.net.evil.com"
-        "http://dnscloak.net"  # HTTP not allowed
+        "https://vany.sh.evil.com"
+        "http://vany.sh"  # HTTP not allowed
         "null"
     )
     
     # Document the expected behavior
     for origin in "${allowed_origins[@]}"; do
-        [[ "$origin" == *"dnscloak.net"* ]]
+        [[ "$origin" == *"vany.sh"* ]]
     done
 }
 

@@ -7,11 +7,11 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
-    export DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
-    export XRAY_CONFIG="$DNSCLOAK_DIR/xray/config.json"
+    export VANY_DIR="$TEST_DIR/vany"
+    export VANY_USERS="$VANY_DIR/users.json"
+    export XRAY_CONFIG="$VANY_DIR/xray/config.json"
     
-    mkdir -p "$DNSCLOAK_DIR/xray"
+    mkdir -p "$VANY_DIR/xray"
     
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     source "$BATS_TEST_DIRNAME/../../lib/xray.sh"
@@ -140,7 +140,7 @@ teardown() {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
     local uuid=$(generate_uuid)
-    xray_add_client "reality-in" "$uuid" "test@dnscloak"
+    xray_add_client "reality-in" "$uuid" "test@vany"
     run jq '.inbounds[0].settings.clients | length' "$XRAY_CONFIG"
     [ "$output" = "1" ]
 }
@@ -148,7 +148,7 @@ teardown() {
 @test "xray_add_client sets correct UUID" {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
-    xray_add_client "reality-in" "test-uuid-12345" "test@dnscloak"
+    xray_add_client "reality-in" "test-uuid-12345" "test@vany"
     run jq -r '.inbounds[0].settings.clients[0].id' "$XRAY_CONFIG"
     [ "$output" = "test-uuid-12345" ]
 }
@@ -156,7 +156,7 @@ teardown() {
 @test "xray_add_client supports flow parameter" {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
-    xray_add_client "reality-in" "test-uuid" "test@dnscloak" "xtls-rprx-vision"
+    xray_add_client "reality-in" "test-uuid" "test@vany" "xtls-rprx-vision"
     run jq -r '.inbounds[0].settings.clients[0].flow' "$XRAY_CONFIG"
     [ "$output" = "xtls-rprx-vision" ]
 }
@@ -164,9 +164,9 @@ teardown() {
 @test "xray_remove_client removes client from inbound" {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
-    xray_add_client "reality-in" "uuid-to-remove" "remove@dnscloak"
-    xray_add_client "reality-in" "uuid-to-keep" "keep@dnscloak"
-    xray_remove_client "reality-in" "remove@dnscloak"
+    xray_add_client "reality-in" "uuid-to-remove" "remove@vany"
+    xray_add_client "reality-in" "uuid-to-keep" "keep@vany"
+    xray_remove_client "reality-in" "remove@vany"
     run jq '.inbounds[0].settings.clients | length' "$XRAY_CONFIG"
     [ "$output" = "1" ]
     run jq -r '.inbounds[0].settings.clients[0].id' "$XRAY_CONFIG"
@@ -176,13 +176,13 @@ teardown() {
 @test "xray_list_clients returns client emails" {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
-    xray_add_client "reality-in" "uuid1" "user1@dnscloak"
-    xray_add_client "reality-in" "uuid2" "user2@dnscloak"
-    xray_add_client "reality-in" "uuid3" "user3@dnscloak"
+    xray_add_client "reality-in" "uuid1" "user1@vany"
+    xray_add_client "reality-in" "uuid2" "user2@vany"
+    xray_add_client "reality-in" "uuid3" "user3@vany"
     run xray_list_clients "reality-in"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"user1@dnscloak"* ]]
-    [[ "$output" == *"user3@dnscloak"* ]]
+    [[ "$output" == *"user1@vany"* ]]
+    [[ "$output" == *"user3@vany"* ]]
 }
 
 # =============================================================================
@@ -201,8 +201,8 @@ teardown() {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
     xray_add_ws_inbound "test.example.com" "/ws" "/tmp/cert.pem" "/tmp/key.pem"
-    xray_add_client "reality-in" "reality-uuid" "reality@dnscloak"
-    xray_add_client "ws-in" "ws-uuid" "ws@dnscloak"
+    xray_add_client "reality-in" "reality-uuid" "reality@vany"
+    xray_add_client "ws-in" "ws-uuid" "ws@vany"
     
     # Check reality inbound has correct client
     run jq -r '.inbounds[] | select(.tag == "reality-in") | .settings.clients[0].id' "$XRAY_CONFIG"
@@ -228,9 +228,9 @@ teardown() {
 @test "config remains valid JSON after modifications" {
     xray_init_config
     xray_add_reality_inbound "priv" "www.google.com" '["abc"]'
-    xray_add_client "reality-in" "uuid1" "user1@dnscloak"
-    xray_add_client "reality-in" "uuid2" "user2@dnscloak"
-    xray_remove_client "reality-in" "user1@dnscloak"
+    xray_add_client "reality-in" "uuid1" "user1@vany"
+    xray_add_client "reality-in" "uuid2" "user2@vany"
+    xray_remove_client "reality-in" "user1@vany"
     xray_add_ws_inbound "test.example.com" "/ws" "/tmp/cert.pem" "/tmp/key.pem"
     
     run jq '.' "$XRAY_CONFIG"

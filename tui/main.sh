@@ -1,22 +1,22 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Entry Point
+# Vany TUI - Entry Point
 # Unified interactive installer & management tool
 #
 # Usage:
-#   curl dnscloak.net | bash           # Interactive menu
-#   curl dnscloak.net/reality | bash   # Jump to Reality
-#   bash dnscloak.sh --page reality    # Direct protocol page
+#   curl vany.sh | bash           # Interactive menu
+#   curl vany.sh/reality | bash   # Jump to Reality
+#   bash vany.sh --page reality    # Direct protocol page
 #===============================================================================
 
 #-------------------------------------------------------------------------------
 # Constants
 #-------------------------------------------------------------------------------
 
-DNSCLOAK_VERSION="2.0.0"
-DNSCLOAK_DIR="/opt/dnscloak"
-DNSCLOAK_USERS="${DNSCLOAK_DIR}/users.json"
-GITHUB_RAW="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}"
+VANY_VERSION="2.0.0"
+VANY_DIR="/opt/vany"
+VANY_USERS="${VANY_DIR}/users.json"
+GITHUB_RAW="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main}"
 
 #-------------------------------------------------------------------------------
 # Resolve script directory (works when sourced or concatenated by worker)
@@ -81,19 +81,19 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --version|-v)
-            echo "DNSCloak TUI v${DNSCLOAK_VERSION}"
+            echo "Vany TUI v${VANY_VERSION}"
             exit 0
             ;;
         --help|-h)
             cat <<EOF
-DNSCloak - Multi-Protocol Censorship Bypass Platform
+Vany - Multi-Protocol Censorship Bypass Platform
 
 Usage:
-  dnscloak                       Interactive TUI menu
-  dnscloak --page <protocol>     Jump to protocol page
-  dnscloak --status              Show service status
-  dnscloak --users               Manage users
-  dnscloak --version             Show version
+  vany                       Interactive TUI menu
+  vany --page <protocol>     Jump to protocol page
+  vany --status              Show service status
+  vany --users               Manage users
+  vany --version             Show version
 
 Protocols: reality, wg, ws, mtp, dnstt, conduit, vray, sos
 EOF
@@ -118,7 +118,7 @@ _preflight() {
     # Check root
     if [[ $EUID -ne 0 ]]; then
         printf '\033[31mError:\033[0m This installer must be run as root.\n'
-        printf 'Try: curl dnscloak.net | sudo bash\n'
+        printf 'Try: curl vany.sh | sudo bash\n'
         exit 1
     fi
 
@@ -142,11 +142,11 @@ _preflight() {
     fi
 
     # Initialize users.json if missing
-    if [[ ! -f "$DNSCLOAK_USERS" ]]; then
-        mkdir -p "$DNSCLOAK_DIR"
+    if [[ ! -f "$VANY_USERS" ]]; then
+        mkdir -p "$VANY_DIR"
         local server_ip
         server_ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "unknown")
-        cat > "$DNSCLOAK_USERS" <<EOJSON
+        cat > "$VANY_USERS" <<EOJSON
 {
   "users": {},
   "server": {
@@ -174,24 +174,24 @@ service_installed() {
     case "$proto" in
         reality|vray|ws)
             # Xray-based protocols: check if inbound exists in config
-            [[ -f /opt/dnscloak/xray/config.json ]] && \
+            [[ -f /opt/vany/xray/config.json ]] && \
                 jq -e ".inbounds[] | select(.tag == \"${proto}-in\")" \
-                    /opt/dnscloak/xray/config.json >/dev/null 2>&1
+                    /opt/vany/xray/config.json >/dev/null 2>&1
             ;;
         wg)
-            [[ -f /etc/wireguard/wg0.conf ]] || [[ -f /opt/dnscloak/wg/wg0.conf ]]
+            [[ -f /etc/wireguard/wg0.conf ]] || [[ -f /opt/vany/wg/wg0.conf ]]
             ;;
         mtp)
-            [[ -f /opt/dnscloak/mtp/config.py ]] || systemctl is-enabled telegram-proxy &>/dev/null
+            [[ -f /opt/vany/mtp/config.py ]] || systemctl is-enabled telegram-proxy &>/dev/null
             ;;
         dnstt)
-            [[ -f /opt/dnscloak/dnstt/server.key ]] || systemctl is-enabled dnstt &>/dev/null
+            [[ -f /opt/vany/dnstt/server.key ]] || systemctl is-enabled dnstt &>/dev/null
             ;;
         conduit)
             docker inspect conduit &>/dev/null 2>&1 || systemctl is-enabled conduit &>/dev/null 2>&1
             ;;
         sos)
-            [[ -f /opt/dnscloak/sos/relay.py ]] || systemctl is-enabled sos-relay &>/dev/null 2>&1
+            [[ -f /opt/vany/sos/relay.py ]] || systemctl is-enabled sos-relay &>/dev/null 2>&1
             ;;
         *)
             return 1
@@ -435,7 +435,7 @@ _run_navigation() {
 
 _show_exit_banner() {
     printf '\n'
-    printf '  %b*%b DNSCloak v%s\n' "$C_GREEN" "$C_RST" "$DNSCLOAK_VERSION"
+    printf '  %b*%b Vany v%s\n' "$C_GREEN" "$C_RST" "$VANY_VERSION"
     printf '  %bThe beacon remains lit.%b\n' "$C_DGRAY" "$C_RST"
     printf '\n'
 }
@@ -444,7 +444,7 @@ _show_exit_banner() {
 # Main
 #-------------------------------------------------------------------------------
 
-dnscloak_tui_main() {
+vany_tui_main() {
     # Parse arguments passed from start.sh or command line
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -496,5 +496,5 @@ dnscloak_tui_main() {
 
 # Run if executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "$0" ]] || [[ -z "${BASH_SOURCE[0]}" ]]; then
-    dnscloak_tui_main "$@"
+    vany_tui_main "$@"
 fi

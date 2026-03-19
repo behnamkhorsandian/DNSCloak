@@ -7,9 +7,9 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
+    export VANY_DIR="$TEST_DIR/vany"
     
-    mkdir -p "$DNSCLOAK_DIR"
+    mkdir -p "$VANY_DIR"
     
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     source "$BATS_TEST_DIRNAME/../../lib/cloud.sh"

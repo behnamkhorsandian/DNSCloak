@@ -1,15 +1,15 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Service Selector
+# Vany - Service Selector
 # Detects domain availability and recommends appropriate services
-# https://github.com/behnamkhorsandian/DNSCloak
+# https://github.com/behnamkhorsandian/Vanyshsh
 #===============================================================================
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common if not already loaded
-if [[ -z "$DNSCLOAK_DIR" ]]; then
+if [[ -z "$VANY_DIR" ]]; then
     source "$SCRIPT_DIR/common.sh"
 fi
 
@@ -97,32 +97,32 @@ recommend_services() {
     echo ""
     
     # Always recommend Reality (no domain needed)
-    echo "  [RECOMMENDED] Reality (dnscloak.net/reality)"
+    echo "  [RECOMMENDED] Reality (vany.sh/reality)"
     echo "      Best detection resistance, no domain needed"
     echo ""
     
     # Always recommend WireGuard
-    echo "  [RECOMMENDED] WireGuard (dnscloak.net/wg)"
+    echo "  [RECOMMENDED] WireGuard (vany.sh/wg)"
     echo "      Fast VPN, native app support"
     echo ""
     
     # MTP is always available
-    echo "  [AVAILABLE] MTProto (dnscloak.net/mtp)"
+    echo "  [AVAILABLE] MTProto (vany.sh/mtp)"
     echo "      Telegram only"
     echo ""
     
     if [[ "$has_domain" == "true" ]]; then
-        echo "  [AVAILABLE] V2Ray (dnscloak.net/vray)"
+        echo "  [AVAILABLE] V2Ray (vany.sh/vray)"
         echo "      Classic setup with Let's Encrypt cert"
         echo ""
         
         if [[ "$has_cloudflare" == "true" ]]; then
-            echo "  [AVAILABLE] WS+CDN (dnscloak.net/ws)"
+            echo "  [AVAILABLE] WS+CDN (vany.sh/ws)"
             echo "      Hide server IP behind Cloudflare"
             echo ""
         fi
         
-        echo "  [EMERGENCY] DNStt (dnscloak.net/dnstt)"
+        echo "  [EMERGENCY] DNStt (vany.sh/dnstt)"
         echo "      DNS tunnel for blackouts (slow)"
         echo ""
     else
@@ -165,16 +165,16 @@ select_service() {
     echo "Available Commands:"
     echo "-------------------"
     echo ""
-    echo "  curl dnscloak.net/reality | sudo bash"
-    echo "  curl dnscloak.net/wg | sudo bash"
-    echo "  curl dnscloak.net/mtp | sudo bash"
+    echo "  curl vany.sh/reality | sudo bash"
+    echo "  curl vany.sh/wg | sudo bash"
+    echo "  curl vany.sh/mtp | sudo bash"
     
     if [[ "$has_domain" == "true" ]]; then
-        echo "  curl dnscloak.net/vray | sudo bash"
+        echo "  curl vany.sh/vray | sudo bash"
         if [[ "$has_cloudflare" == "true" ]]; then
-            echo "  curl dnscloak.net/ws | sudo bash"
+            echo "  curl vany.sh/ws | sudo bash"
         fi
-        echo "  curl dnscloak.net/dnstt | sudo bash"
+        echo "  curl vany.sh/dnstt | sudo bash"
     fi
     
     echo ""

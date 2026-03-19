@@ -3,11 +3,11 @@ export type Lang = 'en' | 'fa';
 type CopyValue = string | ((...args: any[]) => string);
 type Copy = Record<string, CopyValue>;
 
-export const LANG_KEY = 'dnscloak-lang';
+export const LANG_KEY = 'vany-lang';
 
 const copy: Record<Lang, Copy> = {
   en: {
-    app_name: 'DNSCloak',
+    app_name: 'Vany',
     tagline: 'Uncensored and Decentralized',
     guide: 'Guide',
     language_toggle: 'فارسی',
@@ -78,7 +78,7 @@ const copy: Record<Lang, Copy> = {
     send_failed: 'Send failed.',
     could_not_decrypt: '[Could not decrypt]',
     install_title: 'Install this app',
-    install_body: 'Add DNSCloak Chat to your device for a faster, app-like experience.',
+    install_body: 'Add Vany Chat to your device for a faster, app-like experience.',
     install_unavailable: 'Install is not available yet on this browser.',
     dont_show_again: "Don't show again",
     install: 'Install',
@@ -121,7 +121,7 @@ const copy: Record<Lang, Copy> = {
     toggle_theme: 'Toggle theme'
   },
   fa: {
-    app_name: 'DNSCloak',
+    app_name: 'Vany',
     tagline: 'بدون سانسور و غیرمتمرکز',
     guide: 'راهنما',
     language_toggle: 'English',
@@ -192,7 +192,7 @@ const copy: Record<Lang, Copy> = {
     send_failed: 'ارسال ناموفق بود.',
     could_not_decrypt: '[قابل رمزگشایی نیست]',
     install_title: 'نصب این برنامه',
-    install_body: 'DNSCloak Chat را برای تجربه سریع‌تر و شبیه اپ نصب کنید.',
+    install_body: 'Vany Chat را برای تجربه سریع‌تر و شبیه اپ نصب کنید.',
     install_unavailable: 'نصب در این مرورگر در دسترس نیست.',
     dont_show_again: 'دیگر نشان نده',
     install: 'نصب',

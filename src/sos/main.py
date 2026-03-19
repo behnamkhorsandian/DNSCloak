@@ -28,7 +28,7 @@ from typing import Optional
 
 # DNSTT Configuration
 DNSTT_DOH_URL = "https://cloudflare-dns.com/dns-query"
-DNSTT_DOMAIN = "t.dnscloak.net"
+DNSTT_DOMAIN = "t.vany.sh"
 # Pubkey: Embedded at build time via GitHub Actions, or read from env for dev
 DNSTT_PUBKEY = os.environ.get("DNSTT_PUBKEY", "")
 DNSTT_SOCKS_PORT = 10800
@@ -39,7 +39,7 @@ PROXY_TIMEOUT_HOURS = 1
 # CI/CD replaces __SOS_RELAY_DEFAULT__ with actual value from secrets
 DEFAULT_RELAY = os.environ.get("SOS_RELAY_HOST", "__SOS_RELAY_DEFAULT__")
 if DEFAULT_RELAY == "__SOS_RELAY_DEFAULT__":
-    DEFAULT_RELAY = "relay.dnscloak.net:8899"  # Fallback if not injected
+    DEFAULT_RELAY = "relay.vany.sh:8899"  # Fallback if not injected
 
 # Global process reference for cleanup
 _dnstt_process: Optional[subprocess.Popen] = None

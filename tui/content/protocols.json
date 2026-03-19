@@ -427,7 +427,7 @@
         "Python 3.8+"
       ],
       "clients": {
-        "terminal": "pip install dnscloak-sos",
+        "terminal": "pip install vany-sos",
         "browser": "Navigate to relay URL"
       },
       "wizard_steps": [

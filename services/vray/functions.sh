@@ -1,13 +1,13 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - VLESS + TCP + TLS (V2Ray) Functions
+# Vany - VLESS + TCP + TLS (V2Ray) Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
 SERVICE_NAME="vray"
 VRAY_PORT=443
 VRAY_TAG="vray-in"
-CERT_DIR="$DNSCLOAK_DIR/xray/certs"
+CERT_DIR="$VANY_DIR/xray/certs"
 
 #-------------------------------------------------------------------------------
 # Checks
@@ -325,7 +325,7 @@ show_vray_links() {
     server_ip=$(server_get "ip")
 
     local link
-    link=$(xray_vray_link "$uuid" "$domain" "$domain" "DNSCloak-VRay-${username}")
+    link=$(xray_vray_link "$uuid" "$domain" "$domain" "Vany-VRay-${username}")
 
     echo ""
     echo -e "  ${BOLD}${WHITE}V2Ray TLS Links for '$username'${RESET}"

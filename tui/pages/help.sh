@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Help Page
+# Vany TUI - Help Page
 # Keyboard shortcuts, icon legend, protocol comparison, getting started
 #===============================================================================
 
@@ -42,7 +42,7 @@ page_help() {
             "h|Open this help page"
             "Esc|Back to main menu"
             "del|Go back one step"
-            "q|Quit DNSCloak"
+            "q|Quit Vany"
         )
         tui_render_table "Keyboard Shortcuts" kb_headers kb_rows
         FRAME_CONTENT+=("")
@@ -85,7 +85,7 @@ page_help() {
         FRAME_CONTENT+=("${C_LGRAY}If your IP gets blocked, add WS+CDN behind Cloudflare${C_RST}")
         FRAME_CONTENT+=("${C_LGRAY}Emergency backup: DNSTT works even during blackouts${C_RST}")
         FRAME_CONTENT+=("")
-        FRAME_CONTENT+=("${C_DGRAY}DNSCloak v${DNSCLOAK_VERSION:-2.0.0}${C_RST}")
+        FRAME_CONTENT+=("${C_DGRAY}Vany v${VANY_VERSION:-2.0.0}${C_RST}")
 
         FRAME_FOOTER="${C_DGRAY}Esc${C_RST}${C_DIM} back${C_RST}  "
         FRAME_FOOTER+="${C_DGRAY}q${C_RST}${C_DIM} quit${C_RST}"

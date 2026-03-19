@@ -1,4 +1,4 @@
-# DNSCloak - Spot VM Watchdog
+# Vany - Spot VM Watchdog
 #
 # Auto-restarts the GCP Spot VM if it gets preempted.
 # Runs every 5 minutes via cron schedule.
@@ -17,7 +17,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   ZONE: ${{ secrets.ZONE }}
-  INSTANCE_NAME: dnscloak
+  INSTANCE_NAME: vany
 
 jobs:
   check-and-recover:
@@ -76,8 +76,8 @@ jobs:
           # Check if stats endpoint is responding
           # Note: May be blocked by Cloudflare bot protection, which is OK
           HEALTH_RESPONSE=$(curl -sSL --connect-timeout 10 --max-time 15 \
-            -H "User-Agent: DNSCloak-Watchdog/1.0" \
-            "https://stats.dnscloak.net/health" 2>/dev/null || echo '{"status":"error"}')
+            -H "User-Agent: Vany-Watchdog/1.0" \
+            "https://stats.vany.sh/health" 2>/dev/null || echo '{"status":"error"}')
           
           # Check if response is valid JSON (not Cloudflare challenge page)
           if echo "$HEALTH_RESPONSE" | jq -e . >/dev/null 2>&1; then

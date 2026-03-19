@@ -1,8 +1,8 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Bootstrap Script
+# Vany - Bootstrap Script
 # First-time VM setup: updates, prerequisites, Xray installation
-# https://github.com/behnamkhorsandian/DNSCloak
+# https://github.com/behnamkhorsandian/Vanyshsh
 #===============================================================================
 
 set -e
@@ -18,7 +18,7 @@ source "$SCRIPT_DIR/cloud.sh"
 # Bootstrap Flag
 #-------------------------------------------------------------------------------
 
-BOOTSTRAP_FLAG="$DNSCLOAK_DIR/.bootstrapped"
+BOOTSTRAP_FLAG="$VANY_DIR/.bootstrapped"
 
 is_bootstrapped() {
     [[ -f "$BOOTSTRAP_FLAG" ]]
@@ -153,8 +153,8 @@ https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
 configure_sysctl() {
     print_step "Configuring network optimizations"
     
-    cat > /etc/sysctl.d/99-dnscloak.conf <<EOF
-# DNSCloak network optimizations
+    cat > /etc/sysctl.d/99-vany.conf <<EOF
+# Vany network optimizations
 
 # TCP keepalive
 net.ipv4.tcp_keepalive_time = 60
@@ -178,7 +178,7 @@ net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 EOF
 
-    sysctl -p /etc/sysctl.d/99-dnscloak.conf 2>/dev/null || true
+    sysctl -p /etc/sysctl.d/99-vany.conf 2>/dev/null || true
     
     print_success "Network optimized"
 }
@@ -190,10 +190,10 @@ EOF
 create_directories() {
     print_step "Creating directory structure"
     
-    mkdir -p "$DNSCLOAK_DIR"/{xray,mtp,wg,dnstt,certs}
-    chmod 700 "$DNSCLOAK_DIR"
+    mkdir -p "$VANY_DIR"/{xray,mtp,wg,dnstt,certs}
+    chmod 700 "$VANY_DIR"
     
-    print_success "Directories created at $DNSCLOAK_DIR"
+    print_success "Directories created at $VANY_DIR"
 }
 
 #-------------------------------------------------------------------------------
@@ -229,8 +229,8 @@ install_xray() {
     chmod +x "$XRAY_BIN"
     
     # Install geoip and geosite
-    mv "$tmp_dir/geoip.dat" "$DNSCLOAK_DIR/xray/" 2>/dev/null || true
-    mv "$tmp_dir/geosite.dat" "$DNSCLOAK_DIR/xray/" 2>/dev/null || true
+    mv "$tmp_dir/geoip.dat" "$VANY_DIR/xray/" 2>/dev/null || true
+    mv "$tmp_dir/geosite.dat" "$VANY_DIR/xray/" 2>/dev/null || true
     
     rm -rf "$tmp_dir"
     
@@ -247,7 +247,7 @@ User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=$XRAY_BIN run -config $DNSCLOAK_DIR/xray/config.json
+ExecStart=$XRAY_BIN run -config $VANY_DIR/xray/config.json
 Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
@@ -267,7 +267,7 @@ EOF
 #-------------------------------------------------------------------------------
 
 init_xray_config() {
-    local config="$DNSCLOAK_DIR/xray/config.json"
+    local config="$VANY_DIR/xray/config.json"
     
     if [[ -f "$config" ]]; then
         return 0
@@ -279,8 +279,8 @@ init_xray_config() {
 {
   "log": {
     "loglevel": "warning",
-    "access": "$DNSCLOAK_DIR/xray/access.log",
-    "error": "$DNSCLOAK_DIR/xray/error.log"
+    "access": "$VANY_DIR/xray/access.log",
+    "error": "$VANY_DIR/xray/error.log"
   },
   "inbounds": [],
   "outbounds": [
@@ -305,18 +305,18 @@ EOF
 }
 
 #-------------------------------------------------------------------------------
-# Install DNSCloak CLI
+# Install Vany CLI
 #-------------------------------------------------------------------------------
 
 install_cli() {
-    print_step "Installing dnscloak CLI"
+    print_step "Installing vany CLI"
     
-    local cli_url="${GITHUB_RAW}/cli/dnscloak.sh"
-    local lib_dir="$DNSCLOAK_DIR/lib"
+    local cli_url="${GITHUB_RAW}/cli/vany.sh"
+    local lib_dir="$VANY_DIR/lib"
     
     # Download CLI
-    curl -sL "$cli_url" -o "$DNSCLOAK_BIN"
-    chmod +x "$DNSCLOAK_BIN"
+    curl -sL "$cli_url" -o "$VANY_BIN"
+    chmod +x "$VANY_BIN"
     
     # Download libraries for CLI use
     mkdir -p "$lib_dir"
@@ -325,7 +325,7 @@ install_cli() {
     curl -sL "${GITHUB_RAW}/lib/xray.sh" -o "$lib_dir/xray.sh"
     chmod 600 "$lib_dir"/*.sh
     
-    print_success "dnscloak CLI installed"
+    print_success "vany CLI installed"
 }
 
 #-------------------------------------------------------------------------------
@@ -385,7 +385,7 @@ bootstrap() {
         return 0
     fi
     
-    print_info "Setting up DNSCloak on $PRETTY_NAME"
+    print_info "Setting up Vany on $PRETTY_NAME"
     echo ""
     
     system_update

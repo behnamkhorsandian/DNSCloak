@@ -74,7 +74,7 @@ class SOSTransport:
     
     # Relay server configuration
     # Default: public relay domain (direct connection when DNSTT unavailable)
-    DEFAULT_RELAY = "relay.dnscloak.net:8899"
+    DEFAULT_RELAY = "relay.vany.sh:8899"
     _relay_env = os.environ.get("SOS_RELAY_HOST", DEFAULT_RELAY)
     if ":" in _relay_env:
         RELAY_HOST, _port = _relay_env.rsplit(":", 1)

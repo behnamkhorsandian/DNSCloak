@@ -1,19 +1,19 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Xray Configuration Manager
+# Vany - Xray Configuration Manager
 # Manages multi-inbound Xray config with SNI/path routing
-# https://github.com/behnamkhorsandian/DNSCloak
+# https://github.com/behnamkhorsandian/Vanyshsh
 #===============================================================================
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common if not already loaded
-if [[ -z "$DNSCLOAK_DIR" ]]; then
+if [[ -z "$VANY_DIR" ]]; then
     source "$SCRIPT_DIR/common.sh"
 fi
 
-XRAY_CONFIG="${XRAY_CONFIG:-$DNSCLOAK_DIR/xray/config.json}"
+XRAY_CONFIG="${XRAY_CONFIG:-$VANY_DIR/xray/config.json}"
 XRAY_BIN="/usr/local/bin/xray"
 
 #-------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const THEME_KEY = 'dnscloak-theme';
+const THEME_KEY = 'vany-theme';
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY);

@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Main Page (Protocol Browser)
+# Vany TUI - Main Page (Protocol Browser)
 # Sidebar selects protocol, content shows markdown description
 # Footer hotkeys for direct actions (no nested menus)
 #===============================================================================
@@ -98,16 +98,16 @@ _render_doc_file() {
     # Try local paths first
     if [[ -f "${script_dir}/content/docs/${dfile}" ]]; then
         doc_text=$(cat "${script_dir}/content/docs/${dfile}")
-    elif [[ -f "/opt/dnscloak/tui/content/docs/${dfile}" ]]; then
-        doc_text=$(cat "/opt/dnscloak/tui/content/docs/${dfile}")
-    elif [[ -f "/tmp/dnscloak-docs/${dfile}" ]]; then
-        doc_text=$(cat "/tmp/dnscloak-docs/${dfile}")
+    elif [[ -f "/opt/vany/tui/content/docs/${dfile}" ]]; then
+        doc_text=$(cat "/opt/vany/tui/content/docs/${dfile}")
+    elif [[ -f "/tmp/vany-docs/${dfile}" ]]; then
+        doc_text=$(cat "/tmp/vany-docs/${dfile}")
     else
         # Fetch from GitHub
-        mkdir -p /tmp/dnscloak-docs
-        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/tui/content/docs/${dfile}"
-        if curl -sL "$url" -o "/tmp/dnscloak-docs/${dfile}" 2>/dev/null; then
-            doc_text=$(cat "/tmp/dnscloak-docs/${dfile}")
+        mkdir -p /tmp/vany-docs
+        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main}/tui/content/docs/${dfile}"
+        if curl -sL "$url" -o "/tmp/vany-docs/${dfile}" 2>/dev/null; then
+            doc_text=$(cat "/tmp/vany-docs/${dfile}")
         fi
     fi
 

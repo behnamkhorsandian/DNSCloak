@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - User Management Page
+# Vany TUI - User Management Page
 # Table with per-protocol columns, sorting, scrollable in-frame links
 #===============================================================================
 
@@ -30,14 +30,14 @@ page_users() {
         local -a user_dates=()
         local -A user_proto_map=()
 
-        if [[ -f "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" ]] && type jq &>/dev/null; then
+        if [[ -f "${VANY_USERS:-/opt/vany/users.json}" ]] && type jq &>/dev/null; then
             local raw_users
             if [[ "$sort_mode" == "date" ]]; then
                 raw_users=$(jq -r '.users // {} | to_entries | sort_by(.value.created) | reverse | .[].key' \
-                    "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+                    "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
             else
                 raw_users=$(jq -r '.users // {} | keys[]' \
-                    "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+                    "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
             fi
 
             while IFS= read -r uname; do
@@ -45,7 +45,7 @@ page_users() {
                 users+=("$uname")
                 local created
                 created=$(jq -r ".users[\"$uname\"].created // \"\"" \
-                    "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+                    "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
                 # Format date: show just date portion
                 if [[ -n "$created" && "$created" != "null" ]]; then
                     user_dates+=("${created%%T*}")
@@ -55,7 +55,7 @@ page_users() {
                 # Track which protocols this user has
                 local protos
                 protos=$(jq -r ".users[\"$uname\"].protocols // {} | keys[]" \
-                    "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+                    "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
                 user_proto_map["$uname"]="$protos"
             done <<< "$raw_users"
         fi
@@ -327,11 +327,11 @@ _show_user_links_inframe() {
 
     # Get user's protocols
     local -a user_protos=()
-    if [[ -f "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" ]] && type jq &>/dev/null; then
+    if [[ -f "${VANY_USERS:-/opt/vany/users.json}" ]] && type jq &>/dev/null; then
         while IFS= read -r p; do
             [[ -n "$p" ]] && user_protos+=("$p")
         done < <(jq -r ".users[\"$username\"].protocols // {} | keys[]" \
-            "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+            "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
     fi
 
     if [[ ${#user_protos[@]} -eq 0 ]]; then
@@ -455,7 +455,7 @@ _show_single_proto_links() {
         else
             local config
             config=$(jq ".users[\"$username\"].protocols[\"$proto\"]" \
-                "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+                "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
             while IFS= read -r line; do
                 FRAME_CONTENT+=(" ${C_TEXT}${line}${C_RST}")
             done <<< "$config"

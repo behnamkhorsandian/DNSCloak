@@ -1,5 +1,5 @@
 /**
- * DNSCloak - Stats Relay Durable Object
+ * Vany - Stats Relay Durable Object
  * 
  * Receives stats from VPS via POST /push
  * Broadcasts to connected WebSocket clients
@@ -72,11 +72,11 @@ export class StatsRelay implements DurableObject {
       // Non-WebSocket request to root - return info
       return Response.json({
         service: 'stats-relay',
-        description: 'DNSCloak live stats WebSocket relay',
+        description: 'Vany live stats WebSocket relay',
         endpoints: {
-          websocket: 'wss://stats.dnscloak.net/',
-          current: 'https://stats.dnscloak.net/current',
-          push: 'POST https://stats.dnscloak.net/push',
+          websocket: 'wss://stats.vany.sh/',
+          current: 'https://stats.vany.sh/current',
+          push: 'POST https://stats.vany.sh/push',
         },
         connected_clients: this.sessions.size,
       }, { headers: corsHeaders });

@@ -1,9 +1,9 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - VLESS + WebSocket + CDN Service Installer
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - VLESS + WebSocket + CDN Service Installer
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
-# Usage: curl dnscloak.net/ws | sudo bash
+# Usage: curl vany.sh/ws | sudo bash
 #
 # Requires:
 #   - Domain with Cloudflare DNS (free plan works)
@@ -11,12 +11,12 @@
 #===============================================================================
 
 # Cleanup old cached files for fresh install
-rm -rf /tmp/dnscloak-lib /tmp/dnscloak* 2>/dev/null || true
+rm -rf /tmp/vany-lib /tmp/vany* 2>/dev/null || true
 
 # Download and source libraries
-LIB_DIR="/tmp/dnscloak-lib"
+LIB_DIR="/tmp/vany-lib"
 mkdir -p "$LIB_DIR"
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
 
 # Force fresh download (bypass cache)
 CURL_OPTS="-H 'Cache-Control: no-cache' -H 'Pragma: no-cache'"
@@ -49,7 +49,7 @@ set -e
 
 SERVICE_NAME="ws"
 WS_PORT=80  # HTTP on origin - Cloudflare handles TLS at edge
-CERT_DIR="/opt/dnscloak/certs"
+CERT_DIR="/opt/vany/certs"
 
 #-------------------------------------------------------------------------------
 # Installation Check
@@ -189,7 +189,7 @@ generate_ws_path() {
 
 install_ws() {
     clear
-    load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak WS+CDN ===${RESET}\n"
+    load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== Vany WS+CDN ===${RESET}\n"
     
     # Check root
     check_root
@@ -273,7 +273,7 @@ install_ws() {
     "clients": [
       {
         "id": "$uuid",
-        "email": "${first_user}@dnscloak"
+        "email": "${first_user}@vany"
       }
     ],
     "decryption": "none"
@@ -370,7 +370,7 @@ add_ws_user() {
     uuid=$(random_uuid)
     
     # Add to Xray config
-    xray_add_client "ws-in" "$uuid" "${username}@dnscloak"
+    xray_add_client "ws-in" "$uuid" "${username}@vany"
     
     # Save to users.json
     user_add "$username" "ws" "{\"uuid\": \"$uuid\"}"
@@ -408,7 +408,7 @@ remove_ws_user() {
     fi
     
     # Remove from Xray (using email format)
-    xray_remove_client "ws-in" "${username}@dnscloak"
+    xray_remove_client "ws-in" "${username}@vany"
     
     # Remove from users.json
     user_remove "$username" "ws"
@@ -462,7 +462,7 @@ show_ws_user_links() {
     local vless_link="vless://${uuid}@${domain}:443?type=ws&security=tls&path=${encoded_path}&host=${domain}&sni=${domain}#${username}-ws"
     
     clear
-    load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak WS+CDN ===${RESET}\n"
+    load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== Vany WS+CDN ===${RESET}\n"
     
     echo ""
     echo -e "  ${BOLD}${WHITE}Connection Details: ${CYAN}$username${RESET}"
@@ -787,7 +787,7 @@ main() {
     
     # Check for existing installation
     if is_ws_installed; then
-        load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== DNSCloak WS+CDN ===${RESET}\n"
+        load_banner "ws" 2>/dev/null || echo -e "\n${BOLD}${CYAN}=== Vany WS+CDN ===${RESET}\n"
         show_ws_menu
     else
         install_ws

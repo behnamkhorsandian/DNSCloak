@@ -71,7 +71,7 @@ WireGuard is a fast, modern VPN protocol. Simple configuration, excellent perfor
 ## Installation
 
 ```bash
-curl dnscloak.net/wg | sudo bash
+curl vany.sh/wg | sudo bash
 ```
 
 ## Network Layout
@@ -88,7 +88,7 @@ User 3: 10.66.66.4/32
 
 Add user:
 ```bash
-dnscloak add wg alice
+vany add wg alice
 ```
 
 Generates:
@@ -122,7 +122,7 @@ PersistentKeepalive = 25
 
 1. Install WireGuard from App Store
 2. Add Tunnel > Create from QR code
-3. Scan QR shown by `dnscloak links username`
+3. Scan QR shown by `vany links username`
 4. Enable tunnel
 
 ### Android
@@ -140,7 +140,7 @@ PersistentKeepalive = 25
 
 ## Server Configuration
 
-Location: `/opt/dnscloak/wg/wg0.conf`
+Location: `/opt/vany/wg/wg0.conf`
 
 ```ini
 [Interface]
@@ -183,7 +183,7 @@ Default: UDP 51820
 To use different port:
 ```bash
 # During installation, specify port
-# Or edit /opt/dnscloak/wg/wg0.conf
+# Or edit /opt/vany/wg/wg0.conf
 ListenPort = 12345
 ```
 

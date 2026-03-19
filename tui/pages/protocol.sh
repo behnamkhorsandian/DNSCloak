@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Protocol Data (stub)
+# Vany TUI - Protocol Data (stub)
 # Protocol guide text and page_protocol are now in pages/main.sh
 # This file is kept for backward compatibility with source directives
 #===============================================================================

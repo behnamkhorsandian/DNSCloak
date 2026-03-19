@@ -1,11 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - MTProto Proxy Functions
+# Vany - MTProto Proxy Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
 SERVICE_NAME="mtp"
-MTP_DIR="$DNSCLOAK_DIR/mtp"
+MTP_DIR="$VANY_DIR/mtp"
 MTP_CONFIG="$MTP_DIR/config.py"
 MTP_SERVICE="telegram-proxy"
 MTP_DEFAULT_PORT=443
@@ -103,7 +103,7 @@ create_mtp_service() {
 
     cat > "/etc/systemd/system/${MTP_SERVICE}.service" <<EOF
 [Unit]
-Description=DNSCloak MTProto Proxy
+Description=Vany MTProto Proxy
 After=network.target
 
 [Service]

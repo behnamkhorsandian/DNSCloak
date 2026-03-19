@@ -1,11 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - SOS Emergency Secure Chat
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - SOS Emergency Secure Chat
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
 # USAGE:
-#   Client (users): curl dnscloak.net/sos | bash
-#   Server (admin): curl dnscloak.net/sos | sudo bash -s -- --server
+#   Client (users): curl vany.sh/sos | bash
+#   Server (admin): curl vany.sh/sos | sudo bash -s -- --server
 #
 # CLIENT MODE (default):
 #   Launches TUI for creating/joining encrypted chat rooms
@@ -53,7 +53,7 @@ done
 
 # Paths
 if $SERVER_MODE; then
-    SOS_DIR="/opt/dnscloak/sos"
+    SOS_DIR="/opt/vany/sos"
 else
     SOS_DIR="/tmp/sos-chat"
 fi
@@ -61,7 +61,7 @@ fi
 # Use jsDelivr CDN (auto-purges on new commits, more reliable than raw.githubusercontent)
 # Add timestamp for cache busting
 CACHE_BUST="?t=$(date +%s)"
-GITHUB_RAW="https://cdn.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main"
+GITHUB_RAW="https://cdn.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main"
 PYTHON_MIN_VERSION="3.8"
 
 # Relay server configuration
@@ -321,10 +321,10 @@ configure_firewall() {
     case "$provider" in
         gcp)
             if command -v gcloud &>/dev/null; then
-                gcloud compute firewall-rules create dnscloak-sos-relay \
+                gcloud compute firewall-rules create vany-sos-relay \
                     --allow="tcp:${SOS_RELAY_PORT}" \
                     --source-ranges=0.0.0.0/0 \
-                    --description="SOS Relay for DNSCloak" \
+                    --description="SOS Relay for Vany" \
                     --quiet 2>/dev/null && print_success "GCP firewall rule created" || print_info "GCP firewall rule may already exist"
             else
                 print_info "gcloud not found, using local firewall"
@@ -442,8 +442,8 @@ create_update_script() {
 
 set -e
 
-SOS_DIR="/opt/dnscloak/sos"
-CDN="https://cdn.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main"
+SOS_DIR="/opt/vany/sos"
+CDN="https://cdn.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main"
 BUST="?t=$(date +%s)"
 LOG_FILE="/var/log/sos-update.log"
 CHANGED=false
@@ -564,7 +564,7 @@ show_server_status() {
     echo "     Then browse to: http://${public_ip}:${SOS_RELAY_PORT}/"
     echo ""
     echo -e "  ${GREEN}2. TUI Client${RESET}"
-    echo "     curl dnscloak.net/sos | bash"
+    echo "     curl vany.sh/sos | bash"
     echo ""
     echo -e "  ${GREEN}3. Direct (no censorship bypass)${RESET}"
     echo "     http://${public_ip}:${SOS_RELAY_PORT}/"

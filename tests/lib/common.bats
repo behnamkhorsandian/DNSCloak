@@ -8,10 +8,10 @@
 setup() {
     # Create isolated test environment
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
-    export DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
+    export VANY_DIR="$TEST_DIR/vany"
+    export VANY_USERS="$VANY_DIR/users.json"
     
-    mkdir -p "$DNSCLOAK_DIR"
+    mkdir -p "$VANY_DIR"
     
     # Source the library
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
@@ -29,24 +29,24 @@ teardown() {
 # =============================================================================
 
 @test "users_init creates valid JSON structure" {
-    run jq '.' "$DNSCLOAK_USERS"
+    run jq '.' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
 @test "users_init creates users object" {
-    run jq -e '.users' "$DNSCLOAK_USERS"
+    run jq -e '.users' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
 @test "users_init creates server object" {
-    run jq -e '.server' "$DNSCLOAK_USERS"
+    run jq -e '.server' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
 @test "users_init preserves existing database" {
-    echo '{"users":{"existing":{"created":"2026-01-01"}},"server":{}}' > "$DNSCLOAK_USERS"
+    echo '{"users":{"existing":{"created":"2026-01-01"}},"server":{}}' > "$VANY_USERS"
     users_init
-    run jq -e '.users.existing' "$DNSCLOAK_USERS"
+    run jq -e '.users.existing' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
@@ -57,20 +57,20 @@ teardown() {
 @test "user_add creates new user" {
     run user_add "testuser"
     [ "$status" -eq 0 ]
-    run jq -e '.users.testuser' "$DNSCLOAK_USERS"
+    run jq -e '.users.testuser' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
 @test "user_add sets created timestamp" {
     user_add "testuser"
-    run jq -r '.users.testuser.created' "$DNSCLOAK_USERS"
+    run jq -r '.users.testuser.created' "$VANY_USERS"
     [ "$status" -eq 0 ]
     [[ "$output" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]
 }
 
 @test "user_add initializes empty protocols" {
     user_add "testuser"
-    run jq '.users.testuser.protocols | keys | length' "$DNSCLOAK_USERS"
+    run jq '.users.testuser.protocols | keys | length' "$VANY_USERS"
     [ "$output" = "0" ]
 }
 
@@ -147,7 +147,7 @@ teardown() {
 @test "user_set updates protocol data" {
     user_add "testuser"
     user_set "testuser" "ws" '{"uuid":"ws-uuid","path":"/ws"}'
-    run jq -r '.users.testuser.protocols.ws.path' "$DNSCLOAK_USERS"
+    run jq -r '.users.testuser.protocols.ws.path' "$VANY_USERS"
     [ "$output" = "/ws" ]
 }
 
@@ -157,7 +157,7 @@ teardown() {
 
 @test "server_set stores value" {
     server_set "ip" "1.2.3.4"
-    run jq -r '.server.ip' "$DNSCLOAK_USERS"
+    run jq -r '.server.ip' "$VANY_USERS"
     [ "$output" = "1.2.3.4" ]
 }
 
@@ -206,7 +206,7 @@ teardown() {
 @test "handles special characters in protocol data" {
     user_add "testuser"
     user_set "testuser" "test" '{"key":"value with spaces and \"quotes\""}'
-    run jq -e '.users.testuser.protocols.test' "$DNSCLOAK_USERS"
+    run jq -e '.users.testuser.protocols.test' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }
 
@@ -218,6 +218,6 @@ teardown() {
     wait
     
     # Verify database is valid JSON
-    run jq '.' "$DNSCLOAK_USERS"
+    run jq '.' "$VANY_USERS"
     [ "$status" -eq 0 ]
 }

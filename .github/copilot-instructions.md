@@ -1,8 +1,8 @@
-# DNSCloak Development Instructions
+# Vany Development Instructions
 
 ## Project Overview
 
-DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as an independent service, all managed via the unified `dnscloak` CLI with a shared user database.
+Vany is a multi-protocol censorship bypass platform. Each protocol runs as an independent service, all managed via the unified `vany` CLI with a shared user database.
 
 ## Implementation Checklist
 
@@ -24,7 +24,7 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS (requires domain)
 
 ### Phase 3: CLI and Workers [COMPLETE]
-- [x] `cli/dnscloak.sh` - Unified management CLI ✅ CREATED
+- [x] `cli/vany.sh` - Unified management CLI ✅ CREATED
 - [x] `workers/` - Unified Cloudflare Worker for all services ✅ DEPLOYED
   - Routes: mtp, reality, wg, vray, ws, dnstt, sos subdomains
   - DNSTT client setup: /client, /setup/linux, /setup/macos, /setup/windows
@@ -47,9 +47,9 @@ DNSCloak is a multi-protocol censorship bypass platform. Each protocol runs as a
 - [x] `docs/protocols/sos.md` - SOS emergency secure chat
 
 ### Phase 5: Infrastructure & Operations [COMPLETE]
-- [x] GCP Spot VM with static IP (`dnscloak-static`)
+- [x] GCP Spot VM with static IP (`vany-static`)
 - [x] GitHub Actions watchdog (`.github/workflows/spot-vm-watchdog.yml`)
-- [x] Health monitoring endpoint (`stats.dnscloak.net/health`)
+- [x] Health monitoring endpoint (`stats.vany.sh/health`)
 - [x] Health pusher script (`services/conduit/stats-pusher.sh`)
 - [x] Website status popup with live service indicators
 - [x] Service account for CI/CD (`github-vm-manager@noteefy-85339.iam.gserviceaccount.com`)
@@ -81,7 +81,7 @@ src/
     crypto.py       # NaCl encryption, Argon2id key derivation
     relay.py        # Server-side relay daemon
 cli/
-  dnscloak.sh       # Unified CLI
+  vany.sh       # Unified CLI
 workers/
   reality/
   wg/
@@ -98,7 +98,7 @@ docs/
 
 ### Directory Structure (Runtime on VM)
 ```
-/opt/dnscloak/
+/opt/vany/
   users.json        # Unified user database
   xray/
     config.json     # Merged Xray config (reality + vray + ws)
@@ -116,7 +116,7 @@ docs/
   sos/
     relay.py        # Chat relay daemon (runs alongside DNSTT)
 /usr/local/bin/
-  dnscloak          # CLI symlink
+  vany          # CLI symlink
   xray              # Shared Xray binary
 ```
 
@@ -133,7 +133,7 @@ docs/
 - No emojis in output - use ASCII symbols (*, >, -, etc.)
 
 ### User Management
-- All users stored in `/opt/dnscloak/users.json`
+- All users stored in `/opt/vany/users.json`
 - Format:
 ```json
 {
@@ -156,7 +156,7 @@ docs/
 ```
 
 ### Xray Config Management
-- Single config at `/opt/dnscloak/xray/config.json`
+- Single config at `/opt/vany/xray/config.json`
 - Multiple inbounds share port 443 via SNI/path routing
 - Functions in `lib/xray.sh` to add/remove inbounds and clients
 - Reload via `systemctl reload xray` after changes
@@ -204,11 +204,11 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 
 ### VM Testing
 1. Spin up fresh Ubuntu 22.04 VM
-2. Run installer: `curl dnscloak.net/<service> | sudo bash`
-3. Add test user: `dnscloak add <service> testuser`
+2. Run installer: `curl vany.sh/<service> | sudo bash`
+3. Add test user: `vany add <service> testuser`
 4. Verify connection from client device
-5. Test user removal: `dnscloak remove <service> testuser`
-6. Test uninstall: `dnscloak uninstall <service>`
+5. Test user removal: `vany remove <service> testuser`
+6. Test uninstall: `vany uninstall <service>`
 
 ## TODO (Post-MVP)
 - Hysteria 2 - QUIC-based protocol for lossy networks
@@ -219,9 +219,9 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 - Web dashboard - Browser-based management
 - Telegram bot - User self-service
 
-### Security Audit (stats.dnscloak.net WebSocket)
+### Security Audit (stats.vany.sh WebSocket)
 - [ ] HMAC-signed push requests from VPS (prevent spoofing)
-- [ ] Origin validation (only allow dnscloak.net origins)
+- [ ] Origin validation (only allow vany.sh origins)
 - [ ] Rate limiting per IP (prevent DoS)
 - [ ] Cloudflare threat score filtering (block high-risk)
 - [ ] Enable Bot Fight Mode on stats subdomain
@@ -230,7 +230,7 @@ shellcheck lib/*.sh services/*/*.sh cli/*.sh
 ## SOS Roadmap (Emergency Chat)
 
 ### Current State (v1.0 - Testing)
-- Cloudflare Worker serves install script at `dnscloak.net/sos`
+- Cloudflare Worker serves install script at `vany.sh/sos`
 - TUI client downloads via curl, then connects to relay via DNSTT
 - **Limitation**: Initial download CAN be blocked (uses Cloudflare HTTPS)
 
@@ -265,7 +265,7 @@ Pre-compiled binaries users download BEFORE blackout:
 │   1. STARTUP                                                                 │
 │      ┌─────────────────────────────────────────────────────────┐            │
 │      │  Binary extracts bundled dnstt-client                   │            │
-│      │  Spawns: dnstt-client -doh ... t.dnscloak.net :10800    │            │
+│      │  Spawns: dnstt-client -doh ... t.vany.sh :10800    │            │
 │      │  Waits for SOCKS5 proxy to be ready                     │            │
 │      └─────────────────────────────────────────────────────────┘            │
 │                              │                                               │
@@ -308,7 +308,7 @@ Browser-based chat served entirely through DNSTT tunnel:
 - [x] Full crypto interop with TUI client (same rooms!)
 - [x] Polling-based messaging (1.5s interval)
 - [ ] **TODO**: WebSocket for real-time chat (future enhancement)
-- [ ] **TODO**: `hotline.dnscloak.net` subdomain setup
+- [ ] **TODO**: `hotline.vany.sh` subdomain setup
 
 **Web Client Files:**
 - `src/sos/www/index.html` - SPA with all CSS inlined (~100KB)
@@ -363,19 +363,19 @@ Architecture for Phase 2:
 - Both phases: Chat traffic goes through DNSTT, unblockable by DPI/IP blocks
 
 ### TLDR:
-1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'dnscloak.net/sos'
+1) as the VPS owner, i use the server tag to make my server a room provider over dnstt (in my case 'vany.sh/sos'
 2) as user i have two option, either use this url via curl on terminal, or just out it in my browser. and since its served over dnstt, it can never be blocked (even if the main website don't work, this subdomain always loads the instant chatroom.
 
 ## Current Session Context (Updated 2026-01-30)
 
 ### Infrastructure
 - **GCP Project**: `noteefy-85339` (Noteefy)
-- **VM Name**: `dnscloak`
+- **VM Name**: `vany`
 - **Zone**: `europe-west3-c`
 - **Machine Type**: `n2d-highcpu-8` (8 vCPU, 8GB RAM, 16 Gbps bandwidth)
 - **VM Type**: **Spot VM** (60% cost savings, ~$42/month total)
-- **Static IP**: `34.185.221.241` (named `dnscloak-static`)
-- **Disk**: 10GB boot disk from snapshot `dnscloak-backup-20260129`
+- **Static IP**: `34.185.221.241` (named `vany-static`)
+- **Disk**: 10GB boot disk from snapshot `vany-backup-20260129`
 
 ### Spot VM Auto-Recovery
 - **Workflow**: `.github/workflows/spot-vm-watchdog.yml` - Runs every 5 minutes
@@ -385,9 +385,9 @@ Architecture for Phase 2:
 - **Documentation**: `docs/spot-vm-recovery.md`
 
 ### Health Monitoring
-- **Endpoint**: `https://stats.dnscloak.net/health` - Aggregated health status
+- **Endpoint**: `https://stats.vany.sh/health` - Aggregated health status
 - **Pusher**: `services/conduit/stats-pusher.sh` - Reports all service health every 5 seconds
-- **Website**: Status popup on `dnscloak.net` (bottom-left button)
+- **Website**: Status popup on `vany.sh` (bottom-left button)
 - **Services Monitored**: Conduit, Xray (Reality/WS/VRAY), DNSTT, WireGuard, SOS
 
 ### What's Working
@@ -399,30 +399,30 @@ Architecture for Phase 2:
   - TUI client with Textual framework
   - **Web client** (`src/sos/www/`) - Browser-based SPA served via relay
   - Standalone binaries (via GitHub Actions CI/CD)
-  - Default relay: `relay.dnscloak.net:8899`
+  - Default relay: `relay.vany.sh:8899`
   - E2E encryption (NaCl + Argon2id)
 - **WireGuard** (`services/wg/install.sh`) - Created, config exists but not running
-- **CLI** (`cli/dnscloak.sh`) - Unified management CLI
+- **CLI** (`cli/vany.sh`) - Unified management CLI
 
 ### Cloudflare Setup
-- **Workers**: Deployed at `dnscloak` worker, handles all subdomains
+- **Workers**: Deployed at `vany` worker, handles all subdomains
   - Routes: mtp, reality, wg, vray, ws, dnstt, conduit, sos, stats
-  - Stats relay: `stats.dnscloak.net` with WebSocket and `/health` endpoint
-- **Pages**: Landing page at `www.dnscloak.net` via direct upload of `www/` folder
+  - Stats relay: `stats.vany.sh` with WebSocket and `/health` endpoint
+- **Pages**: Landing page at `www.vany.sh` via direct upload of `www/` folder
 - **DNS**: 
-  - `*.dnscloak.net` - Worker routes
-  - `www.dnscloak.net` - Cloudflare Pages
-  - `ws-origin.dnscloak.net` - WS origin server (Proxied, SSL Flexible)
-  - `ns1.dnscloak.net` - DNSTT nameserver (DNS only, NOT proxied)
-  - `t.dnscloak.net` - NS record pointing to ns1.dnscloak.net
-  - `relay.dnscloak.net` - SOS relay server (DNS only, NOT proxied) → 34.185.221.241
-  - `stats.dnscloak.net` - Worker route for health/stats
+  - `*.vany.sh` - Worker routes
+  - `www.vany.sh` - Cloudflare Pages
+  - `ws-origin.vany.sh` - WS origin server (Proxied, SSL Flexible)
+  - `ns1.vany.sh` - DNSTT nameserver (DNS only, NOT proxied)
+  - `t.vany.sh` - NS record pointing to ns1.vany.sh
+  - `relay.vany.sh` - SOS relay server (DNS only, NOT proxied) → 34.185.221.241
+  - `stats.vany.sh` - Worker route for health/stats
 
 ### Key Technical Decisions
 1. **Spot VM with auto-recovery** - 60% cost savings, GitHub Actions watchdog restarts if preempted
 2. **WS+CDN uses port 80 (HTTP) on origin** - Cloudflare handles TLS at edge, SSL mode must be "Flexible"
 3. **DNSTT builds from source** - Downloads Go 1.21 from go.dev, builds dnstt-server
-4. **User database** - `/opt/dnscloak/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
+4. **User database** - `/opt/vany/users.json` with format `{users: {name: {protocols: {ws: {uuid}}}}, server: {...}}`
 5. **Health aggregation** - Single `/health` endpoint reports all services, used by watchdog and website
 6. **WireGuard network** - Uses `10.66.66.0/24` subnet, server at `.1`, clients from `.2`
 

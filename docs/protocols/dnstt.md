@@ -118,7 +118,7 @@ dig NS t.yourdomain.com
 ## Installation
 
 ```bash
-curl dnscloak.net/dnstt | sudo bash
+curl vany.sh/dnstt | sudo bash
 ```
 
 During setup:
@@ -130,7 +130,7 @@ During setup:
 ## Server Components
 
 ```text
-/opt/dnscloak/dnstt/
+/opt/vany/dnstt/
     server.key          # Server private key
     server.pub          # Server public key (share with clients)
     dnstt-server        # Server binary
@@ -194,7 +194,7 @@ export https_proxy=socks5://127.0.0.1:1080
 
 ## Server Configuration
 
-Location: `/opt/dnscloak/dnstt/`
+Location: `/opt/vany/dnstt/`
 
 Service file: `/etc/systemd/system/dnstt.service`
 
@@ -205,9 +205,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/dnscloak/dnstt/dnstt-server \
+ExecStart=/opt/vany/dnstt/dnstt-server \
   -udp :5300 \
-  -privkey-file /opt/dnscloak/dnstt/server.key \
+  -privkey-file /opt/vany/dnstt/server.key \
   t.yourdomain.com \
   127.0.0.1:1080
 Restart=always

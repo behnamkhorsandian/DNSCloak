@@ -9,8 +9,8 @@ const MAX_GOSSIP_ROOMS = 200;
 
 const GENESIS_WORKERS = [
     'https://lionsun-node1.lionsun.workers.dev/',
-    'https://node1.dnscloak.net',
-    'https://app.dnscloak.net'
+    'https://node1.vany.sh',
+    'https://app.vany.sh'
 ];
 
 interface Env {

@@ -1,11 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Unified Management CLI
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - Unified Management CLI
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
 # Usage:
-#   dnscloak                         - Interactive TUI menu
-#   dnscloak <command> [service] [options]
+#   vany                         - Interactive TUI menu
+#   vany <command> [service] [options]
 #
 # Commands:
 #   add <service> <username>     - Add user to service
@@ -26,12 +26,12 @@
 set -e
 
 # Paths (respect environment overrides for testing)
-DNSCLOAK_DIR="${DNSCLOAK_DIR:-/opt/dnscloak}"
-DNSCLOAK_USERS="${DNSCLOAK_USERS:-$DNSCLOAK_DIR/users.json}"
-LIB_DIR="${LIB_DIR:-$DNSCLOAK_DIR/lib}"
-SERVICES_DIR="${SERVICES_DIR:-$DNSCLOAK_DIR/services}"
-BANNERS_DIR="${BANNERS_DIR:-$DNSCLOAK_DIR/banners}"
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+VANY_DIR="${VANY_DIR:-/opt/vany}"
+VANY_USERS="${VANY_USERS:-$VANY_DIR/users.json}"
+LIB_DIR="${LIB_DIR:-$VANY_DIR/lib}"
+SERVICES_DIR="${SERVICES_DIR:-$VANY_DIR/services}"
+BANNERS_DIR="${BANNERS_DIR:-$VANY_DIR/banners}"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
 
 # Version
 VERSION="2.1.0"
@@ -132,7 +132,7 @@ warn() {
 
 require_root() {
     if [[ $EUID -ne 0 ]]; then
-        error "This command requires root privileges. Use: sudo dnscloak $*"
+        error "This command requires root privileges. Use: sudo vany $*"
     fi
 }
 
@@ -151,25 +151,25 @@ is_service_installed() {
     local service="$1"
     case "$service" in
         reality)
-            [[ -f "$DNSCLOAK_DIR/xray/config.json" ]] && \
-            grep -q '"tag": "reality-in"' "$DNSCLOAK_DIR/xray/config.json" 2>/dev/null
+            [[ -f "$VANY_DIR/xray/config.json" ]] && \
+            grep -q '"tag": "reality-in"' "$VANY_DIR/xray/config.json" 2>/dev/null
             ;;
         ws)
-            [[ -f "$DNSCLOAK_DIR/xray/config.json" ]] && \
-            grep -q '"tag": "ws-in"' "$DNSCLOAK_DIR/xray/config.json" 2>/dev/null
+            [[ -f "$VANY_DIR/xray/config.json" ]] && \
+            grep -q '"tag": "ws-in"' "$VANY_DIR/xray/config.json" 2>/dev/null
             ;;
         vray)
-            [[ -f "$DNSCLOAK_DIR/xray/config.json" ]] && \
-            grep -q '"tag": "vray-in"' "$DNSCLOAK_DIR/xray/config.json" 2>/dev/null
+            [[ -f "$VANY_DIR/xray/config.json" ]] && \
+            grep -q '"tag": "vray-in"' "$VANY_DIR/xray/config.json" 2>/dev/null
             ;;
         wg)
-            [[ -f "$DNSCLOAK_DIR/wg/wg0.conf" ]]
+            [[ -f "$VANY_DIR/wg/wg0.conf" ]]
             ;;
         dnstt)
-            [[ -f "$DNSCLOAK_DIR/dnstt/server.key" ]]
+            [[ -f "$VANY_DIR/dnstt/server.key" ]]
             ;;
         mtp)
-            [[ -f "$DNSCLOAK_DIR/mtp/config.py" ]] || systemctl is-active --quiet mtprotoproxy 2>/dev/null
+            [[ -f "$VANY_DIR/mtp/config.py" ]] || systemctl is-active --quiet mtprotoproxy 2>/dev/null
             ;;
         conduit)
             [[ -f "/usr/local/bin/conduit" ]] && systemctl is-enabled --quiet conduit 2>/dev/null
@@ -204,11 +204,11 @@ add_user() {
     fi
     
     if [[ -z "$username" ]]; then
-        error "Username required. Usage: dnscloak add $service <username>"
+        error "Username required. Usage: vany add $service <username>"
     fi
     
     if ! is_service_installed "$service"; then
-        error "Service '$service' is not installed. Install it first: dnscloak install $service"
+        error "Service '$service' is not installed. Install it first: vany install $service"
     fi
     
     source_libs
@@ -232,7 +232,7 @@ remove_user() {
     fi
     
     if [[ -z "$username" ]]; then
-        error "Username required. Usage: dnscloak remove $service <username>"
+        error "Username required. Usage: vany remove $service <username>"
     fi
     
     if ! is_service_installed "$service"; then
@@ -275,7 +275,7 @@ list_users() {
     else
         while IFS= read -r username; do
             local protocols
-            protocols=$(jq -r ".users[\"$username\"].protocols | keys | join(\", \")" "$DNSCLOAK_USERS" 2>/dev/null)
+            protocols=$(jq -r ".users[\"$username\"].protocols | keys | join(\", \")" "$VANY_USERS" 2>/dev/null)
             echo "  $username  [$protocols]"
         done <<< "$users"
     fi
@@ -292,7 +292,7 @@ show_links() {
     source_libs
 
     if [[ -z "$username" ]]; then
-        error "Username required. Usage: dnscloak links <username> [service]"
+        error "Username required. Usage: vany links <username> [service]"
     fi
 
     if [[ -n "$service" ]]; then
@@ -329,7 +329,7 @@ show_status() {
         validate_service "$service"
         show_service_status "$service"
     else
-        echo -e "${BOLD}DNSCloak Services Status${RESET}"
+        echo -e "${BOLD}Vany Services Status${RESET}"
         echo "================================================"
         echo ""
         for svc in reality ws wg dnstt mtp vray conduit; do
@@ -539,12 +539,12 @@ show_help() {
     cat <<'EOF'
 
   +-----------------------------------------------------------+
-  |                    DNSCloak CLI v2.1.0                     |
+  |                    Vany CLI v2.1.0                     |
   +-----------------------------------------------------------+
 
   USAGE:
-    dnscloak                         Interactive TUI menu
-    dnscloak <command> [service] [options]
+    vany                         Interactive TUI menu
+    vany <command> [service] [options]
 
   COMMANDS:
     add <service> <username>     Add user to service
@@ -569,14 +569,14 @@ show_help() {
     conduit   Psiphon relay node (volunteer proxy)
 
   EXAMPLES:
-    dnscloak                          # Interactive menu
-    dnscloak add reality alice        # Add Alice to Reality
-    dnscloak manage wg                # Manage WireGuard
-    dnscloak links alice              # Show all links for Alice
-    dnscloak links alice wg           # Show WireGuard config
-    dnscloak list                     # List all users
-    dnscloak status                   # All services status
-    dnscloak install reality          # Install Reality protocol
+    vany                          # Interactive menu
+    vany add reality alice        # Add Alice to Reality
+    vany manage wg                # Manage WireGuard
+    vany links alice              # Show all links for Alice
+    vany links alice wg           # Show WireGuard config
+    vany list                     # List all users
+    vany status                   # All services status
+    vany install reality          # Install Reality protocol
 
 EOF
 }
@@ -593,7 +593,7 @@ interactive_menu() {
 
         load_banner "menu" 2>/dev/null || {
             echo ""
-            echo -e "  ${BOLD}${WHITE}DNSCloak v${VERSION}${RESET}"
+            echo -e "  ${BOLD}${WHITE}Vany v${VERSION}${RESET}"
         }
         echo ""
         echo -e "  ${BOLD}${WHITE}Protocol Manager${RESET}"
@@ -767,13 +767,13 @@ main() {
             interactive_menu
             ;;
         version|-v|--version)
-            echo "DNSCloak CLI v${VERSION}"
+            echo "Vany CLI v${VERSION}"
             ;;
         help|-h|--help)
             show_help
             ;;
         *)
-            error "Unknown command: $command. Use 'dnscloak help' for usage."
+            error "Unknown command: $command. Use 'vany help' for usage."
             ;;
     esac
 }

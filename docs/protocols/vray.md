@@ -77,7 +77,7 @@ Classic V2Ray setup with proper TLS certificates. Requires a domain.
 ## Installation
 
 ```bash
-curl dnscloak.net/vray | sudo bash
+curl vany.sh/vray | sudo bash
 ```
 
 During setup:
@@ -92,8 +92,8 @@ During setup:
 Installer uses acme.sh:
 ```bash
 # Certificates stored at
-/opt/dnscloak/certs/yourdomain.com/fullchain.pem
-/opt/dnscloak/certs/yourdomain.com/privkey.pem
+/opt/vany/certs/yourdomain.com/fullchain.pem
+/opt/vany/certs/yourdomain.com/privkey.pem
 
 # Auto-renewal via cron
 0 0 * * * /root/.acme.sh/acme.sh --cron
@@ -104,15 +104,15 @@ Installer uses acme.sh:
 If you have existing certificates:
 ```bash
 # Place at
-/opt/dnscloak/certs/yourdomain.com/fullchain.pem
-/opt/dnscloak/certs/yourdomain.com/privkey.pem
+/opt/vany/certs/yourdomain.com/fullchain.pem
+/opt/vany/certs/yourdomain.com/privkey.pem
 ```
 
 ## User Management
 
 Add user:
 ```bash
-dnscloak add vray alice
+vany add vray alice
 ```
 
 Generates:
@@ -151,7 +151,7 @@ Same as Reality - use Hiddify, v2rayNG, or Shadowrocket.
 
 Shares Xray instance with Reality.
 
-Location: `/opt/dnscloak/xray/config.json`
+Location: `/opt/vany/xray/config.json`
 
 ```json
 {
@@ -162,7 +162,7 @@ Location: `/opt/dnscloak/xray/config.json`
       "protocol": "vless",
       "settings": {
         "clients": [
-          {"id": "uuid-here", "email": "alice@dnscloak"}
+          {"id": "uuid-here", "email": "alice@vany"}
         ],
         "decryption": "none"
       },
@@ -172,8 +172,8 @@ Location: `/opt/dnscloak/xray/config.json`
         "tlsSettings": {
           "serverName": "proxy.yourdomain.com",
           "certificates": [{
-            "certificateFile": "/opt/dnscloak/certs/proxy.yourdomain.com/fullchain.pem",
-            "keyFile": "/opt/dnscloak/certs/proxy.yourdomain.com/privkey.pem"
+            "certificateFile": "/opt/vany/certs/proxy.yourdomain.com/fullchain.pem",
+            "keyFile": "/opt/vany/certs/proxy.yourdomain.com/privkey.pem"
           }]
         }
       }
@@ -203,7 +203,7 @@ Xray routes based on SNI automatically.
 | Certificate error | DNS not pointing to server | Check A record |
 | Let's Encrypt failed | Port 80 blocked | Open port 80 for verification |
 | TLS handshake failed | Wrong SNI in client | Match domain exactly |
-| Connection refused | Xray not running | Check `dnscloak status` |
+| Connection refused | Xray not running | Check `vany status` |
 
 ## Comparison
 

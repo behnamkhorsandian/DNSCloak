@@ -4,7 +4,7 @@
  * Implements the full SOS relay API using SQLite-backed Durable Object storage.
  * Rooms auto-expire after 1 hour, max 500 messages per room.
  *
- * API endpoints (all under dnscloak.net/sos):
+ * API endpoints (all under vany.sh/sos):
  *   GET  /            → web client (index.html, served from GitHub Raw)
  *   GET  /app.js      → web client JS (served from GitHub Raw)
  *   GET  /health      → relay health + room count

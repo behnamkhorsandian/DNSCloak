@@ -29,7 +29,7 @@ export default function Navbar({
         <div className="flex min-w-0 items-center gap-2">
           <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
           <div className="min-w-0">
-            <div className="text-sm font-semibold uppercase tracking-[0.22em]">{appName ?? 'DNSCloak'}</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em]">{appName ?? 'Vany'}</div>
             <div className="truncate text-[10px] text-muted-foreground">
               {pageLabel ? `${pageLabel} · ` : ''}
               {tagline ?? 'Uncensored and Decentralized'}

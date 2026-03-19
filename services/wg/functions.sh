@@ -1,13 +1,13 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - WireGuard VPN Functions
+# Vany - WireGuard VPN Functions
 # Sourced by start.sh or install.sh - do not run directly
 #===============================================================================
 
 SERVICE_NAME="wg"
 WG_PORT=51820
 WG_INTERFACE="wg0"
-WG_DIR="$DNSCLOAK_DIR/wg"
+WG_DIR="$VANY_DIR/wg"
 WG_CONFIG="$WG_DIR/wg0.conf"
 WG_PEERS_DIR="$WG_DIR/peers"
 WG_NETWORK="10.66.66.0/24"
@@ -89,7 +89,7 @@ create_wg_config() {
     chmod 700 "$WG_PEERS_DIR"
 
     cat > "$WG_CONFIG" <<EOF
-# DNSCloak WireGuard Configuration
+# Vany WireGuard Configuration
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 [Interface]
@@ -113,9 +113,9 @@ EOF
 get_wg_next_ip() {
     local last_octet=1
 
-    if [[ -f "$DNSCLOAK_USERS" ]]; then
+    if [[ -f "$VANY_USERS" ]]; then
         local ips
-        ips=$(jq -r '.users[].protocols.wg.ip // empty' "$DNSCLOAK_USERS" 2>/dev/null | sort -t. -k4 -n | tail -1)
+        ips=$(jq -r '.users[].protocols.wg.ip // empty' "$VANY_USERS" 2>/dev/null | sort -t. -k4 -n | tail -1)
         if [[ -n "$ips" ]]; then
             last_octet=$(echo "$ips" | cut -d. -f4)
         fi
@@ -151,7 +151,7 @@ regenerate_wg_config() {
     main_iface=$(get_wg_default_interface)
 
     cat > "$WG_CONFIG" <<EOF
-# DNSCloak WireGuard Configuration
+# Vany WireGuard Configuration
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 [Interface]
@@ -277,7 +277,7 @@ install_wg() {
     show_wg_links "$first_username"
 
     echo ""
-    print_info "Add more users: dnscloak add wg <username>"
+    print_info "Add more users: vany add wg <username>"
     echo ""
 
     if confirm "Open management menu?"; then

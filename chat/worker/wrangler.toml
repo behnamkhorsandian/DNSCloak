@@ -1,9 +1,9 @@
-name = "dnscloak-sos-chat"
+name = "vany-sos-chat"
 main = "src/index.ts"
 compatibility_date = "2026-02-02"
 
 routes = [
-  { pattern = "app.dnscloak.net", custom_domain = true }
+  { pattern = "app.vany.sh", custom_domain = true }
 ]
 
 [assets]

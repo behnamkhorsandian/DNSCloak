@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Conduit Installer
-# Usage: curl dnscloak.net/conduit | sudo bash
+# Vany - Conduit Installer
+# Usage: curl vany.sh/conduit | sudo bash
 #===============================================================================
 
 # Colors
@@ -145,7 +145,7 @@ BANDWIDTH=$BANDWIDTH
 EOF
     
     # Download monitoring script
-    curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/services/conduit/monitoring-script.sh" \
+    curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/services/conduit/monitoring-script.sh" \
         -o /usr/local/bin/conduit
     chmod +x /usr/local/bin/conduit
     
@@ -315,7 +315,7 @@ EOF
                 BANDWIDTH=${BANDWIDTH:--1}
                 run_conduit
                 # Also update CLI
-                curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/services/conduit/monitoring-script.sh" \
+                curl -sL "https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/services/conduit/monitoring-script.sh" \
                     -o /usr/local/bin/conduit
                 chmod +x /usr/local/bin/conduit
                 log_ok "Updated to latest version"

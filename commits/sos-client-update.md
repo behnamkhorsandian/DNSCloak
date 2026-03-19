@@ -24,18 +24,18 @@
 ## How to Run (Local)
 ### Relay
 ```bash
-cd /home/pouria/projects/DNSCloak
+cd /home/pouria/projects/Vany
 python3 src/sos/relay.py --host 0.0.0.0 --port 8899
 ```
 
 ### App
 ```bash
-cd /home/pouria/projects/DNSCloak/app
+cd /home/pouria/projects/Vany/app
 npm install
 npm run dev -- --port 5175
 ```
 
 ## Notes
-- Client defaults to relay: `http://relay.dnscloak.net:8899`
+- Client defaults to relay: `http://relay.vany.sh:8899`
 - For production, use HTTPS to avoid mixed-content issues.
 - Web client in `src/sos/www/` remains unchanged (optional to align with fixed-PIN only).

@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests/run-tests.sh - Main test runner for DNSCloak
+# tests/run-tests.sh - Main test runner for Vany
 #
 # Usage:
 #   ./tests/run-tests.sh              # Run all tests
@@ -329,7 +329,7 @@ main() {
         shift
     done
     
-    print_header "DNSCloak Test Suite"
+    print_header "Vany Test Suite"
     
     # Check dependencies
     if ! check_dependencies; then

@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DNSCloak - Multi-Protocol Censorship Bypass</title>
+  <title>Vany - Multi-Protocol Censorship Bypass</title>
   <meta name="description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect.">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://dnscloak.net/">
-  <meta property="og:title" content="DNSCloak - Multi-Protocol Censorship Bypass">
+  <meta property="og:url" content="https://vany.sh/">
+  <meta property="og:title" content="Vany - Multi-Protocol Censorship Bypass">
   <meta property="og:description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect. Help keep people connected.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/www/og-image.png">
-  <meta property="og:site_name" content="DNSCloak">
+  <meta property="og:image" content="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/www/og-image.png">
+  <meta property="og:site_name" content="Vany">
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://dnscloak.net/">
-  <meta name="twitter:title" content="DNSCloak - Multi-Protocol Censorship Bypass">
+  <meta name="twitter:url" content="https://vany.sh/">
+  <meta name="twitter:title" content="Vany - Multi-Protocol Censorship Bypass">
   <meta name="twitter:description" content="Open-source tools to bypass internet censorship. One command to install, multiple protocols to connect.">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/www/og-image.png">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/www/og-image.png">
   
   <link rel="icon" href="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/globe_2_question/default/48px.svg">
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">  
@@ -1631,7 +1631,7 @@
         <!-- Static Logo removed in favor of morph -->
         
         <div class="header-info">
-          v2.1.0 | <a href="https://github.com/behnamkhorsandian/DNSCloak">github</a> | <a href="#docs" onclick="showDocs(); return false;">docs</a>
+          v2.1.0 | <a href="https://github.com/behnamkhorsandian/Vanyshsh">github</a> | <a href="#docs" onclick="showDocs(); return false;">docs</a>
         </div>
       </div>
     </header>
@@ -1680,8 +1680,8 @@
             </div>
             <div class="tui-body">
               <div class="install-cmd">
-                <code><span class="prompt">$ </span>curl dnscloak.net | sudo bash</code>
-                <button class="copy-btn" onclick="copyCommand('curl dnscloak.net | sudo bash')">[ COPY ]</button>
+                <code><span class="prompt">$ </span>curl vany.sh | sudo bash</code>
+                <button class="copy-btn" onclick="copyCommand('curl vany.sh | sudo bash')">[ COPY ]</button>
               </div>
               <p class="install-note">Launches an interactive menu to install and manage all protocols.</p>
             </div>
@@ -1694,11 +1694,11 @@
           <!-- <h2 class="section-title">CLI Preview</h2> -->
           <div class="tui-window">
             <div class="tui-window-header">
-              <span>dnscloak — ssh <span id="live-indicator" style="color: #666; font-size: 0.85em;">(connecting...)</span></span>
+              <span>vany — ssh <span id="live-indicator" style="color: #666; font-size: 0.85em;">(connecting...)</span></span>
               <div class="tui-controls"><span>[</span><span>-</span><span>]</span> <span>[</span><span>□</span><span>]</span> <span>[</span><span>x</span><span>]</span></div>
             </div>
             <div class="terminal-body">
-              <div class="terminal-line"><span class="prompt">root@vps:~# </span><span class="cmd">curl dnscloak.net | sudo bash</span></div>
+              <div class="terminal-line"><span class="prompt">root@vps:~# </span><span class="cmd">curl vany.sh | sudo bash</span></div>
               <div class="terminal-output">
                 <span class="info">[*]</span> Detecting cloud provider... GCP<br>
                 <span class="success">[+]</span> Loading interactive TUI...<br>
@@ -1732,7 +1732,7 @@
                   <kbd>Up/Down</kbd> navigate &nbsp;<kbd>Enter</kbd> select &nbsp;<kbd>s</kbd> status &nbsp;<kbd>u</kbd> users &nbsp;<kbd>q</kbd> quit
                 </div>
               </div>
-              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">dnscloak status</span></div>
+              <div class="terminal-line" style="margin-top: 15px;"><span class="prompt">root@vps:~# </span><span class="cmd">vany status</span></div>
               <div class="terminal-output">
                 <span class="success">●</span> Xray (Reality/WS): <span style="color:var(--accent-green);">running</span> (<span id="live-uptime">63h 29m</span> uptime)<br>
                 <span class="success">●</span> Conduit: <span style="color:var(--accent-green);">running</span> | Connected: <span id="live-connected">312</span> | Up: <span id="live-up">145.1 GB</span> | Down: <span id="live-down">1.5 TB</span><br>
@@ -1749,8 +1749,8 @@
         (function() {
           'use strict';
           
-          const STATS_WS_URL = 'wss://stats.dnscloak.net/';
-          const STATS_CACHE_KEY = 'dnscloak_live_stats';
+          const STATS_WS_URL = 'wss://stats.vany.sh/';
+          const STATS_CACHE_KEY = 'vany_live_stats';
           const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000]; // Exponential backoff
           
           let ws = null;
@@ -1931,7 +1931,7 @@
                 <span class="tag">last-resort</span>
                 <span class="tag">slow</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/dnstt | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/dnstt | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/dnstt | sudo bash')"><span class="prompt">$ </span>curl vany.sh/dnstt | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
             <div class="protocol-item theme-purple">
@@ -1946,7 +1946,7 @@
                 <span class="tag">psiphon</span>
                 <span class="tag">no-domain</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/conduit | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/conduit | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/conduit | sudo bash')"><span class="prompt">$ </span>curl vany.sh/conduit | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
 
@@ -1963,7 +1963,7 @@
                 <span class="tag">fast</span>
                 <span class="tag">undetectable</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/reality | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/reality | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/reality | sudo bash')"><span class="prompt">$ </span>curl vany.sh/reality | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -1978,7 +1978,7 @@
                 <span class="tag">cdn</span>
                 <span class="tag">cloudflare</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/ws | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/ws | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/ws | sudo bash')"><span class="prompt">$ </span>curl vany.sh/ws | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -1993,7 +1993,7 @@
                 <span class="tag">native-apps</span>
                 <span class="tag">fast</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/wg | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/wg | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/wg | sudo bash')"><span class="prompt">$ </span>curl vany.sh/wg | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             <div class="protocol-item">
@@ -2008,7 +2008,7 @@
                 <span class="tag">fake-tls</span>
                 <span class="tag">easy</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/mtp | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/mtp | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/mtp | sudo bash')"><span class="prompt">$ </span>curl vany.sh/mtp | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
             
             
@@ -2024,7 +2024,7 @@
                 <span class="tag">lets-encrypt</span>
                 <span class="tag">compatible</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/vray | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/vray | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/vray | sudo bash')"><span class="prompt">$ </span>curl vany.sh/vray | sudo bash<span class="copied-toast">copied!</span></div>
             </div>
 
             <div class="protocol-item theme-sos-subtle">
@@ -2039,30 +2039,30 @@
                 <span class="tag">e2e-encrypted</span>
                 <span class="tag">no-internet</span>
               </div>
-              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl dnscloak.net/sos | sudo bash')"><span class="prompt">$ </span>curl dnscloak.net/sos | sudo bash<span class="copied-toast">copied!</span></div>
+              <div class="protocol-cmd" onclick="copyProtocolCmd(this, 'curl vany.sh/sos | sudo bash')"><span class="prompt">$ </span>curl vany.sh/sos | sudo bash<span class="copied-toast">copied!</span></div>
               <div class="sos-download-dropdown" id="sos-dropdown">
                 <button class="sos-dropdown-btn" onclick="toggleSosDropdown()">
                   <span>Download standalone client</span>
                   <span class="material-symbols-outlined">expand_more</span>
                 </button>
                 <div class="sos-dropdown-menu">
-                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-amd64">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/Vanyshsh/releases/latest/download/sos-linux-amd64">
                     <span class="material-symbols-outlined">desktop_windows</span>
                     <span>Linux (x86_64)<span class="dl-info"> - amd64</span></span>
                   </a>
-                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-linux-arm64">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/Vanyshsh/releases/latest/download/sos-linux-arm64">
                     <span class="material-symbols-outlined">memory</span>
                     <span>Linux (ARM64)<span class="dl-info"> - Raspberry Pi</span></span>
                   </a>
-                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-arm64" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/Vanyshsh/releases/latest/download/sos-darwin-arm64" onclick="showMacosPopup(event, 'sos-darwin-arm64')">
                     <span class="material-symbols-outlined">laptop_mac</span>
                     <span>macOS (Apple Silicon)<span class="dl-info"> - M1/M2/M3/M4</span></span>
                   </a>
-                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-darwin-amd64" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/Vanyshsh/releases/latest/download/sos-darwin-amd64" onclick="showMacosPopup(event, 'sos-darwin-amd64')">
                     <span class="material-symbols-outlined">laptop_mac</span>
                     <span>macOS (Intel)<span class="dl-info"> - x86_64</span></span>
                   </a>
-                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/DNSCloak/releases/latest/download/sos-windows-amd64.exe">
+                  <a class="sos-dropdown-item" href="https://github.com/behnamkhorsandian/Vanyshsh/releases/latest/download/sos-windows-amd64.exe">
                     <span class="material-symbols-outlined">window</span>
                     <span>Windows<span class="dl-info"> - x86_64</span></span>
                   </a>
@@ -2110,7 +2110,7 @@
               <div class="feature-item">
                 <div class="feature-icon"><span class="material-symbols-outlined">code</span></div>
                 <div class="feature-title">Unified CLI</div>
-                <div class="feature-desc">Manage all protocols with single `dnscloak` command. Add, remove, list users easily.</div>
+                <div class="feature-desc">Manage all protocols with single `vany` command. Add, remove, list users easily.</div>
               </div>
               <div class="feature-item">
                 <div class="feature-icon"><span class="material-symbols-outlined">lock_open</span></div>
@@ -2142,7 +2142,7 @@
               <div class="feature-item">
                 <div class="feature-icon"><span class="material-symbols-outlined">code</span></div>
                 <div class="feature-title">Unified CLI</div>
-                <div class="feature-desc">Manage all protocols with single `dnscloak` command. Add, remove, list users easily.</div>
+                <div class="feature-desc">Manage all protocols with single `vany` command. Add, remove, list users easily.</div>
               </div>
               <div class="feature-item">
                 <div class="feature-icon"><span class="material-symbols-outlined">lock_open</span></div>
@@ -2158,9 +2158,9 @@
     <footer>
       <div class="container">
         <div class="footer-links">
-          <a href="https://github.com/behnamkhorsandian/DNSCloak">[github]</a>
+          <a href="https://github.com/behnamkhorsandian/Vanyshsh">[github]</a>
           <a href="#docs" onclick="showDocs(); return false;">[docs]</a>
-          <a href="https://github.com/behnamkhorsandian/DNSCloak/issues">[issues]</a>
+          <a href="https://github.com/behnamkhorsandian/Vanyshsh/issues">[issues]</a>
         </div>
         <p>Made by behnvm  ░▒▓█▀</p>
       </div>
@@ -2174,7 +2174,7 @@
         <div class="sidebar-header">
           <a class="sidebar-logo" onclick="showHome()">
             <span class="material-symbols-outlined">globe_2_question</span>
-            DNSCloak
+            Vany
           </a>
           <div class="sidebar-version">v2.1.0 Documentation</div>
         </div>
@@ -2207,8 +2207,8 @@
           <div class="nav-section">
             <div class="nav-section-title"><span class="material-symbols-outlined">link</span> Links</div>
             <ul class="nav-list">
-              <li class="nav-item"><a class="nav-link" href="https://github.com/behnamkhorsandian/DNSCloak" target="_blank"><span class="material-symbols-outlined">code</span> GitHub Repository</a></li>
-              <li class="nav-item"><a class="nav-link" href="https://github.com/behnamkhorsandian/DNSCloak/issues" target="_blank"><span class="material-symbols-outlined">bug_report</span> Report Issue</a></li>
+              <li class="nav-item"><a class="nav-link" href="https://github.com/behnamkhorsandian/Vanyshsh" target="_blank"><span class="material-symbols-outlined">code</span> GitHub Repository</a></li>
+              <li class="nav-item"><a class="nav-link" href="https://github.com/behnamkhorsandian/Vanyshsh/issues" target="_blank"><span class="material-symbols-outlined">bug_report</span> Report Issue</a></li>
               <li class="nav-item"><a class="nav-link" onclick="showHome()"><span class="material-symbols-outlined">home</span> Back to Home</a></li>
             </ul>
           </div>
@@ -2217,7 +2217,7 @@
       
       <main class="docs-main">
         <div class="breadcrumb">
-          <a onclick="showHome()">DNSCloak</a> / <a onclick="showDocs()">Docs</a> / <span id="breadcrumb-current">Loading...</span>
+          <a onclick="showHome()">Vany</a> / <a onclick="showDocs()">Docs</a> / <span id="breadcrumb-current">Loading...</span>
         </div>
         <article class="markdown-content" id="content">
           <div class="loading"><div class="loading-spinner"></div>Loading documentation...</div>
@@ -2230,7 +2230,7 @@
   </div>
   
   <script>
-    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main/docs/';
+    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main/docs/';
     const DEFAULT_DOC = 'self-hosting';
     let currentDoc = DEFAULT_DOC;
     
@@ -2251,7 +2251,7 @@
       document.getElementById('home-page').classList.remove('hidden');
       document.getElementById('docs-page').classList.remove('active');
       history.pushState({page: 'home'}, '', window.location.pathname);
-      document.title = 'DNSCloak - Multi-Protocol Censorship Bypass Platform';
+      document.title = 'Vany - Multi-Protocol Censorship Bypass Platform';
     }
     
     function showDocs(doc) {
@@ -2272,7 +2272,7 @@
       const name = parts[parts.length - 1];
       const formatted = name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       document.getElementById('breadcrumb-current').textContent = formatted;
-      document.title = `${formatted} - DNSCloak Docs`;
+      document.title = `${formatted} - Vany Docs`;
     }
     
     async function loadDoc(docPath) {
@@ -2813,14 +2813,14 @@
           <div class="socks-step-content">
             Run this command on your machine to start the DNS tunnel client:
             <div class="socks-cmd-box">
-              <code>curl dnscloak.net/dnstt/setup/$(uname -s | tr A-Z a-z) | bash</code>
-              <button class="socks-copy-btn" onclick="copySocksCmd('curl dnscloak.net/dnstt/setup/$(uname -s | tr A-Z a-z) | bash')">COPY</button>
+              <code>curl vany.sh/dnstt/setup/$(uname -s | tr A-Z a-z) | bash</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('curl vany.sh/dnstt/setup/$(uname -s | tr A-Z a-z) | bash')">COPY</button>
             </div>
             <p style="margin-top: 10px; color: var(--text-dim); font-size: 12px;">
               Or download directly: 
-              <a href="https://dnscloak.net/dnstt/setup/linux" style="color: var(--accent-blue);">Linux</a> | 
-              <a href="https://dnscloak.net/dnstt/setup/macos" style="color: var(--accent-blue);">macOS</a> | 
-              <a href="https://dnscloak.net/dnstt/setup/windows" style="color: var(--accent-blue);">Windows</a>
+              <a href="https://vany.sh/dnstt/setup/linux" style="color: var(--accent-blue);">Linux</a> | 
+              <a href="https://vany.sh/dnstt/setup/macos" style="color: var(--accent-blue);">macOS</a> | 
+              <a href="https://vany.sh/dnstt/setup/windows" style="color: var(--accent-blue);">Windows</a>
             </p>
           </div>
         </div>
@@ -2866,8 +2866,8 @@
           <div class="socks-step-content">
             With proxy configured, navigate to the relay server:
             <div class="socks-cmd-box">
-              <code>http://relay.dnscloak.net:8899/</code>
-              <button class="socks-copy-btn" onclick="copySocksCmd('http://relay.dnscloak.net:8899/')">COPY</button>
+              <code>http://relay.vany.sh:8899/</code>
+              <button class="socks-copy-btn" onclick="copySocksCmd('http://relay.vany.sh:8899/')">COPY</button>
             </div>
             <p style="margin-top: 10px; color: var(--text-dim); font-size: 12px;">
               The web UI will load entirely through the DNS tunnel. Create a room, share the 6-emoji ID + PIN verbally.
@@ -2896,7 +2896,7 @@
     }
     
     function openSosWebChat() {
-      window.open('http://relay.dnscloak.net:8899/', '_blank');
+      window.open('http://relay.vany.sh:8899/', '_blank');
       closeSocksPopup();
     }
     
@@ -2931,7 +2931,7 @@
   </script>
   
   <!-- Fixed SOS CTA Button -->
-  <button class="sos-cta-fixed" onclick="window.open('http://relay.dnscloak.net:8899/', '_blank')">
+  <button class="sos-cta-fixed" onclick="window.open('http://relay.vany.sh:8899/', '_blank')">
     <span class="material-symbols-outlined">sos</span>
     <span class="tooltip">SOS Emergency Chat<br>Right-click → Incognito</span>
   </button>
@@ -2988,7 +2988,7 @@
     
     async function fetchHealth() {
       try {
-        const res = await fetch('https://stats.dnscloak.net/health');
+        const res = await fetch('https://stats.vany.sh/health');
         if (!res.ok) throw new Error('Health endpoint unavailable');
         return await res.json();
       } catch (e) {

@@ -1,10 +1,10 @@
-# Self-Hosting DNSCloak
+# Self-Hosting Vany
 
-Complete guide to hosting your own DNSCloak platform with custom domain.
+Complete guide to hosting your own Vany platform with custom domain.
 
 ## Overview
 
-DNSCloak uses Cloudflare Workers to serve installation scripts from GitHub. When a user runs `curl dnscloak.net/reality | sudo bash`, the request goes to your Cloudflare Worker, which fetches the script from your GitHub repo.
+Vany uses Cloudflare Workers to serve installation scripts from GitHub. When a user runs `curl vany.sh/reality | sudo bash`, the request goes to your Cloudflare Worker, which fetches the script from your GitHub repo.
 
 ```text
 User's VM                 Cloudflare Worker              GitHub
@@ -20,19 +20,19 @@ User's VM                 Cloudflare Worker              GitHub
 
 ## Prerequisites
 
-- Domain name (e.g., dnscloak.net)
+- Domain name (e.g., vany.sh)
 - Cloudflare account (free tier works)
 - GitHub account
 - Node.js 18+ (for Wrangler CLI)
 
 ## Step 1: Fork the Repository
 
-1. Go to https://github.com/behnamkhorsandian/DNSCloak
+1. Go to https://github.com/behnamkhorsandian/Vanyshsh
 2. Click "Fork"
 3. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/DNSCloak.git
-   cd DNSCloak
+   git clone https://github.com/YOUR_USERNAME/Vany.git
+   cd Vany
    ```
 
 ## Step 2: Add Domain to Cloudflare
@@ -62,7 +62,7 @@ cd reality
 
 Create `wrangler.toml`:
 ```toml
-name = "dnscloak-reality"
+name = "vany-reality"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
@@ -73,7 +73,7 @@ routes = [
 
 Create `src/index.ts`:
 ```typescript
-const GITHUB_RAW = 'https://raw.githubusercontent.com/YOUR_USERNAME/DNSCloak/main';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/YOUR_USERNAME/Vany/main';
 
 export default {
   async fetch(request: Request): Promise<Response> {
@@ -103,7 +103,7 @@ export default {
 
 const INFO_HTML = `<!DOCTYPE html>
 <html>
-<head><title>DNSCloak - Reality</title></head>
+<head><title>Vany - Reality</title></head>
 <body>
 <h1>Reality Proxy</h1>
 <pre>curl reality.yourdomain.com | sudo bash</pre>
@@ -122,12 +122,12 @@ Create workers for each service:
 
 | Service | Worker Name | Script Path |
 |---------|-------------|-------------|
-| reality | dnscloak-reality | services/reality/install.sh |
-| wg | dnscloak-wg | services/wg/install.sh |
-| mtp | dnscloak-mtp | services/mtp/install.sh |
-| vray | dnscloak-vray | services/vray/install.sh |
-| ws | dnscloak-ws | services/ws/install.sh |
-| dnstt | dnscloak-dnstt | services/dnstt/install.sh |
+| reality | vany-reality | services/reality/install.sh |
+| wg | vany-wg | services/wg/install.sh |
+| mtp | vany-mtp | services/mtp/install.sh |
+| vray | vany-vray | services/vray/install.sh |
+| ws | vany-ws | services/ws/install.sh |
+| dnstt | vany-dnstt | services/dnstt/install.sh |
 
 ## Step 5: Configure Custom Domains
 
@@ -140,9 +140,9 @@ After deploying each worker:
 
 Verify DNS records exist:
 ```text
-CNAME  reality  ->  dnscloak-reality.your-subdomain.workers.dev
-CNAME  wg       ->  dnscloak-wg.your-subdomain.workers.dev
-CNAME  mtp      ->  dnscloak-mtp.your-subdomain.workers.dev
+CNAME  reality  ->  vany-reality.your-subdomain.workers.dev
+CNAME  wg       ->  vany-wg.your-subdomain.workers.dev
+CNAME  mtp      ->  vany-mtp.your-subdomain.workers.dev
 ...
 ```
 
@@ -225,7 +225,7 @@ export default {
 
 Then use wildcard DNS:
 ```text
-CNAME  *  ->  dnscloak-main.workers.dev
+CNAME  *  ->  vany-main.workers.dev
 ```
 
 ## Security Considerations

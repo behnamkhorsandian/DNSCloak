@@ -1,9 +1,9 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - VLESS + REALITY Service Installer
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - VLESS + REALITY Service Installer
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
-# Usage: curl dnscloak.net/reality | sudo bash
+# Usage: curl vany.sh/reality | sudo bash
 #===============================================================================
 
 set -e
@@ -14,9 +14,9 @@ if [[ -f "${BASH_SOURCE[0]}" ]]; then
     LIB_DIR="$(dirname "$SCRIPT_DIR")/../lib"
 else
     # Piped execution - download libs
-    LIB_DIR="/tmp/dnscloak-lib"
+    LIB_DIR="/tmp/vany-lib"
     mkdir -p "$LIB_DIR"
-    GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+    GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
     curl -sL "$GITHUB_RAW/lib/common.sh" -o "$LIB_DIR/common.sh"
     curl -sL "$GITHUB_RAW/lib/cloud.sh" -o "$LIB_DIR/cloud.sh"
     curl -sL "$GITHUB_RAW/lib/bootstrap.sh" -o "$LIB_DIR/bootstrap.sh"
@@ -218,8 +218,8 @@ install_reality() {
     show_user_links "$first_username"
     
     echo ""
-    print_info "Add more users: dnscloak add reality <username>"
-    print_info "View links: dnscloak links <username>"
+    print_info "Add more users: vany add reality <username>"
+    print_info "View links: vany links <username>"
 }
 
 #-------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ add_reality_user() {
     uuid=$(random_uuid)
     
     # Add to Xray config
-    xray_add_client "reality-in" "$uuid" "${username}@dnscloak" "xtls-rprx-vision"
+    xray_add_client "reality-in" "$uuid" "${username}@vany" "xtls-rprx-vision"
     
     # Save to users.json
     user_add "$username" "reality" "{\"uuid\": \"$uuid\", \"flow\": \"xtls-rprx-vision\"}"
@@ -271,7 +271,7 @@ remove_reality_user() {
     fi
     
     # Remove from Xray config
-    xray_remove_client "reality-in" "${username}@dnscloak"
+    xray_remove_client "reality-in" "${username}@vany"
     
     # Remove from users.json
     user_remove "$username" "reality"

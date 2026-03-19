@@ -1,11 +1,11 @@
 /**
- * DNSCloak - Multi-Service Cloudflare Worker
+ * Vany - Multi-Service Cloudflare Worker
  * 
  * Copy this entire code into Cloudflare Workers dashboard
- * Routes based on subdomain: dnscloak.net/reality, dnscloak.net/wg, etc.
+ * Routes based on subdomain: vany.sh/reality, vany.sh/wg, etc.
  */
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main';
 
 const SERVICES = {
   mtp: {
@@ -95,7 +95,7 @@ export default {
     const url = new URL(request.url);
     const hostname = url.hostname;
     
-    // Extract service from subdomain (e.g., "reality" from "reality.dnscloak.net")
+    // Extract service from subdomain (e.g., "reality" from "reality.vany.sh")
     let service = hostname.split('.')[0];
     
     // Check for aliases
@@ -151,7 +151,7 @@ export default {
       return Response.json({
         service: service,
         name: config.name,
-        repo: 'https://github.com/behnamkhorsandian/DNSCloak',
+        repo: 'https://github.com/behnamkhorsandian/Vanyshsh',
       }, { headers: corsHeaders });
     }
 
@@ -181,7 +181,7 @@ function getLandingPage() {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>DNSCloak - Beacon is Lit!</title>
+  <title>Vany - Beacon is Lit!</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -246,16 +246,16 @@ function getLandingPage() {
     <p class="tagline">Multi-protocol censorship bypass platform</p>
     
     <div class="services">
-      <a href="https://dnscloak.net/reality/info">Reality</a>
-      <a href="https://dnscloak.net/wg/info">WireGuard</a>
-      <a href="https://dnscloak.net/mtp/info">MTProto</a>
-      <a href="https://dnscloak.net/vray/info">V2Ray</a>
-      <a href="https://dnscloak.net/ws/info">WS+CDN</a>
-      <a href="https://dnscloak.net/dnstt/info">DNStt</a>
+      <a href="https://vany.sh/reality/info">Reality</a>
+      <a href="https://vany.sh/wg/info">WireGuard</a>
+      <a href="https://vany.sh/mtp/info">MTProto</a>
+      <a href="https://vany.sh/vray/info">V2Ray</a>
+      <a href="https://vany.sh/ws/info">WS+CDN</a>
+      <a href="https://vany.sh/dnstt/info">DNStt</a>
     </div>
     
     <p class="footer">
-      <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a>
+      <a href="https://github.com/behnamkhorsandian/Vanyshsh">GitHub</a>
     </p>
   </div>
 </body>
@@ -275,7 +275,7 @@ function getInfoPage(service, config) {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>DNSCloak - ${config.name}</title>
+  <title>Vany - ${config.name}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -379,21 +379,21 @@ function getInfoPage(service, config) {
 </head>
 <body>
   <div class="container">
-    <h1>DNSCloak - ${config.name}</h1>
+    <h1>Vany - ${config.name}</h1>
     <p class="description">${config.description}</p>
     
     <div class="services">
-      <a href="https://dnscloak.net/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
-      <a href="https://dnscloak.net/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
-      <a href="https://dnscloak.net/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
-      <a href="https://dnscloak.net/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
-      <a href="https://dnscloak.net/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
-      <a href="https://dnscloak.net/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
+      <a href="https://vany.sh/reality/info" ${service === 'reality' ? 'class="active"' : ''}>Reality</a>
+      <a href="https://vany.sh/wg/info" ${service === 'wg' ? 'class="active"' : ''}>WireGuard</a>
+      <a href="https://vany.sh/mtp/info" ${service === 'mtp' ? 'class="active"' : ''}>MTProto</a>
+      <a href="https://vany.sh/vray/info" ${service === 'vray' ? 'class="active"' : ''}>V2Ray</a>
+      <a href="https://vany.sh/ws/info" ${service === 'ws' ? 'class="active"' : ''}>WS+CDN</a>
+      <a href="https://vany.sh/dnstt/info" ${service === 'dnstt' ? 'class="active"' : ''}>DNStt</a>
     </div>
     
     <div class="install-box">
       <h2>Install on your VPS</h2>
-      <code>curl dnscloak.net/${service} | sudo bash</code>
+      <code>curl vany.sh/${service} | sudo bash</code>
     </div>
     
     <div class="apps">
@@ -405,8 +405,8 @@ function getInfoPage(service, config) {
     
     <div class="footer">
       <p>
-        <a href="https://github.com/behnamkhorsandian/DNSCloak">GitHub</a> |
-        <a href="https://github.com/behnamkhorsandian/DNSCloak/blob/main/docs/protocols/${service}.md">Documentation</a>
+        <a href="https://github.com/behnamkhorsandian/Vanyshsh">GitHub</a> |
+        <a href="https://github.com/behnamkhorsandian/Vanyshsh/blob/main/docs/protocols/${service}.md">Documentation</a>
       </p>
     </div>
   </div>

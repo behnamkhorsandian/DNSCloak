@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Status Dashboard Page
+# Vany TUI - Status Dashboard Page
 # Uses table renderer for structured data display
 #===============================================================================
 
@@ -50,11 +50,11 @@ page_status() {
         local server_provider="unknown"
         local user_count=0
 
-        if [[ -f "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" ]] && type jq &>/dev/null; then
-            server_ip=$(jq -r '.server.ip // "unknown"' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
-            server_domain=$(jq -r '.server.domain // ""' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
-            server_provider=$(jq -r '.server.provider // "unknown"' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
-            user_count=$(jq -r '.users // {} | keys | length' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+        if [[ -f "${VANY_USERS:-/opt/vany/users.json}" ]] && type jq &>/dev/null; then
+            server_ip=$(jq -r '.server.ip // "unknown"' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
+            server_domain=$(jq -r '.server.domain // ""' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
+            server_provider=$(jq -r '.server.provider // "unknown"' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
+            user_count=$(jq -r '.users // {} | keys | length' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
         fi
 
         local uptime_str=""

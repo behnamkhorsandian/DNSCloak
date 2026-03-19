@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Theme & Drawing Constants
+# Vany TUI - Theme & Drawing Constants
 # 256-color palette matching the 432.sh design language
 #===============================================================================
 
@@ -138,5 +138,5 @@ declare -A PROTOCOL_CLIENTS=(
     [dnstt]="Requires dnstt-client binary.\nSee docs for setup."
     [conduit]="No client needed.\nUsers connect via Psiphon apps."
     [vray]="iOS: Hiddify  Android: Hiddify\nWindows: Hiddify  macOS: Hiddify"
-    [sos]="Terminal: pip install dnscloak-sos\nBrowser: navigate to relay URL"
+    [sos]="Terminal: pip install vany-sos\nBrowser: navigate to relay URL"
 )

@@ -1,5 +1,5 @@
 {
-  "name": "dnscloak-sos-worker",
+  "name": "vany-sos-worker",
   "private": true,
   "version": "1.0.0",
   "scripts": {

@@ -1,6 +1,6 @@
 # DNS Configuration Guide
 
-Some DNSCloak services require domain configuration. This guide covers setup for each service type.
+Some Vany services require domain configuration. This guide covers setup for each service type.
 
 ## Services by DNS Requirement
 
@@ -54,7 +54,7 @@ Result: Traffic goes through Cloudflare CDN, hiding your server IP.
 
 ### API Token for Automation
 
-DNSCloak can auto-configure Cloudflare if you provide an API token:
+Vany can auto-configure Cloudflare if you provide an API token:
 
 1. Go to My Profile > API Tokens
 2. Create Token > Edit zone DNS template

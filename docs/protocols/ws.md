@@ -73,7 +73,7 @@ Route traffic through Cloudflare CDN. Hides server IP completely.
 ## Installation
 
 ```bash
-curl dnscloak.net/ws | sudo bash
+curl vany.sh/ws | sudo bash
 ```
 
 During setup:
@@ -116,7 +116,7 @@ Settings:
 
 Add user:
 ```bash
-dnscloak add ws alice
+vany add ws alice
 ```
 
 Generates:
@@ -151,7 +151,7 @@ Same as other VLESS services - use Hiddify, v2rayNG, or Shadowrocket.
 
 ## Server Configuration
 
-Location: `/opt/dnscloak/xray/config.json`
+Location: `/opt/vany/xray/config.json`
 
 ```json
 {
@@ -161,7 +161,7 @@ Location: `/opt/dnscloak/xray/config.json`
     "protocol": "vless",
     "settings": {
       "clients": [
-        {"id": "uuid-here", "email": "alice@dnscloak"}
+        {"id": "uuid-here", "email": "alice@vany"}
       ],
       "decryption": "none"
     },
@@ -175,8 +175,8 @@ Location: `/opt/dnscloak/xray/config.json`
       "tlsSettings": {
         "serverName": "ws.yourdomain.com",
         "certificates": [{
-          "certificateFile": "/opt/dnscloak/certs/ws.yourdomain.com/fullchain.pem",
-          "keyFile": "/opt/dnscloak/certs/ws.yourdomain.com/privkey.pem"
+          "certificateFile": "/opt/vany/certs/ws.yourdomain.com/fullchain.pem",
+          "keyFile": "/opt/vany/certs/ws.yourdomain.com/privkey.pem"
         }]
       }
     }

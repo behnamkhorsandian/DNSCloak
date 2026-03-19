@@ -1,11 +1,11 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Unified VPN Protocol Setup
-# https://github.com/behnamkhorsandian/DNSCloak
+# Vany - Unified VPN Protocol Setup
+# https://github.com/behnamkhorsandian/Vanyshsh
 #
 # Usage:
-#   curl dnscloak.net | sudo bash              # Interactive menu
-#   curl dnscloak.net/reality | sudo bash      # Jump to specific protocol
+#   curl vany.sh | sudo bash              # Interactive menu
+#   curl vany.sh/reality | sudo bash      # Jump to specific protocol
 #
 # All-in-one: install, manage, and remove VPN protocols on your VM.
 #===============================================================================
@@ -16,7 +16,7 @@
 # Argument Parsing
 #-------------------------------------------------------------------------------
 
-REQUESTED_PROTOCOL="${DNSCLOAK_PROTOCOL:-}"
+REQUESTED_PROTOCOL="${VANY_PROTOCOL:-}"
 DO_UPDATE=0
 
 for arg in "$@"; do
@@ -34,9 +34,9 @@ done
 # Download Libraries & TUI
 #-------------------------------------------------------------------------------
 
-LIB_DIR="/tmp/dnscloak-lib"
-TUI_DL_DIR="/tmp/dnscloak-tui"
-GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main"
+LIB_DIR="/tmp/vany-lib"
+TUI_DL_DIR="/tmp/vany-tui"
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main"
 
 download_libs() {
     mkdir -p "$LIB_DIR"
@@ -118,10 +118,10 @@ download_service_functions() {
 #-------------------------------------------------------------------------------
 
 do_update() {
-    echo "  Updating DNSCloak..."
+    echo "  Updating Vany..."
 
-    # Re-download libs to /opt/dnscloak/lib/
-    local permanent_lib="/opt/dnscloak/lib"
+    # Re-download libs to /opt/vany/lib/
+    local permanent_lib="/opt/vany/lib"
     mkdir -p "$permanent_lib"
 
     for lib in common.sh cloud.sh bootstrap.sh xray.sh selector.sh; do
@@ -132,16 +132,16 @@ do_update() {
 
     # Update CLI
     echo "  Updating CLI"
-    curl -sfL "$GITHUB_RAW/cli/dnscloak.sh" -o /usr/local/bin/dnscloak 2>/dev/null && \
-        chmod +x /usr/local/bin/dnscloak || echo "  Warning: Failed to update CLI"
+    curl -sfL "$GITHUB_RAW/cli/vany.sh" -o /usr/local/bin/vany 2>/dev/null && \
+        chmod +x /usr/local/bin/vany || echo "  Warning: Failed to update CLI"
 
     # Update banners
-    mkdir -p "/opt/dnscloak/banners"
+    mkdir -p "/opt/vany/banners"
     for banner in logo menu setup reality ws wireguard dnstt mtp conduit sos lionsun; do
-        curl -sfL "$GITHUB_RAW/banners/${banner}.txt" -o "/opt/dnscloak/banners/${banner}.txt" 2>/dev/null || true
+        curl -sfL "$GITHUB_RAW/banners/${banner}.txt" -o "/opt/vany/banners/${banner}.txt" 2>/dev/null || true
     done
 
-    echo "  DNSCloak updated to latest version"
+    echo "  Vany updated to latest version"
     echo ""
 }
 
@@ -153,7 +153,7 @@ main() {
     # Check root
     if [[ $EUID -ne 0 ]]; then
         echo "ERROR: This script must be run as root or with sudo"
-        echo "Usage: curl dnscloak.net | sudo bash"
+        echo "Usage: curl vany.sh | sudo bash"
         exit 1
     fi
 
@@ -170,7 +170,7 @@ main() {
     fi
 
     # Download TUI
-    echo "  Loading DNSCloak..."
+    echo "  Loading Vany..."
 
     if download_tui; then
         # Set TUI_DIR so modules find each other
@@ -188,7 +188,7 @@ main() {
         fi
 
         # Hand off to TUI main
-        dnscloak_tui_main "${tui_args[@]}"
+        vany_tui_main "${tui_args[@]}"
     else
         echo "ERROR: Failed to download TUI. Check your internet connection."
         exit 1

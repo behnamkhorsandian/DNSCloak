@@ -7,12 +7,12 @@
 
 setup() {
     export TEST_DIR=$(mktemp -d)
-    export DNSCLOAK_DIR="$TEST_DIR/dnscloak"
-    export DNSCLOAK_USERS="$DNSCLOAK_DIR/users.json"
+    export VANY_DIR="$TEST_DIR/vany"
+    export VANY_USERS="$VANY_DIR/users.json"
     
-    mkdir -p "$DNSCLOAK_DIR"
-    mkdir -p "$DNSCLOAK_DIR/wg/peers"
-    mkdir -p "$DNSCLOAK_DIR/xray"
+    mkdir -p "$VANY_DIR"
+    mkdir -p "$VANY_DIR/wg/peers"
+    mkdir -p "$VANY_DIR/xray"
     
     source "$BATS_TEST_DIRNAME/../../lib/common.sh"
     
@@ -46,7 +46,7 @@ get_permissions() {
     user_set "wguser" "wg" "$bad_data"
     
     # Check if private_key exists in the stored data
-    run jq -r '.users.wguser.protocols.wg.private_key // "not_found"' "$DNSCLOAK_USERS"
+    run jq -r '.users.wguser.protocols.wg.private_key // "not_found"' "$VANY_USERS"
     
     # This test documents the CURRENT (bad) behavior
     # After Issue #5 is fixed, this should return "not_found"
@@ -58,7 +58,7 @@ get_permissions() {
 
 @test "SECURITY: WireGuard peer configs should have 600 permissions" {
     # Create a mock peer config
-    local peer_config="$DNSCLOAK_DIR/wg/peers/testuser.conf"
+    local peer_config="$VANY_DIR/wg/peers/testuser.conf"
     echo "[Interface]" > "$peer_config"
     chmod 600 "$peer_config"
     
@@ -67,9 +67,9 @@ get_permissions() {
 }
 
 @test "SECURITY: WireGuard peers directory should have 700 permissions" {
-    chmod 700 "$DNSCLOAK_DIR/wg/peers"
+    chmod 700 "$VANY_DIR/wg/peers"
     
-    local perms=$(get_permissions "$DNSCLOAK_DIR/wg/peers")
+    local perms=$(get_permissions "$VANY_DIR/wg/peers")
     [ "$perms" = "700" ]
 }
 
@@ -84,16 +84,16 @@ get_permissions() {
 # =============================================================================
 
 @test "SECURITY: users.json should have 600 permissions" {
-    chmod 600 "$DNSCLOAK_USERS"
+    chmod 600 "$VANY_USERS"
     
-    local perms=$(get_permissions "$DNSCLOAK_USERS")
+    local perms=$(get_permissions "$VANY_USERS")
     [ "$perms" = "600" ]
 }
 
-@test "SECURITY: dnscloak directory should have 700 permissions" {
-    chmod 700 "$DNSCLOAK_DIR"
+@test "SECURITY: vany directory should have 700 permissions" {
+    chmod 700 "$VANY_DIR"
     
-    local perms=$(get_permissions "$DNSCLOAK_DIR")
+    local perms=$(get_permissions "$VANY_DIR")
     [ "$perms" = "700" ]
 }
 
@@ -102,17 +102,17 @@ get_permissions() {
 # =============================================================================
 
 @test "SECURITY: xray config should have 600 permissions" {
-    echo '{}' > "$DNSCLOAK_DIR/xray/config.json"
-    chmod 600 "$DNSCLOAK_DIR/xray/config.json"
+    echo '{}' > "$VANY_DIR/xray/config.json"
+    chmod 600 "$VANY_DIR/xray/config.json"
     
-    local perms=$(get_permissions "$DNSCLOAK_DIR/xray/config.json")
+    local perms=$(get_permissions "$VANY_DIR/xray/config.json")
     [ "$perms" = "600" ]
 }
 
 @test "SECURITY: xray directory should have 700 permissions" {
-    chmod 700 "$DNSCLOAK_DIR/xray"
+    chmod 700 "$VANY_DIR/xray"
     
-    local perms=$(get_permissions "$DNSCLOAK_DIR/xray")
+    local perms=$(get_permissions "$VANY_DIR/xray")
     [ "$perms" = "700" ]
 }
 
@@ -148,7 +148,7 @@ get_permissions() {
     # Check that mktemp is used, not predictable names
     local impl=$(grep -r "tmp" "$BATS_TEST_DIRNAME/../../lib/common.sh" | head -10)
     
-    # Should use mktemp, not /tmp/dnscloak.tmp or similar
+    # Should use mktemp, not /tmp/vany.tmp or similar
     [[ "$impl" == *"mktemp"* ]] || [ -z "$impl" ]
 }
 
@@ -188,11 +188,11 @@ get_permissions() {
 # =============================================================================
 
 @test "SECURITY: DNSTT server key file permissions" {
-    mkdir -p "$DNSCLOAK_DIR/dnstt"
-    echo "server-key" > "$DNSCLOAK_DIR/dnstt/server.key"
-    chmod 600 "$DNSCLOAK_DIR/dnstt/server.key"
+    mkdir -p "$VANY_DIR/dnstt"
+    echo "server-key" > "$VANY_DIR/dnstt/server.key"
+    chmod 600 "$VANY_DIR/dnstt/server.key"
     
-    local perms=$(get_permissions "$DNSCLOAK_DIR/dnstt/server.key")
+    local perms=$(get_permissions "$VANY_DIR/dnstt/server.key")
     [ "$perms" = "600" ]
 }
 

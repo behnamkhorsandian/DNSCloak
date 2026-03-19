@@ -1,4 +1,4 @@
-# DNSCloak - Auto Deploy
+# Vany - Auto Deploy
 #
 # Deploys Workers, Pages, and purges caches on push to main.
 # Uses path filters to only deploy what changed.
@@ -6,7 +6,7 @@
 # Required Secrets:
 #   CLOUDFLARE_API_TOKEN - CF API token with Workers/Pages/Cache Purge/Zone Read permissions
 #   CF_ACCOUNT_ID        - Cloudflare account ID (59c1b66d875ff34924700a8539597845)
-#   CF_ZONE_ID           - Cloudflare zone ID for dnscloak.net (b77748f1e24d18d80541aad32cb06b3a)
+#   CF_ZONE_ID           - Cloudflare zone ID for vany.sh (b77748f1e24d18d80541aad32cb06b3a)
 #
 name: Deploy
 
@@ -95,7 +95,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy www --project-name=dnscloak --branch=main --commit-dirty=true
+          command: pages deploy www --project-name=vany --branch=main --commit-dirty=true
 
   # ============================================
   # Purge Cloudflare Cache
@@ -137,6 +137,6 @@ jobs:
             "tui/theme.sh"
           )
           for f in "${FILES[@]}"; do
-            curl -s "https://purge.jsdelivr.net/gh/behnamkhorsandian/DNSCloak@main/$f" || true
+            curl -s "https://purge.jsdelivr.net/gh/behnamkhorsandian/Vanyshsh@main/$f" || true
           done
           echo "* jsDelivr cache purged"

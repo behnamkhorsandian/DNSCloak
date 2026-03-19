@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak TUI - Rendering Engine
+# Vany TUI - Rendering Engine
 # Unified frame model: status bar + sidebar + content + footer
 # Inspired by 432.sh layout patterns, ported to bash
 #===============================================================================
@@ -180,8 +180,8 @@ _load_json_data() {
     script_dir="$(dirname "${BASH_SOURCE[0]}")"
     if [[ -d "${script_dir}/content" ]]; then
         _CONTENT_DIR="${script_dir}/content"
-    elif [[ -d "/opt/dnscloak/tui/content" ]]; then
-        _CONTENT_DIR="/opt/dnscloak/tui/content"
+    elif [[ -d "/opt/vany/tui/content" ]]; then
+        _CONTENT_DIR="/opt/vany/tui/content"
     else
         # Fallback: data stays in theme.sh (backward compat)
         return 1
@@ -274,17 +274,17 @@ _load_frame_banner() {
 
     if [[ -n "${BANNER_DIR:-}" && -f "${BANNER_DIR}/${bfile}" ]]; then
         banner_text=$(cat "${BANNER_DIR}/${bfile}")
-    elif [[ -f "/opt/dnscloak/banners/${bfile}" ]]; then
-        banner_text=$(cat "/opt/dnscloak/banners/${bfile}")
-    elif [[ -f "/tmp/dnscloak-banners/${bfile}" ]]; then
-        banner_text=$(cat "/tmp/dnscloak-banners/${bfile}")
+    elif [[ -f "/opt/vany/banners/${bfile}" ]]; then
+        banner_text=$(cat "/opt/vany/banners/${bfile}")
+    elif [[ -f "/tmp/vany-banners/${bfile}" ]]; then
+        banner_text=$(cat "/tmp/vany-banners/${bfile}")
     elif [[ -f "${script_dir}/../banners/${bfile}" ]]; then
         banner_text=$(cat "${script_dir}/../banners/${bfile}")
     else
-        mkdir -p /tmp/dnscloak-banners
-        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/banners/${bfile}"
-        if curl -sL "$url" -o "/tmp/dnscloak-banners/${bfile}" 2>/dev/null; then
-            banner_text=$(cat "/tmp/dnscloak-banners/${bfile}")
+        mkdir -p /tmp/vany-banners
+        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main}/banners/${bfile}"
+        if curl -sL "$url" -o "/tmp/vany-banners/${bfile}" 2>/dev/null; then
+            banner_text=$(cat "/tmp/vany-banners/${bfile}")
         fi
     fi
 
@@ -459,7 +459,7 @@ tui_cleanup() {
 #
 # Layout:
 #   ┌──────────────────────────────────────────────────────────────────────┐
-#   │  DNSCLOAK  *  1.2.3.4  |  3 services  |  q quit              16:58 │
+#   │  VANY  *  1.2.3.4  |  3 services  |  q quit              16:58 │
 #   ├──────────────────┬───────────────────────────────────────────────────┤
 #   │  Protocols       │  Content area...                                 │
 #   │ > REALITY    *   │                                                  │
@@ -575,9 +575,9 @@ _build_status_text() {
     local clock=""
 
     # Read from users.json if available
-    if [[ -f "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" ]] && type jq &>/dev/null; then
-        ip=$(jq -r '.server.ip // "?"' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
-        user_count=$(jq -r '.users // {} | keys | length' "${DNSCLOAK_USERS:-/opt/dnscloak/users.json}" 2>/dev/null)
+    if [[ -f "${VANY_USERS:-/opt/vany/users.json}" ]] && type jq &>/dev/null; then
+        ip=$(jq -r '.server.ip // "?"' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
+        user_count=$(jq -r '.users // {} | keys | length' "${VANY_USERS:-/opt/vany/users.json}" 2>/dev/null)
     fi
 
     # Count running services
@@ -602,7 +602,7 @@ _build_status_text() {
     local usr_label="users"
     (( user_count == 1 )) && usr_label="user"
 
-    printf ' %bDNSCLOAK%b  %b  %b%s%b  %b│%b  %b%d %s%b  %b│%b  %b%d %s%b  %b│%b  %b%s%b' \
+    printf ' %bVANY%b  %b  %b%s%b  %b│%b  %b%d %s%b  %b│%b  %b%d %s%b  %b│%b  %b%s%b' \
         "$C_GREEN" "$C_RST" \
         "$health_dot" \
         "$C_TEXT" "$ip" "$C_RST" \
@@ -948,8 +948,8 @@ tui_render_markdown() {
         local repo_root="${script_dir}/.."
         if [[ -f "${repo_root}/${md_file}" ]]; then
             md_file="${repo_root}/${md_file}"
-        elif [[ -f "/opt/dnscloak/${md_file}" ]]; then
-            md_file="/opt/dnscloak/${md_file}"
+        elif [[ -f "/opt/vany/${md_file}" ]]; then
+            md_file="/opt/vany/${md_file}"
         else
             FRAME_CONTENT+=("${C_DGRAY}Documentation not available.${C_RST}")
             return 1
@@ -1443,7 +1443,7 @@ tui_progress() {
 tui_run_cmd_framed() {
     local desc="$1"
     shift
-    local logfile="/tmp/dnscloak-install-$$.log"
+    local logfile="/tmp/vany-install-$$.log"
     local max_lines=$(( _CONTENT_H - 6 ))
     (( max_lines < 5 )) && max_lines=5
 
@@ -1500,17 +1500,17 @@ render_banner() {
 
     if [[ -n "${BANNER_DIR:-}" && -f "${BANNER_DIR}/${bfile}" ]]; then
         banner_text=$(cat "${BANNER_DIR}/${bfile}")
-    elif [[ -f "/opt/dnscloak/banners/${bfile}" ]]; then
-        banner_text=$(cat "/opt/dnscloak/banners/${bfile}")
-    elif [[ -f "/tmp/dnscloak-banners/${bfile}" ]]; then
-        banner_text=$(cat "/tmp/dnscloak-banners/${bfile}")
+    elif [[ -f "/opt/vany/banners/${bfile}" ]]; then
+        banner_text=$(cat "/opt/vany/banners/${bfile}")
+    elif [[ -f "/tmp/vany-banners/${bfile}" ]]; then
+        banner_text=$(cat "/tmp/vany-banners/${bfile}")
     elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../banners/${bfile}" ]]; then
         banner_text=$(cat "$(dirname "${BASH_SOURCE[0]}")/../banners/${bfile}")
     else
-        mkdir -p /tmp/dnscloak-banners
-        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/DNSCloak/main}/banners/${bfile}"
-        if curl -sL "$url" -o "/tmp/dnscloak-banners/${bfile}" 2>/dev/null; then
-            banner_text=$(cat "/tmp/dnscloak-banners/${bfile}")
+        mkdir -p /tmp/vany-banners
+        local url="${GITHUB_RAW:-https://raw.githubusercontent.com/behnamkhorsandian/Vanyshsh/main}/banners/${bfile}"
+        if curl -sL "$url" -o "/tmp/vany-banners/${bfile}" 2>/dev/null; then
+            banner_text=$(cat "/tmp/vany-banners/${bfile}")
         fi
     fi
 

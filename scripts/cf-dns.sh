@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# DNSCloak - Cloudflare DNS Manager
+# Vany - Cloudflare DNS Manager
 # Automates DNS record creation for all services
 #
 # Usage: ./scripts/cf-dns.sh [command] [options]
@@ -81,7 +81,7 @@ cf_request() {
             echo -e "${RED}Authentication failed. Your API token may not have DNS permissions.${RESET}" >&2
             echo "" >&2
             echo "Create a new token at: https://dash.cloudflare.com/profile/api-tokens" >&2
-            echo "Use template: 'Edit zone DNS' for zone dnscloak.net" >&2
+            echo "Use template: 'Edit zone DNS' for zone vany.sh" >&2
             exit 1
         fi
     fi
@@ -175,7 +175,7 @@ delete_record() {
 
 cmd_setup() {
     local server_ip="${1:-}"
-    local domain="${CF_DOMAIN:-dnscloak.net}"
+    local domain="${CF_DOMAIN:-vany.sh}"
     
     if [[ -z "$server_ip" ]]; then
         echo -e "${CYAN}Enter your server IP:${RESET}"
@@ -221,7 +221,7 @@ cmd_add() {
     
     if [[ -z "$type" || -z "$name" || -z "$content" ]]; then
         echo "Usage: cf-dns.sh add <type> <name> <content> [proxied]"
-        echo "Example: cf-dns.sh add A proxy.dnscloak.net 1.2.3.4 false"
+        echo "Example: cf-dns.sh add A proxy.vany.sh 1.2.3.4 false"
         exit 1
     fi
     
@@ -248,10 +248,10 @@ cmd_list() {
 cmd_status() {
     load_env
     
-    local domain="${CF_DOMAIN:-dnscloak.net}"
+    local domain="${CF_DOMAIN:-vany.sh}"
     
     echo ""
-    echo -e "${BOLD}DNSCloak DNS Status${RESET}"
+    echo -e "${BOLD}Vany DNS Status${RESET}"
     echo ""
     
     # Check each service subdomain
@@ -278,7 +278,7 @@ cmd_status() {
 }
 
 cmd_help() {
-    echo "DNSCloak Cloudflare DNS Manager"
+    echo "Vany Cloudflare DNS Manager"
     echo ""
     echo "Usage: ./scripts/cf-dns.sh <command> [options]"
     echo ""
@@ -292,11 +292,11 @@ cmd_help() {
     echo "Environment:"
     echo "  CF_API_TOKEN   Cloudflare API token (required)"
     echo "  CF_ZONE_ID     Cloudflare zone ID (required)"
-    echo "  CF_DOMAIN      Domain name (default: dnscloak.net)"
+    echo "  CF_DOMAIN      Domain name (default: vany.sh)"
     echo ""
     echo "Examples:"
     echo "  ./scripts/cf-dns.sh setup 34.185.221.241"
-    echo "  ./scripts/cf-dns.sh add A myapp.dnscloak.net 1.2.3.4 true"
+    echo "  ./scripts/cf-dns.sh add A myapp.vany.sh 1.2.3.4 true"
     echo "  ./scripts/cf-dns.sh list"
 }
 
