@@ -13,7 +13,7 @@ const LOGO = [
     " ░▓▓▓   ░▓▓▓ ",
     " ░░▓▓▓  ▓▓▓  ",
     "  ░░░▓▓▓▓░   ",
-    "   ░░▓▓  "
+    "    ░░▓▓     "
 ];
 
 // Star rating helper
@@ -161,6 +161,19 @@ export function pageLanding(): string {
   lines.push(divider("NEED HELP CHOOSING?", W));
   lines.push("");
   lines.push(`    ${LGREEN}curl vany.sh/choose | bash${RST}   ${DIM}Interactive questionnaire to pick the right protocol${RST}`);
+  lines.push("");
+
+  // Free services
+  lines.push(divider("FREE SERVICES", W));
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}Free VPN (WS+CDN)${RST}       ${DIM}No account, no VPS needed. 1-hour sessions.${RST}`);
+  lines.push(`    ${LGREEN}1.${RST} ${TEXT}Open ${BLUE}https://vany.sh${RST}  ${DIM}and click${RST} ${LGREEN}Quick Connect${RST}`);
+  lines.push(`    ${LGREEN}2.${RST} ${TEXT}Hit${RST} ${LGREEN}Generate${RST}${TEXT}, copy the link${RST}`);
+  lines.push(`    ${LGREEN}3.${RST} ${TEXT}Paste into ${BLUE}Hiddify${RST} ${DIM}(iOS/Android/Windows/macOS/Linux)${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}SafeBox (Encrypted Dead-Drop)${RST}  ${DIM}Share secrets with emoji-based access. 24h TTL.${RST}`);
+  lines.push(`    ${LGREEN}Browser:${RST}  ${TEXT}Open ${BLUE}https://vany.sh${RST} ${DIM}and click the${RST} ${PURPLE}lock icon${RST}`);
+  lines.push(`    ${LGREEN}CLI:${RST}      ${DIM}curl -s vany.sh/box${RST}   ${TEXT}(view help and create/open boxes)${RST}`);
   lines.push("");
 
   // Rating legend

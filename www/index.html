@@ -30,6 +30,7 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked-highlight/lib/index.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
   <style>
     :root {
       --font-main: 'Roboto Mono', 'SF Mono', Monaco, Consolas, monospace;
@@ -674,6 +675,225 @@
       color: var(--accent-yellow);
     }
     
+    .qc-qr-area {
+      text-align: center;
+      padding: 16px;
+      background: #fff;
+      margin-bottom: 16px;
+    }
+    .qc-qr-area canvas { display: block; margin: 0 auto; }
+    
+    /* SafeBox Popup */
+    .sb-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+    .sb-popup-overlay.active { opacity: 1; visibility: visible; }
+    .sb-popup {
+      background: var(--bg-primary);
+      border: 1px solid var(--accent-purple);
+      width: 90%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .sb-popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .sb-popup-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-purple);
+    }
+    .sb-popup-close {
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .sb-popup-close:hover { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+    .sb-popup-body { padding: 16px; }
+    .sb-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .sb-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: inherit;
+    }
+    .sb-tab.active { color: var(--accent-purple); border-bottom-color: var(--accent-purple); }
+    .sb-tab:hover { color: var(--text-primary); }
+    .sb-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .sb-section h4 {
+      color: var(--accent-orange);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sb-section label {
+      display: block;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .sb-section textarea {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .sb-section textarea:focus { outline: none; border-color: var(--accent-purple); }
+    .sb-section input[type=text] {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .sb-section input[type=text]:focus { outline: none; border-color: var(--accent-purple); }
+    .sb-emoji-display {
+      font-size: 22px;
+      letter-spacing: 3px;
+      text-align: center;
+      padding: 10px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      margin: 8px 0;
+      user-select: all;
+    }
+    .sb-phonetic {
+      color: var(--text-dim);
+      font-size: 10px;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .sb-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--accent-purple);
+      transition: all 0.15s;
+    }
+    .sb-btn:hover { border-color: var(--accent-purple); background: rgba(164, 146, 255, 0.1); }
+    .sb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sb-btn-primary {
+      background: var(--accent-purple);
+      color: var(--bg-primary);
+      border-color: var(--accent-purple);
+      font-weight: 600;
+    }
+    .sb-btn-primary:hover { background: var(--box-purple-dark); }
+    .sb-row { display: flex; gap: 8px; margin-top: 10px; }
+    .sb-row .sb-btn { flex: 1; text-align: center; }
+    .sb-result {
+      background: var(--bg-primary);
+      border: 1px solid var(--accent-purple);
+      padding: 12px;
+      margin: 10px 0;
+    }
+    .sb-result .sb-rlabel { color: var(--accent-orange); font-size: 10px; margin-bottom: 4px; }
+    .sb-result .sb-rvalue { color: var(--accent-light-green); font-size: 10px; word-break: break-all; }
+    .sb-status { padding: 8px 10px; font-size: 11px; margin: 8px 0; }
+    .sb-status.warn { background: rgba(213,151,25,0.1); border: 1px solid var(--accent-orange); color: var(--accent-orange); }
+    .sb-status.err { background: rgba(162,81,56,0.1); border: 1px solid var(--accent-red); color: var(--accent-red); }
+    .sb-status.ok { background: rgba(46,183,135,0.1); border: 1px solid var(--accent-green); color: var(--accent-green); }
+    .sb-footer {
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 12px;
+    }
+    .sb-footer a { color: var(--accent-blue); text-decoration: none; }
+    .sb-hidden { display: none; }
+    
+    /* Stats Terminal Widget */
+    .stats-widget {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      margin-top: 30px;
+    }
+    .stats-widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .stats-widget-body {
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    .stats-widget-body .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+    .stats-widget-body .stat-label { color: var(--text-dim); }
+    .stats-widget-body .stat-value { color: var(--accent-green); font-weight: 600; }
+    .stats-widget-body .stat-bar {
+      display: inline-block;
+      height: 8px;
+      background: var(--accent-green);
+      margin-left: 8px;
+      vertical-align: middle;
+      opacity: 0.6;
+    }
+    
 
 
     .features { padding: 40px 0; border-top: 1px solid var(--border); overflow: hidden; position: relative; }
@@ -1031,6 +1251,9 @@
       .qc-popup { width: 95%; max-width: none; }
       .qc-step { padding: 8px 10px; }
       .qc-footer { flex-direction: column; gap: 4px; text-align: center; }
+      
+      /* SafeBox Popup */
+      .sb-popup { width: 95%; max-width: none; }
       
       /* Footer */
       footer { padding: 20px 0; font-size: 11px; }
@@ -1565,6 +1788,23 @@
           </div>
         </div>
       </section>
+      
+      <!-- Stats Terminal Widget -->
+      <section style="padding: 0 0 40px;">
+        <div class="container">
+          <h2 class="section-title">Live Stats</h2>
+          <div class="stats-widget">
+            <div class="stats-widget-header">
+              <span>vany.sh — worker metrics</span>
+              <span id="stats-updated">loading...</span>
+            </div>
+            <div class="stats-widget-body" id="stats-body">
+              <div class="stat-row"><span class="stat-label">$ curl vany.sh/stats</span></div>
+              <div class="stat-row"><span class="stat-label" style="color:var(--text-dim);">connecting...</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
     
     <footer>
@@ -2092,10 +2332,88 @@
   </script>
   
   <!-- Fixed SafeBox CTA Button -->
-  <button class="box-cta-fixed" onclick="window.open('https://vany.sh/box', '_blank')">
+  <button class="box-cta-fixed" onclick="showSBPopup()">
     <span class="material-symbols-outlined">lock</span>
     <span class="tooltip">SafeBox - Encrypted Dead-Drop</span>
   </button>
+  
+  <!-- SafeBox Popup -->
+  <div class="sb-popup-overlay" id="sb-popup">
+    <div class="sb-popup">
+      <div class="sb-popup-header">
+        <h3><span class="material-symbols-outlined" style="font-size:18px">lock</span> SafeBox</h3>
+        <button class="sb-popup-close" onclick="closeSBPopup()">ESC</button>
+      </div>
+      <div class="sb-popup-body">
+        <div class="sb-tabs">
+          <button class="sb-tab active" onclick="sbSwitchTab('create')" id="sb-tab-create">Create Box</button>
+          <button class="sb-tab" onclick="sbSwitchTab('open')" id="sb-tab-open">Open Box</button>
+        </div>
+
+        <!-- Create Tab -->
+        <div id="sb-panel-create">
+          <div class="sb-section">
+            <h4>Drop Your Secret</h4>
+            <label>Message (encrypted client-side, server never sees plaintext)</label>
+            <textarea id="sb-msg" placeholder="Type or paste your secret..." maxlength="50000"></textarea>
+            <div style="text-align:right;margin-top:4px;"><span id="sb-charcount" style="color:var(--text-dim);font-size:10px;">0 / 50,000</span></div>
+            <div class="sb-row">
+              <button class="sb-btn sb-btn-primary" id="sb-create-btn" onclick="sbCreateBox()">Generate SafeBox</button>
+            </div>
+          </div>
+          <div id="sb-create-result" class="sb-hidden">
+            <div class="sb-section">
+              <h4>Your Box Credentials</h4>
+              <div class="sb-status warn">Save these! They cannot be recovered. Box expires in 24 hours.</div>
+              <div class="sb-result">
+                <div class="sb-rlabel">BOX ID (share this)</div>
+                <div class="sb-emoji-display" id="sb-res-box"></div>
+                <div class="sb-phonetic" id="sb-res-box-ph"></div>
+              </div>
+              <div class="sb-result">
+                <div class="sb-rlabel">PASSWORD (keep secret)</div>
+                <div class="sb-emoji-display" id="sb-res-pass"></div>
+                <div class="sb-phonetic" id="sb-res-pass-ph"></div>
+              </div>
+              <div class="sb-result">
+                <div class="sb-rlabel">CLI COMMAND <span style="color:var(--text-dim);cursor:pointer;font-size:10px;" onclick="sbCopyCli()">[copy]</span></div>
+                <div class="sb-rvalue" id="sb-res-cli" style="font-size:10px;"></div>
+              </div>
+              <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--accent-yellow);" id="sb-res-ttl"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Tab -->
+        <div id="sb-panel-open" class="sb-hidden">
+          <div class="sb-section">
+            <h4>Open a Box</h4>
+            <label>Box ID (6 emojis or phonetic: fire-moon-star-target-wave-gem)</label>
+            <input type="text" id="sb-open-id" placeholder="Paste 6 emojis or phonetic names..." />
+            <label>Password (6 emojis or phonetic)</label>
+            <input type="text" id="sb-open-pass" placeholder="Paste 6 emojis or phonetic names..." />
+            <div class="sb-row">
+              <button class="sb-btn sb-btn-primary" onclick="sbOpenBox()">Decrypt</button>
+            </div>
+          </div>
+          <div id="sb-open-result" class="sb-hidden">
+            <div class="sb-section">
+              <h4>Decrypted Content</h4>
+              <textarea id="sb-open-content" readonly style="min-height:120px;color:var(--accent-light-green);"></textarea>
+              <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--accent-yellow);" id="sb-open-ttl"></div>
+            </div>
+          </div>
+          <div id="sb-open-error" class="sb-hidden">
+            <div class="sb-status err" id="sb-open-errmsg"></div>
+          </div>
+        </div>
+
+        <div class="sb-footer">
+          All crypto runs in your browser. Server stores only ciphertext. &middot; <a href="https://vany.sh/box" target="_blank">Full page</a>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- Quick Connect Button -->
   <button class="qc-btn-fixed" onclick="showQCPopup()">
@@ -2121,8 +2439,18 @@
         
         <div class="qc-link-box" id="qc-link-container">
           <label>Connection Link</label>
-          <code id="qc-link">Loading...</code>
-          <button class="qc-copy-btn" onclick="copyQCLink()">Copy</button>
+          <code id="qc-link">Click Generate to get a connection</code>
+          <button class="qc-copy-btn" id="qc-copy-btn" onclick="copyQCLink()" style="display:none">Copy</button>
+        </div>
+        
+        <div class="qc-qr-area sb-hidden" id="qc-qr-area">
+          <canvas id="qc-qr-canvas"></canvas>
+        </div>
+        
+        <div style="text-align:center;margin-bottom:16px;">
+          <button class="sb-btn sb-btn-primary" id="qc-gen-btn" onclick="generateQC()" style="background:var(--accent-blue);border-color:var(--accent-blue);padding:10px 24px;">
+            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bolt</span> Generate Connection
+          </button>
         </div>
         
         <div class="qc-steps">
@@ -2160,7 +2488,151 @@
   </div>
   
   <script>
-    // Quick Connect - WS+CDN
+    // ── SafeBox Crypto ──
+    const SB_EMOJIS = [
+      "\u{1F525}","\u{1F319}","\u{2B50}","\u{1F3AF}","\u{1F30A}","\u{1F48E}","\u{1F340}","\u{1F3B2}",
+      "\u{1F680}","\u{1F308}","\u{26A1}","\u{1F3B5}","\u{1F511}","\u{1F338}","\u{1F344}","\u{1F98B}",
+      "\u{1F3AA}","\u{1F335}","\u{1F34E}","\u{1F40B}","\u{1F98A}","\u{1F33B}","\u{1F3AD}","\u{1F514}",
+      "\u{1F3D4}\u{FE0F}","\u{1F334}","\u{1F355}","\u{1F419}","\u{1F989}","\u{1F33A}","\u{1F3A8}","\u{1F52E}"
+    ];
+    const SB_PH = {
+      "\u{1F525}":"fire","\u{1F319}":"moon","\u{2B50}":"star","\u{1F3AF}":"target",
+      "\u{1F30A}":"wave","\u{1F48E}":"gem","\u{1F340}":"clover","\u{1F3B2}":"dice",
+      "\u{1F680}":"rocket","\u{1F308}":"rainbow","\u{26A1}":"bolt","\u{1F3B5}":"music",
+      "\u{1F511}":"key","\u{1F338}":"bloom","\u{1F344}":"shroom","\u{1F98B}":"butterfly",
+      "\u{1F3AA}":"circus","\u{1F335}":"cactus","\u{1F34E}":"apple","\u{1F40B}":"whale",
+      "\u{1F98A}":"fox","\u{1F33B}":"sunflower","\u{1F3AD}":"mask","\u{1F514}":"bell",
+      "\u{1F3D4}\u{FE0F}":"mountain","\u{1F334}":"palm","\u{1F355}":"pizza","\u{1F419}":"octopus",
+      "\u{1F989}":"owl","\u{1F33A}":"hibiscus","\u{1F3A8}":"palette","\u{1F52E}":"crystal"
+    };
+    const SB_PHR = {}; for (const [e,n] of Object.entries(SB_PH)) SB_PHR[n] = e;
+
+    function sbRnd(n) { const a = new Uint32Array(n); crypto.getRandomValues(a); return Array.from(a, v => SB_EMOJIS[v % SB_EMOJIS.length]); }
+    function sbToPhon(arr) { return arr.map(e => SB_PH[e]||"?").join("-"); }
+
+    function sbParseIn(str) {
+      str = str.trim();
+      if (str.includes("-")) {
+        const p = str.split("-").map(s => s.trim().toLowerCase());
+        if (p.length !== 6) return null;
+        const r = p.map(x => SB_PHR[x]); return r.every(Boolean) ? r : null;
+      }
+      const f = []; let rem = str;
+      while (rem.length > 0 && f.length < 6) {
+        let hit = false;
+        for (const e of SB_EMOJIS) { if (rem.startsWith(e)) { f.push(e); rem = rem.slice(e.length); hit = true; break; } }
+        if (!hit) rem = rem.slice(1);
+      }
+      return f.length === 6 ? f : null;
+    }
+
+    async function sbBoxHash(emojis) {
+      const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(emojis.join("")));
+      return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,16);
+    }
+
+    async function sbDeriveKey(box, pass) {
+      const raw = new TextEncoder().encode(box.join("") + ":" + pass.join(""));
+      const km = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: new TextEncoder().encode("vany-safebox-v1"), iterations: 100000, hash: "SHA-256" },
+        km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+      );
+    }
+
+    async function sbEncrypt(text, box, pass) {
+      const key = await sbDeriveKey(box, pass);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(text));
+      return { ct: btoa(String.fromCharCode(...new Uint8Array(ct))), iv: btoa(String.fromCharCode(...iv)) };
+    }
+
+    async function sbDecrypt(ct64, iv64, box, pass) {
+      const key = await sbDeriveKey(box, pass);
+      const ct = Uint8Array.from(atob(ct64), c => c.charCodeAt(0));
+      const iv = Uint8Array.from(atob(iv64), c => c.charCodeAt(0));
+      return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct));
+    }
+
+    // ── SafeBox Popup UI ──
+    function showSBPopup() {
+      document.getElementById('sb-popup').classList.add('active');
+    }
+    function closeSBPopup() {
+      document.getElementById('sb-popup').classList.remove('active');
+    }
+    function sbSwitchTab(tab) {
+      document.getElementById('sb-panel-create').classList.toggle('sb-hidden', tab !== 'create');
+      document.getElementById('sb-panel-open').classList.toggle('sb-hidden', tab !== 'open');
+      document.getElementById('sb-tab-create').classList.toggle('active', tab === 'create');
+      document.getElementById('sb-tab-open').classList.toggle('active', tab === 'open');
+    }
+    document.getElementById('sb-msg').addEventListener('input', function() {
+      document.getElementById('sb-charcount').textContent = this.value.length + ' / 50,000';
+    });
+
+    async function sbCreateBox() {
+      const msg = document.getElementById('sb-msg').value.trim();
+      if (!msg) return;
+      const btn = document.getElementById('sb-create-btn');
+      btn.disabled = true; btn.textContent = 'Encrypting...';
+      try {
+        const bx = sbRnd(6), pw = sbRnd(6);
+        const { ct, iv } = await sbEncrypt(msg, bx, pw);
+        const bh = await sbBoxHash(bx);
+        const resp = await fetch('https://vany.sh/box', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ box_hash: bh, ciphertext: ct, iv })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Failed');
+        document.getElementById('sb-res-box').textContent = bx.join('');
+        document.getElementById('sb-res-box-ph').textContent = sbToPhon(bx);
+        document.getElementById('sb-res-pass').textContent = pw.join('');
+        document.getElementById('sb-res-pass-ph').textContent = sbToPhon(pw);
+        document.getElementById('sb-res-cli').textContent = 'curl -s "https://vany.sh/box/' + sbToPhon(bx) + '?pass=' + sbToPhon(pw) + '"';
+        document.getElementById('sb-res-ttl').textContent = 'Expires: ' + new Date(data.expires_at).toLocaleString();
+        document.getElementById('sb-create-result').classList.remove('sb-hidden');
+      } catch (e) { alert('Error: ' + e.message); }
+      finally { btn.disabled = false; btn.textContent = 'Generate SafeBox'; }
+    }
+
+    async function sbOpenBox() {
+      const bx = sbParseIn(document.getElementById('sb-open-id').value);
+      const pw = sbParseIn(document.getElementById('sb-open-pass').value);
+      document.getElementById('sb-open-result').classList.add('sb-hidden');
+      document.getElementById('sb-open-error').classList.add('sb-hidden');
+      if (!bx) { sbShowErr('Invalid box ID. Use 6 emojis or phonetic names.'); return; }
+      if (!pw) { sbShowErr('Invalid password. Use 6 emojis or phonetic names.'); return; }
+      try {
+        const resp = await fetch('https://vany.sh/box/' + encodeURIComponent(sbToPhon(bx)));
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Box not found');
+        const text = await sbDecrypt(data.ciphertext, data.iv, bx, pw);
+        document.getElementById('sb-open-content').value = text;
+        document.getElementById('sb-open-ttl').textContent = 'Expires: ' + new Date(data.expires_at).toLocaleString();
+        document.getElementById('sb-open-result').classList.remove('sb-hidden');
+      } catch (e) {
+        if (e.name === 'OperationError') sbShowErr('Wrong password.');
+        else sbShowErr(e.message);
+      }
+    }
+
+    function sbShowErr(msg) {
+      document.getElementById('sb-open-errmsg').textContent = msg;
+      document.getElementById('sb-open-error').classList.remove('sb-hidden');
+    }
+    function sbCopyCli() {
+      const txt = document.getElementById('sb-res-cli').textContent;
+      navigator.clipboard.writeText(txt);
+    }
+
+    // Close SafeBox popup
+    document.getElementById('sb-popup').addEventListener('click', function(e) {
+      if (e.target === this) closeSBPopup();
+    });
+
+    // ── Quick Connect ──
     let qcLink = null;
     let qcExpiry = null;
     
@@ -2180,13 +2652,31 @@
     function updateQCUI(data) {
       const linkEl = document.getElementById('qc-link');
       const ttlEl = document.getElementById('qc-ttl-countdown');
+      const copyBtn = document.getElementById('qc-copy-btn');
+      const qrArea = document.getElementById('qc-qr-area');
       
       if (data && data.link) {
         linkEl.textContent = data.link;
         linkEl.style.color = 'var(--accent-green)';
+        copyBtn.style.display = '';
+        
+        // Show QR code
+        qrArea.classList.remove('sb-hidden');
+        if (typeof QRious !== 'undefined') {
+          new QRious({
+            element: document.getElementById('qc-qr-canvas'),
+            value: data.link,
+            size: 180,
+            level: 'M',
+            background: '#ffffff',
+            foreground: '#232323'
+          });
+        }
       } else {
         linkEl.textContent = 'Service starting up — check back soon';
         linkEl.style.color = 'var(--text-dim)';
+        copyBtn.style.display = 'none';
+        qrArea.classList.add('sb-hidden');
       }
       
       if (qcExpiry) {
@@ -2197,10 +2687,18 @@
       }
     }
     
+    async function generateQC() {
+      const btn = document.getElementById('qc-gen-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">hourglass_empty</span> Generating...';
+      const data = await fetchQCLink();
+      updateQCUI(data);
+      btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bolt</span> Generate Connection';
+    }
+
     function copyQCLink() {
       if (!qcLink) return;
       navigator.clipboard.writeText(qcLink).then(() => {
-        const btn = document.querySelector('.qc-copy-btn');
+        const btn = document.getElementById('qc-copy-btn');
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       });
@@ -2208,7 +2706,6 @@
     
     function showQCPopup() {
       document.getElementById('qc-popup').classList.add('active');
-      fetchQCLink().then(data => updateQCUI(data));
     }
     
     function closeQCPopup() {
@@ -2222,8 +2719,47 @@
     
     // Close on Escape
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeQCPopup();
+      if (e.key === 'Escape') {
+        closeQCPopup();
+        closeSBPopup();
+      }
     });
+    
+    // ── Stats Widget ──
+    async function fetchStats() {
+      try {
+        const res = await fetch('https://vany.sh/stats');
+        if (!res.ok) return null;
+        return await res.json();
+      } catch { return null; }
+    }
+    
+    function renderStats(data) {
+      const body = document.getElementById('stats-body');
+      const updated = document.getElementById('stats-updated');
+      if (!data) {
+        body.innerHTML = '<div class="stat-row"><span class="stat-label">$ curl vany.sh/stats</span></div><div class="stat-row"><span class="stat-label" style="color:var(--accent-red);">offline</span></div>';
+        updated.textContent = '--';
+        return;
+      }
+      const maxVal = Math.max(data.visits || 0, data.boxes || 0, data.connects || 0, data.downloads || 0, 1);
+      function bar(val) {
+        const w = Math.max(2, Math.round((val / maxVal) * 120));
+        return '<span class="stat-bar" style="width:' + w + 'px"></span>';
+      }
+      body.innerHTML =
+        '<div class="stat-row"><span class="stat-label">$ curl vany.sh/stats</span></div>' +
+        '<div class="stat-row"><span class="stat-label">page_visits</span><span class="stat-value">' + (data.visits || 0).toLocaleString() + bar(data.visits || 0) + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">safebox_created</span><span class="stat-value">' + (data.boxes || 0).toLocaleString() + bar(data.boxes || 0) + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">qc_connections</span><span class="stat-value">' + (data.connects || 0).toLocaleString() + bar(data.connects || 0) + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">script_downloads</span><span class="stat-value">' + (data.downloads || 0).toLocaleString() + bar(data.downloads || 0) + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">protocols_available</span><span class="stat-value">15</span></div>' +
+        '<div class="stat-row" style="margin-top:8px;"><span class="stat-label" style="color:var(--text-dim);">uptime</span><span class="stat-value" style="color:var(--accent-yellow);">' + (data.uptime || '99.9%') + '</span></div>';
+      updated.textContent = new Date().toLocaleTimeString();
+    }
+    
+    // Load stats on page load
+    fetchStats().then(renderStats);
   </script>
 </body>
 </html>
