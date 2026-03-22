@@ -115,11 +115,16 @@ install_docker() {
     apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release
 
     mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    # Detect distro: use debian for Debian, ubuntu for Ubuntu
+    local docker_distro
+    docker_distro=$(. /etc/os-release && echo "$ID")
+    [[ "$docker_distro" != "ubuntu" && "$docker_distro" != "debian" ]] && docker_distro="debian"
+
+    curl -fsSL "https://download.docker.com/linux/${docker_distro}/gpg" | \
         gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null
 
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+https://download.docker.com/linux/${docker_distro} $(lsb_release -cs) stable" | \
         tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     wait_for_apt_lock

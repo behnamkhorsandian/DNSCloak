@@ -796,22 +796,6 @@
       margin-bottom: 8px;
     }
     .sb-section input[type=text]:focus { outline: none; border-color: var(--accent-purple); }
-    .sb-emoji-display {
-      font-size: 22px;
-      letter-spacing: 3px;
-      text-align: center;
-      padding: 10px;
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      margin: 8px 0;
-      user-select: all;
-    }
-    .sb-phonetic {
-      color: var(--text-dim);
-      font-size: 10px;
-      text-align: center;
-      margin-bottom: 6px;
-    }
     .sb-btn {
       display: inline-block;
       padding: 8px 16px;
@@ -2357,6 +2341,8 @@
             <label>Message (encrypted client-side, server never sees plaintext)</label>
             <textarea id="sb-msg" placeholder="Type or paste your secret..." maxlength="50000"></textarea>
             <div style="text-align:right;margin-top:4px;"><span id="sb-charcount" style="color:var(--text-dim);font-size:10px;">0 / 50,000</span></div>
+            <label style="margin-top:8px;">Password (you choose — remember it to decrypt later)</label>
+            <input type="text" id="sb-create-pass" placeholder="Enter a password..." />
             <div class="sb-row">
               <button class="sb-btn sb-btn-primary" id="sb-create-btn" onclick="sbCreateBox()">Generate SafeBox</button>
             </div>
@@ -2367,13 +2353,11 @@
               <div class="sb-status warn">Save these! They cannot be recovered. Box expires in 24 hours.</div>
               <div class="sb-result">
                 <div class="sb-rlabel">BOX ID (share this)</div>
-                <div class="sb-emoji-display" id="sb-res-box"></div>
-                <div class="sb-phonetic" id="sb-res-box-ph"></div>
+                <div style="font-size:24px;letter-spacing:6px;text-align:center;padding:10px;background:var(--bg-dark);border:1px solid var(--border);margin:8px 0;font-weight:bold;color:var(--accent-green);user-select:all;" id="sb-res-box"></div>
               </div>
               <div class="sb-result">
                 <div class="sb-rlabel">PASSWORD (keep secret)</div>
-                <div class="sb-emoji-display" id="sb-res-pass"></div>
-                <div class="sb-phonetic" id="sb-res-pass-ph"></div>
+                <div style="text-align:center;padding:8px;color:var(--text-dim);font-size:12px;" id="sb-res-pass"></div>
               </div>
               <div class="sb-result">
                 <div class="sb-rlabel">CLI COMMAND <span style="color:var(--text-dim);cursor:pointer;font-size:10px;" onclick="sbCopyCli()">[copy]</span></div>
@@ -2388,10 +2372,10 @@
         <div id="sb-panel-open" class="sb-hidden">
           <div class="sb-section">
             <h4>Open a Box</h4>
-            <label>Box ID (6 emojis or phonetic: fire-moon-star-target-wave-gem)</label>
-            <input type="text" id="sb-open-id" placeholder="Paste 6 emojis or phonetic names..." />
-            <label>Password (6 emojis or phonetic)</label>
-            <input type="text" id="sb-open-pass" placeholder="Paste 6 emojis or phonetic names..." />
+            <label>Box ID (6 characters, A-Z / 0-9)</label>
+            <input type="text" id="sb-open-id" placeholder="e.g. A3K9X2" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;font-size:16px;text-align:center;" />
+            <label style="margin-top:8px;">Password</label>
+            <input type="text" id="sb-open-pass" placeholder="Enter the password..." />
             <div class="sb-row">
               <button class="sb-btn sb-btn-primary" onclick="sbOpenBox()">Decrypt</button>
             </div>
@@ -2489,50 +2473,21 @@
   
   <script>
     // ── SafeBox Crypto ──
-    const SB_EMOJIS = [
-      "\u{1F525}","\u{1F319}","\u{2B50}","\u{1F3AF}","\u{1F30A}","\u{1F48E}","\u{1F340}","\u{1F3B2}",
-      "\u{1F680}","\u{1F308}","\u{26A1}","\u{1F3B5}","\u{1F511}","\u{1F338}","\u{1F344}","\u{1F98B}",
-      "\u{1F3AA}","\u{1F335}","\u{1F34E}","\u{1F40B}","\u{1F98A}","\u{1F33B}","\u{1F3AD}","\u{1F514}",
-      "\u{1F3D4}\u{FE0F}","\u{1F334}","\u{1F355}","\u{1F419}","\u{1F989}","\u{1F33A}","\u{1F3A8}","\u{1F52E}"
-    ];
-    const SB_PH = {
-      "\u{1F525}":"fire","\u{1F319}":"moon","\u{2B50}":"star","\u{1F3AF}":"target",
-      "\u{1F30A}":"wave","\u{1F48E}":"gem","\u{1F340}":"clover","\u{1F3B2}":"dice",
-      "\u{1F680}":"rocket","\u{1F308}":"rainbow","\u{26A1}":"bolt","\u{1F3B5}":"music",
-      "\u{1F511}":"key","\u{1F338}":"bloom","\u{1F344}":"shroom","\u{1F98B}":"butterfly",
-      "\u{1F3AA}":"circus","\u{1F335}":"cactus","\u{1F34E}":"apple","\u{1F40B}":"whale",
-      "\u{1F98A}":"fox","\u{1F33B}":"sunflower","\u{1F3AD}":"mask","\u{1F514}":"bell",
-      "\u{1F3D4}\u{FE0F}":"mountain","\u{1F334}":"palm","\u{1F355}":"pizza","\u{1F419}":"octopus",
-      "\u{1F989}":"owl","\u{1F33A}":"hibiscus","\u{1F3A8}":"palette","\u{1F52E}":"crystal"
-    };
-    const SB_PHR = {}; for (const [e,n] of Object.entries(SB_PH)) SB_PHR[n] = e;
+    const SB_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    function sbRnd(n) { const a = new Uint32Array(n); crypto.getRandomValues(a); return Array.from(a, v => SB_EMOJIS[v % SB_EMOJIS.length]); }
-    function sbToPhon(arr) { return arr.map(e => SB_PH[e]||"?").join("-"); }
-
-    function sbParseIn(str) {
-      str = str.trim();
-      if (str.includes("-")) {
-        const p = str.split("-").map(s => s.trim().toLowerCase());
-        if (p.length !== 6) return null;
-        const r = p.map(x => SB_PHR[x]); return r.every(Boolean) ? r : null;
-      }
-      const f = []; let rem = str;
-      while (rem.length > 0 && f.length < 6) {
-        let hit = false;
-        for (const e of SB_EMOJIS) { if (rem.startsWith(e)) { f.push(e); rem = rem.slice(e.length); hit = true; break; } }
-        if (!hit) rem = rem.slice(1);
-      }
-      return f.length === 6 ? f : null;
+    function sbGenerateId() {
+      const a = new Uint32Array(6);
+      crypto.getRandomValues(a);
+      return Array.from(a, v => SB_CHARSET[v % SB_CHARSET.length]).join("");
     }
 
-    async function sbBoxHash(emojis) {
-      const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(emojis.join("")));
+    async function sbBoxHash(boxId) {
+      const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(boxId));
       return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,16);
     }
 
-    async function sbDeriveKey(box, pass) {
-      const raw = new TextEncoder().encode(box.join("") + ":" + pass.join(""));
+    async function sbDeriveKey(boxId, pass) {
+      const raw = new TextEncoder().encode(boxId + ":" + pass);
       const km = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
         { name: "PBKDF2", salt: new TextEncoder().encode("vany-safebox-v1"), iterations: 100000, hash: "SHA-256" },
@@ -2540,15 +2495,15 @@
       );
     }
 
-    async function sbEncrypt(text, box, pass) {
-      const key = await sbDeriveKey(box, pass);
+    async function sbEncrypt(text, boxId, pass) {
+      const key = await sbDeriveKey(boxId, pass);
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(text));
       return { ct: btoa(String.fromCharCode(...new Uint8Array(ct))), iv: btoa(String.fromCharCode(...iv)) };
     }
 
-    async function sbDecrypt(ct64, iv64, box, pass) {
-      const key = await sbDeriveKey(box, pass);
+    async function sbDecrypt(ct64, iv64, boxId, pass) {
+      const key = await sbDeriveKey(boxId, pass);
       const ct = Uint8Array.from(atob(ct64), c => c.charCodeAt(0));
       const iv = Uint8Array.from(atob(iv64), c => c.charCodeAt(0));
       return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct));
@@ -2573,24 +2528,24 @@
 
     async function sbCreateBox() {
       const msg = document.getElementById('sb-msg').value.trim();
+      const pass = document.getElementById('sb-create-pass').value;
       if (!msg) return;
+      if (!pass) { alert('Please enter a password.'); return; }
       const btn = document.getElementById('sb-create-btn');
       btn.disabled = true; btn.textContent = 'Encrypting...';
       try {
-        const bx = sbRnd(6), pw = sbRnd(6);
-        const { ct, iv } = await sbEncrypt(msg, bx, pw);
-        const bh = await sbBoxHash(bx);
+        const boxId = sbGenerateId();
+        const { ct, iv } = await sbEncrypt(msg, boxId, pass);
+        const bh = await sbBoxHash(boxId);
         const resp = await fetch('https://vany.sh/box', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ box_hash: bh, ciphertext: ct, iv })
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || 'Failed');
-        document.getElementById('sb-res-box').textContent = bx.join('');
-        document.getElementById('sb-res-box-ph').textContent = sbToPhon(bx);
-        document.getElementById('sb-res-pass').textContent = pw.join('');
-        document.getElementById('sb-res-pass-ph').textContent = sbToPhon(pw);
-        document.getElementById('sb-res-cli').textContent = 'curl -s "https://vany.sh/box/' + sbToPhon(bx) + '?pass=' + sbToPhon(pw) + '"';
+        document.getElementById('sb-res-box').textContent = boxId;
+        document.getElementById('sb-res-pass').textContent = pass;
+        document.getElementById('sb-res-cli').textContent = 'curl -s "https://vany.sh/box/' + boxId + '"';
         document.getElementById('sb-res-ttl').textContent = 'Expires: ' + new Date(data.expires_at).toLocaleString();
         document.getElementById('sb-create-result').classList.remove('sb-hidden');
       } catch (e) { alert('Error: ' + e.message); }
@@ -2598,17 +2553,17 @@
     }
 
     async function sbOpenBox() {
-      const bx = sbParseIn(document.getElementById('sb-open-id').value);
-      const pw = sbParseIn(document.getElementById('sb-open-pass').value);
+      const boxId = document.getElementById('sb-open-id').value.trim().toUpperCase();
+      const pass = document.getElementById('sb-open-pass').value;
       document.getElementById('sb-open-result').classList.add('sb-hidden');
       document.getElementById('sb-open-error').classList.add('sb-hidden');
-      if (!bx) { sbShowErr('Invalid box ID. Use 6 emojis or phonetic names.'); return; }
-      if (!pw) { sbShowErr('Invalid password. Use 6 emojis or phonetic names.'); return; }
+      if (!/^[A-Z0-9]{6}$/.test(boxId)) { sbShowErr('Invalid box ID. Must be 6 characters (A-Z, 0-9).'); return; }
+      if (!pass) { sbShowErr('Please enter the password.'); return; }
       try {
-        const resp = await fetch('https://vany.sh/box/' + encodeURIComponent(sbToPhon(bx)));
+        const resp = await fetch('https://vany.sh/box/' + encodeURIComponent(boxId));
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || 'Box not found');
-        const text = await sbDecrypt(data.ciphertext, data.iv, bx, pw);
+        const text = await sbDecrypt(data.ciphertext, data.iv, boxId, pass);
         document.getElementById('sb-open-content').value = text;
         document.getElementById('sb-open-ttl').textContent = 'Expires: ' + new Date(data.expires_at).toLocaleString();
         document.getElementById('sb-open-result').classList.remove('sb-hidden');

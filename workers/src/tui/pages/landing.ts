@@ -171,7 +171,7 @@ export function pageLanding(): string {
   lines.push(`    ${LGREEN}2.${RST} ${TEXT}Hit${RST} ${LGREEN}Generate${RST}${TEXT}, copy the link${RST}`);
   lines.push(`    ${LGREEN}3.${RST} ${TEXT}Paste into ${BLUE}Hiddify${RST} ${DIM}(iOS/Android/Windows/macOS/Linux)${RST}`);
   lines.push("");
-  lines.push(`  ${ORANGE}${BOLD}SafeBox (Encrypted Dead-Drop)${RST}  ${DIM}Share secrets with emoji-based access. 24h TTL.${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}SafeBox (Encrypted Dead-Drop)${RST}  ${DIM}Share secrets with a 6-char box ID + password. 24h TTL.${RST}`);
   lines.push(`    ${LGREEN}Browser:${RST}  ${TEXT}Open ${BLUE}https://vany.sh${RST} ${DIM}and click the${RST} ${PURPLE}lock icon${RST}`);
   lines.push(`    ${LGREEN}CLI:${RST}      ${DIM}curl -s vany.sh/box${RST}   ${TEXT}(view help and create/open boxes)${RST}`);
   lines.push("");

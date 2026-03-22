@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
-// Vany SafeBox — Encrypted Dead-Drop with Emoji Access
+// Vany SafeBox — Encrypted Dead-Drop with Alphanumeric Access
 //
 // Flow (all encryption is client-side):
-//   1. Client generates 6 box emojis + 6 password emojis
-//   2. Client derives AES-256-GCM key via PBKDF2(box+":"+pass, 100K iterations)
-//   3. Client encrypts plaintext, computes box_hash = SHA256(box_emojis)[:16]
+//   1. Client generates 6-char box ID [A-Z0-9], user sets their own password
+//   2. Client derives AES-256-GCM key via PBKDF2(boxId+":"+password, 100K iterations)
+//   3. Client encrypts plaintext, computes box_hash = SHA256(boxId)[:16]
 //   4. Client POSTs {box_hash, ciphertext, iv} to /box
 //   5. Server stores opaque blob in KV with TTL=24h
-//   6. Recipient GETs /box/{phonetic-or-emojis}, decrypts client-side
+//   6. Recipient GETs /box/:id, decrypts client-side with password
 //
 // Routes:
 //   POST /box           → store {box_hash, ciphertext, iv}
@@ -15,72 +15,18 @@
 //   GET  /box           → web UI (browser) or CLI help (curl)
 // ---------------------------------------------------------------------------
 
-// 32 emojis — same set as SOS crypto.py
-const EMOJI_SET = [
-  "\u{1F525}", "\u{1F319}", "\u{2B50}", "\u{1F3AF}", "\u{1F30A}", "\u{1F48E}", "\u{1F340}", "\u{1F3B2}",
-  "\u{1F680}", "\u{1F308}", "\u{26A1}", "\u{1F3B5}", "\u{1F511}", "\u{1F338}", "\u{1F344}", "\u{1F98B}",
-  "\u{1F3AA}", "\u{1F335}", "\u{1F34E}", "\u{1F40B}", "\u{1F98A}", "\u{1F33B}", "\u{1F3AD}", "\u{1F514}",
-  "\u{1F3D4}\u{FE0F}", "\u{1F334}", "\u{1F355}", "\u{1F419}", "\u{1F989}", "\u{1F33A}", "\u{1F3A8}", "\u{1F52E}",
-];
+const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const BOX_ID_LENGTH = 6;
+const BOX_ID_REGEX = /^[A-Z0-9]{6}$/;
 
-const EMOJI_PHONETICS: Record<string, string> = {
-  "\u{1F525}": "fire",    "\u{1F319}": "moon",     "\u{2B50}": "star",     "\u{1F3AF}": "target",
-  "\u{1F30A}": "wave",    "\u{1F48E}": "gem",      "\u{1F340}": "clover",  "\u{1F3B2}": "dice",
-  "\u{1F680}": "rocket",  "\u{1F308}": "rainbow",  "\u{26A1}": "bolt",     "\u{1F3B5}": "music",
-  "\u{1F511}": "key",     "\u{1F338}": "bloom",    "\u{1F344}": "shroom",  "\u{1F98B}": "butterfly",
-  "\u{1F3AA}": "circus",  "\u{1F335}": "cactus",   "\u{1F34E}": "apple",   "\u{1F40B}": "whale",
-  "\u{1F98A}": "fox",     "\u{1F33B}": "sunflower","\u{1F3AD}": "mask",    "\u{1F514}": "bell",
-  "\u{1F3D4}\u{FE0F}": "mountain", "\u{1F334}": "palm", "\u{1F355}": "pizza", "\u{1F419}": "octopus",
-  "\u{1F989}": "owl",     "\u{1F33A}": "hibiscus", "\u{1F3A8}": "palette", "\u{1F52E}": "crystal",
-};
-
-const PHONETICS_TO_EMOJI: Record<string, string> = {};
-for (const [emoji, name] of Object.entries(EMOJI_PHONETICS)) {
-  PHONETICS_TO_EMOJI[name] = emoji;
+/** Validate box ID: exactly 6 uppercase alphanumeric chars */
+function validateBoxId(id: string): boolean {
+  return BOX_ID_REGEX.test(id);
 }
 
-/** Parse "fire-moon-star-target-wave-gem" → emoji array */
-function phoneticsToEmojis(input: string): string[] | null {
-  const parts = input.split("-").map(s => s.trim().toLowerCase());
-  if (parts.length !== 6) return null;
-  const emojis: string[] = [];
-  for (const name of parts) {
-    const e = PHONETICS_TO_EMOJI[name];
-    if (!e) return null;
-    emojis.push(e);
-  }
-  return emojis;
-}
-
-/** Parse raw emoji string → emoji array */
-function parseEmojiString(input: string): string[] | null {
-  const found: string[] = [];
-  let remaining = input;
-  while (remaining.length > 0 && found.length < 6) {
-    let matched = false;
-    for (const e of EMOJI_SET) {
-      if (remaining.startsWith(e)) {
-        found.push(e);
-        remaining = remaining.slice(e.length);
-        matched = true;
-        break;
-      }
-    }
-    if (!matched) remaining = remaining.slice(1);
-  }
-  return found.length === 6 ? found : null;
-}
-
-/** Parse box ID from URL segment — emojis or phonetics */
-function parseBoxId(segment: string): string[] | null {
-  const decoded = decodeURIComponent(segment);
-  if (decoded.includes("-")) return phoneticsToEmojis(decoded);
-  return parseEmojiString(decoded);
-}
-
-/** SHA-256(emoji_string)[:16] → KV address */
-async function hashEmojis(emojis: string[]): Promise<string> {
-  const data = new TextEncoder().encode(emojis.join(""));
+/** SHA-256(boxId)[:16] → KV address */
+async function hashBoxId(boxId: string): Promise<string> {
+  const data = new TextEncoder().encode(boxId);
   const hash = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
@@ -151,15 +97,15 @@ export async function handleBoxCreate(request: Request, kv: KVNamespace): Promis
 
 /** GET /box/:id — fetch encrypted box */
 export async function handleBoxFetch(boxIdSegment: string, kv: KVNamespace): Promise<Response> {
-  const emojis = parseBoxId(boxIdSegment);
-  if (!emojis) {
+  const boxId = decodeURIComponent(boxIdSegment).toUpperCase();
+  if (!validateBoxId(boxId)) {
     return Response.json(
-      { error: "Invalid box ID. Use 6 emojis or phonetic names (fire-moon-star-target-wave-gem)" },
+      { error: "Invalid box ID. Use 6 characters (A-Z, 0-9), e.g. A3K9X2" },
       { status: 400, headers: CORS_HEADERS },
     );
   }
 
-  const boxHash = await hashEmojis(emojis);
+  const boxHash = await hashBoxId(boxId);
   const raw = await kv.get(`box:${boxHash}`);
   if (!raw) {
     return Response.json({ error: "Box not found or expired" }, { status: 404, headers: CORS_HEADERS });
@@ -183,24 +129,20 @@ export function handleBoxPage(isCli: boolean): Response {
 }
 
 const CLI_HELP = `# Vany SafeBox - Encrypted Dead-Drop
-# Store encrypted text with emoji-based access. Auto-expires in 24h.
+# Store encrypted text with alphanumeric box ID + your own password. Auto-expires in 24h.
 # All encryption is client-side (PBKDF2 + AES-256-GCM). Server never sees plaintext.
 #
 # WEB INTERFACE:
 #   Open https://vany.sh/box in your browser
 #
-# RETRIEVE A BOX (phonetic names):
-#   curl -s "https://vany.sh/box/fire-moon-star-target-wave-gem"
-#
-# RETRIEVE A BOX (emojis):
-#   curl -s "https://vany.sh/box/%F0%9F%94%A5%F0%9F%8C%99%E2%AD%90%F0%9F%8E%AF%F0%9F%8C%8A%F0%9F%92%8E"
+# RETRIEVE A BOX:
+#   curl -s "https://vany.sh/box/A3K9X2"
 #
 # Returns JSON: { ciphertext, iv, created_at, expires_at }
-# Decrypt client-side with the password emojis.
+# Decrypt client-side with your password.
 #
-# Phonetic names: fire moon star target wave gem clover dice rocket rainbow
-#   bolt music key bloom shroom butterfly circus cactus apple whale
-#   fox sunflower mask bell mountain palm pizza octopus owl hibiscus palette crystal
+# Box ID: 6 characters (A-Z, 0-9), randomly generated
+# Password: Your own text, chosen when creating the box
 `;
 
 const WEB_PAGE = `<!DOCTYPE html>
@@ -233,13 +175,12 @@ textarea:focus { outline: none; border-color: var(--green); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary { background: var(--green); color: var(--bg); border-color: var(--green); }
 .btn-primary:hover { background: #25a078; }
-.emoji-display { font-size: 24px; letter-spacing: 4px; text-align: center; padding: 12px; background: var(--bg); border: 1px solid var(--border); margin: 8px 0; user-select: all; }
-.phonetic { color: var(--dim); font-size: 11px; text-align: center; margin-bottom: 8px; }
+.id-display { font-size: 28px; letter-spacing: 6px; text-align: center; padding: 12px; background: var(--bg); border: 1px solid var(--border); margin: 8px 0; user-select: all; font-weight: bold; color: var(--green); }
 .result-box { background: var(--bg); border: 1px solid var(--green); padding: 16px; margin: 12px 0; }
 .result-box .label { color: var(--orange); font-size: 11px; margin-bottom: 4px; }
 .result-box .value { color: var(--lgreen); font-size: 11px; word-break: break-all; }
-input[type=text] { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 12px; padding: 10px; }
-input[type=text]:focus { outline: none; border-color: var(--green); }
+input[type=text], input[type=password] { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 12px; padding: 10px; }
+input[type=text]:focus, input[type=password]:focus { outline: none; border-color: var(--green); }
 .status { padding: 8px 12px; font-size: 11px; margin: 8px 0; }
 .status.ok { background: rgba(46,183,135,0.1); border: 1px solid var(--green); color: var(--green); }
 .status.err { background: rgba(162,81,56,0.1); border: 1px solid var(--red); color: var(--red); }
@@ -256,12 +197,13 @@ input[type=text]:focus { outline: none; border-color: var(--green); }
 .footer a { color: var(--blue); text-decoration: none; font-size: 11px; }
 .copy-btn { cursor: pointer; color: var(--dim); font-size: 11px; }
 .copy-btn:hover { color: var(--green); }
+.pass-label { color: var(--dim); font-size: 11px; text-align: center; margin-bottom: 8px; }
 </style>
 </head>
 <body>
 <div class="app">
   <h1>&#x1F510; Vany SafeBox</h1>
-  <p class="subtitle">Encrypted dead-drop. 6 emoji box + 6 emoji password. Auto-expires in 24h.</p>
+  <p class="subtitle">Encrypted dead-drop. 6-char box ID + your password. Auto-expires in 24h.</p>
 
   <div class="tab-bar">
     <div class="tab active" onclick="switchTab('create')" id="tab-create">Create Box</div>
@@ -275,6 +217,8 @@ input[type=text]:focus { outline: none; border-color: var(--green); }
       <label>Message (encrypted client-side, server never sees plaintext)</label>
       <textarea id="msg-input" placeholder="Type or paste your secret text here..." maxlength="50000"></textarea>
       <div style="text-align:right;margin-top:4px;"><span id="char-count" style="color:var(--muted);font-size:10px;">0 / 50,000</span></div>
+      <label style="margin-top:8px;">Password (you choose — remember it to decrypt later)</label>
+      <input type="text" id="create-password" placeholder="Enter a password..." />
       <div class="row">
         <button class="btn btn-primary" id="create-btn" onclick="createBox()">Create SafeBox</button>
       </div>
@@ -285,13 +229,11 @@ input[type=text]:focus { outline: none; border-color: var(--green); }
         <div class="status warn">Save these! They cannot be recovered. Box expires in 24 hours.</div>
         <div class="result-box">
           <div class="label">BOX ID (share this)</div>
-          <div class="emoji-display" id="res-box-id"></div>
-          <div class="phonetic" id="res-box-phonetic"></div>
+          <div class="id-display" id="res-box-id"></div>
         </div>
         <div class="result-box">
           <div class="label">PASSWORD (keep secret)</div>
-          <div class="emoji-display" id="res-password"></div>
-          <div class="phonetic" id="res-pass-phonetic"></div>
+          <div class="pass-label" id="res-password"></div>
         </div>
         <div class="result-box">
           <div class="label">CLI COMMAND <span class="copy-btn" onclick="copyCli()">[copy]</span></div>
@@ -306,10 +248,10 @@ input[type=text]:focus { outline: none; border-color: var(--green); }
   <div id="panel-open" class="hidden">
     <div class="section">
       <h2>OPEN A BOX</h2>
-      <label>Box ID (6 emojis or phonetic: fire-moon-star-target-wave-gem)</label>
-      <input type="text" id="open-box-id" placeholder="Paste 6 emojis or phonetic names..." />
-      <label style="margin-top:8px;">Password (6 emojis or phonetic)</label>
-      <input type="text" id="open-password" placeholder="Paste 6 emojis or phonetic names..." />
+      <label>Box ID (6 characters, A-Z / 0-9)</label>
+      <input type="text" id="open-box-id" placeholder="e.g. A3K9X2" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;font-size:16px;text-align:center;" />
+      <label style="margin-top:8px;">Password</label>
+      <input type="text" id="open-password" placeholder="Enter the password..." />
       <div class="row">
         <button class="btn btn-primary" onclick="openBox()">Decrypt</button>
       </div>
@@ -333,50 +275,21 @@ input[type=text]:focus { outline: none; border-color: var(--green); }
 </div>
 
 <script>
-const EMOJIS = [
-  "\\u{1F525}","\\u{1F319}","\\u{2B50}","\\u{1F3AF}","\\u{1F30A}","\\u{1F48E}","\\u{1F340}","\\u{1F3B2}",
-  "\\u{1F680}","\\u{1F308}","\\u{26A1}","\\u{1F3B5}","\\u{1F511}","\\u{1F338}","\\u{1F344}","\\u{1F98B}",
-  "\\u{1F3AA}","\\u{1F335}","\\u{1F34E}","\\u{1F40B}","\\u{1F98A}","\\u{1F33B}","\\u{1F3AD}","\\u{1F514}",
-  "\\u{1F3D4}\\u{FE0F}","\\u{1F334}","\\u{1F355}","\\u{1F419}","\\u{1F989}","\\u{1F33A}","\\u{1F3A8}","\\u{1F52E}"
-];
-const PH = {
-  "\\u{1F525}":"fire","\\u{1F319}":"moon","\\u{2B50}":"star","\\u{1F3AF}":"target",
-  "\\u{1F30A}":"wave","\\u{1F48E}":"gem","\\u{1F340}":"clover","\\u{1F3B2}":"dice",
-  "\\u{1F680}":"rocket","\\u{1F308}":"rainbow","\\u{26A1}":"bolt","\\u{1F3B5}":"music",
-  "\\u{1F511}":"key","\\u{1F338}":"bloom","\\u{1F344}":"shroom","\\u{1F98B}":"butterfly",
-  "\\u{1F3AA}":"circus","\\u{1F335}":"cactus","\\u{1F34E}":"apple","\\u{1F40B}":"whale",
-  "\\u{1F98A}":"fox","\\u{1F33B}":"sunflower","\\u{1F3AD}":"mask","\\u{1F514}":"bell",
-  "\\u{1F3D4}\\u{FE0F}":"mountain","\\u{1F334}":"palm","\\u{1F355}":"pizza","\\u{1F419}":"octopus",
-  "\\u{1F989}":"owl","\\u{1F33A}":"hibiscus","\\u{1F3A8}":"palette","\\u{1F52E}":"crystal"
-};
-const PHR = {}; for (const [e,n] of Object.entries(PH)) PHR[n] = e;
+const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-function rnd(n) { const a = new Uint32Array(n); crypto.getRandomValues(a); return Array.from(a, v => EMOJIS[v % EMOJIS.length]); }
-function toPhon(arr) { return arr.map(e => PH[e]||"?").join("-"); }
-
-function parseIn(str) {
-  str = str.trim();
-  if (str.includes("-")) {
-    const p = str.split("-").map(s => s.trim().toLowerCase());
-    if (p.length !== 6) return null;
-    const r = p.map(x => PHR[x]); return r.every(Boolean) ? r : null;
-  }
-  const f = []; let rem = str;
-  while (rem.length > 0 && f.length < 6) {
-    let hit = false;
-    for (const e of EMOJIS) { if (rem.startsWith(e)) { f.push(e); rem = rem.slice(e.length); hit = true; break; } }
-    if (!hit) rem = rem.slice(1);
-  }
-  return f.length === 6 ? f : null;
+function generateId() {
+  const a = new Uint32Array(6);
+  crypto.getRandomValues(a);
+  return Array.from(a, v => CHARSET[v % CHARSET.length]).join("");
 }
 
-async function boxHash(emojis) {
-  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(emojis.join("")));
+async function boxHash(id) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(id));
   return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,16);
 }
 
-async function deriveKey(box, pass) {
-  const raw = new TextEncoder().encode(box.join("") + ":" + pass.join(""));
+async function deriveKey(boxId, pass) {
+  const raw = new TextEncoder().encode(boxId + ":" + pass);
   const km = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt: new TextEncoder().encode("vany-safebox-v1"), iterations: 100000, hash: "SHA-256" },
@@ -384,15 +297,15 @@ async function deriveKey(box, pass) {
   );
 }
 
-async function enc(text, box, pass) {
-  const key = await deriveKey(box, pass);
+async function enc(text, boxId, pass) {
+  const key = await deriveKey(boxId, pass);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(text));
   return { ct: btoa(String.fromCharCode(...new Uint8Array(ct))), iv: btoa(String.fromCharCode(...iv)) };
 }
 
-async function dec(ct64, iv64, box, pass) {
-  const key = await deriveKey(box, pass);
+async function dec(ct64, iv64, boxId, pass) {
+  const key = await deriveKey(boxId, pass);
   const ct = Uint8Array.from(atob(ct64), c => c.charCodeAt(0));
   const iv = Uint8Array.from(atob(iv64), c => c.charCodeAt(0));
   return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct));
@@ -410,25 +323,24 @@ document.getElementById("msg-input").addEventListener("input", function() {
 
 async function createBox() {
   const msg = document.getElementById("msg-input").value.trim();
+  const pass = document.getElementById("create-password").value;
   if (!msg) return;
+  if (!pass) { alert("Please enter a password."); return; }
   const btn = document.getElementById("create-btn");
   btn.disabled = true; btn.textContent = "Encrypting...";
   try {
-    const bx = rnd(6), pw = rnd(6);
-    const { ct, iv } = await enc(msg, bx, pw);
-    const bh = await boxHash(bx);
+    const boxId = generateId();
+    const { ct, iv } = await enc(msg, boxId, pass);
+    const bh = await boxHash(boxId);
     const resp = await fetch("/box", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ box_hash: bh, ciphertext: ct, iv })
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || "Failed");
-    document.getElementById("res-box-id").textContent = bx.join("");
-    document.getElementById("res-box-phonetic").textContent = toPhon(bx);
-    document.getElementById("res-password").textContent = pw.join("");
-    document.getElementById("res-pass-phonetic").textContent = toPhon(pw);
-    document.getElementById("res-cli").textContent =
-      'curl -s "https://vany.sh/box/' + toPhon(bx) + '?pass=' + toPhon(pw) + '"';
+    document.getElementById("res-box-id").textContent = boxId;
+    document.getElementById("res-password").textContent = pass;
+    document.getElementById("res-cli").textContent = 'curl -s "https://vany.sh/box/' + boxId + '"';
     document.getElementById("res-ttl").textContent = "Expires: " + new Date(data.expires_at).toLocaleString();
     document.getElementById("create-result").classList.remove("hidden");
   } catch (e) { alert("Error: " + e.message); }
@@ -436,17 +348,17 @@ async function createBox() {
 }
 
 async function openBox() {
-  const bx = parseIn(document.getElementById("open-box-id").value);
-  const pw = parseIn(document.getElementById("open-password").value);
+  const boxId = document.getElementById("open-box-id").value.trim().toUpperCase();
+  const pass = document.getElementById("open-password").value;
   document.getElementById("open-result").classList.add("hidden");
   document.getElementById("open-error").classList.add("hidden");
-  if (!bx) { showErr("Invalid box ID. Use 6 emojis or phonetic names."); return; }
-  if (!pw) { showErr("Invalid password. Use 6 emojis or phonetic names."); return; }
+  if (!/^[A-Z0-9]{6}$/.test(boxId)) { showErr("Invalid box ID. Must be 6 characters (A-Z, 0-9)."); return; }
+  if (!pass) { showErr("Please enter the password."); return; }
   try {
-    const resp = await fetch("/box/" + encodeURIComponent(toPhon(bx)));
+    const resp = await fetch("/box/" + encodeURIComponent(boxId));
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || "Box not found");
-    const text = await dec(data.ciphertext, data.iv, bx, pw);
+    const text = await dec(data.ciphertext, data.iv, boxId, pass);
     document.getElementById("open-content").value = text;
     document.getElementById("open-ttl").textContent = "Expires: " + new Date(data.expires_at).toLocaleString();
     document.getElementById("open-result").classList.remove("hidden");
@@ -466,7 +378,7 @@ function copyCli() {
   setTimeout(() => document.querySelector(".copy-btn").textContent = "[copy]", 2000);
 }
 
-// Direct open via URL params: ?id=fire-moon-...&pass=rocket-...
+// Direct open via URL params: ?id=A3K9X2&pass=mypassword
 const sp = new URLSearchParams(location.search);
 if (sp.has("id") && sp.has("pass")) {
   switchTab("open");
