@@ -2545,7 +2545,7 @@
         if (!resp.ok) throw new Error(data.error || 'Failed');
         document.getElementById('sb-res-box').textContent = boxId;
         document.getElementById('sb-res-pass').textContent = pass;
-        document.getElementById('sb-res-cli').textContent = 'curl -s "https://vany.sh/box/' + boxId + '"';
+        document.getElementById('sb-res-cli').textContent = 'curl -s "https://vany.sh/box/' + boxId + '?pass=' + encodeURIComponent(pass) + '"';
         document.getElementById('sb-res-ttl').textContent = 'Expires: ' + new Date(data.expires_at).toLocaleString();
         document.getElementById('sb-create-result').classList.remove('sb-hidden');
       } catch (e) { alert('Error: ' + e.message); }

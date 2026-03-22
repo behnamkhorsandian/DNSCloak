@@ -95,8 +95,18 @@ export async function handleBoxCreate(request: Request, kv: KVNamespace): Promis
   }, { headers: CORS_HEADERS });
 }
 
-/** GET /box/:id — fetch encrypted box */
-export async function handleBoxFetch(boxIdSegment: string, kv: KVNamespace): Promise<Response> {
+/** Derive AES-256-GCM key from boxId + password (same as client-side) */
+async function deriveKey(boxId: string, pass: string): Promise<CryptoKey> {
+  const raw = new TextEncoder().encode(boxId + ":" + pass);
+  const km = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: new TextEncoder().encode("vany-safebox-v1"), iterations: 100000, hash: "SHA-256" },
+    km, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+  );
+}
+
+/** GET /box/:id — fetch encrypted box, optionally decrypt if ?pass= provided */
+export async function handleBoxFetch(boxIdSegment: string, kv: KVNamespace, password?: string): Promise<Response> {
   const boxId = decodeURIComponent(boxIdSegment).toUpperCase();
   if (!validateBoxId(boxId)) {
     return Response.json(
@@ -112,6 +122,22 @@ export async function handleBoxFetch(boxIdSegment: string, kv: KVNamespace): Pro
   }
 
   const data: BoxData = JSON.parse(raw);
+
+  // If password provided, decrypt and return plaintext
+  if (password) {
+    try {
+      const key = await deriveKey(boxId, password);
+      const ct = Uint8Array.from(atob(data.ciphertext), c => c.charCodeAt(0));
+      const iv = Uint8Array.from(atob(data.iv), c => c.charCodeAt(0));
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+      return new Response(new TextDecoder().decode(plain) + "\n", {
+        headers: { ...CORS_HEADERS, "Content-Type": "text/plain; charset=utf-8" },
+      });
+    } catch {
+      return Response.json({ error: "Wrong password" }, { status: 403, headers: CORS_HEADERS });
+    }
+  }
+
   return Response.json({
     ciphertext: data.ciphertext,
     iv: data.iv,
@@ -135,11 +161,11 @@ const CLI_HELP = `# Vany SafeBox - Encrypted Dead-Drop
 # WEB INTERFACE:
 #   Open https://vany.sh/box in your browser
 #
-# RETRIEVE A BOX:
-#   curl -s "https://vany.sh/box/A3K9X2"
+# RETRIEVE & DECRYPT A BOX:
+#   curl -s "https://vany.sh/box/A3K9X2?pass=mypassword"
 #
-# Returns JSON: { ciphertext, iv, created_at, expires_at }
-# Decrypt client-side with your password.
+# Returns decrypted plaintext directly.
+# Without ?pass=, returns raw JSON: { ciphertext, iv, created_at, expires_at }
 #
 # Box ID: 6 characters (A-Z, 0-9), randomly generated
 # Password: Your own text, chosen when creating the box
@@ -340,7 +366,7 @@ async function createBox() {
     if (!resp.ok) throw new Error(data.error || "Failed");
     document.getElementById("res-box-id").textContent = boxId;
     document.getElementById("res-password").textContent = pass;
-    document.getElementById("res-cli").textContent = 'curl -s "https://vany.sh/box/' + boxId + '"';
+    document.getElementById("res-cli").textContent = 'curl -s "https://vany.sh/box/' + boxId + '?pass=' + encodeURIComponent(pass) + '"';
     document.getElementById("res-ttl").textContent = "Expires: " + new Date(data.expires_at).toLocaleString();
     document.getElementById("create-result").classList.remove("hidden");
   } catch (e) { alert("Error: " + e.message); }

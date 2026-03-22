@@ -318,7 +318,8 @@ export default {
           return handleBoxPage(isCli);
         }
         if (boxSegments.length === 2 && request.method === 'GET') {
-          return handleBoxFetch(boxSegments[1], env.SAFEBOX);
+          const pass = url.searchParams.get('pass') || undefined;
+          return handleBoxFetch(boxSegments[1], env.SAFEBOX, pass);
         }
         return new Response('Not found', { status: 404 });
       }
