@@ -1,0 +1,18 @@
+services:
+  tor-bridge:
+    build: .
+    image: vany-tor-bridge:latest
+    container_name: vany-tor-bridge
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/vany/tor-bridge:/etc/tor:rw
+      - tor-data:/var/lib/tor
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  tor-data:

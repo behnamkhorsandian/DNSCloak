@@ -17,6 +17,8 @@ import { pageProtocols } from "./pages/protocols.js";
 import { pageInstall } from "./pages/install.js";
 import { pageHelp } from "./pages/help.js";
 import { pageLanding } from "./pages/landing.js";
+import { pageClient } from "./pages/client.js";
+import { pageTools } from "./pages/tools.js";
 import { splash } from "./splash.js";
 import { CLEAR, HIDE_CURSOR, SHOW_CURSOR, HOME } from "./ansi.js";
 import { frame } from "./frame.js";
@@ -110,6 +112,22 @@ export async function handleTuiRequest(
   if (path === "/tui/help") {
     const content = pageHelp();
     const page = frame({ content, cols, rows, navIndex: 4, interactive });
+    return new Response(CLEAR + HIDE_CURSOR + page, { headers: TEXT_HEADERS });
+  }
+
+  // /tui/client[/<subpage>] — client connection page
+  if (path.startsWith("/tui/connect")) {
+    const subpage = path.split("/")[3] || "";
+    const content = pageClient(subpage, state);
+    const page = frame({ content, cols, rows, navIndex: 5, interactive });
+    return new Response(CLEAR + HIDE_CURSOR + page, { headers: TEXT_HEADERS });
+  }
+
+  // /tui/tools[/<tool>] — network tools page
+  if (path.startsWith("/tui/tools")) {
+    const tool = path.split("/")[3] || "";
+    const content = pageTools(tool, state);
+    const page = frame({ content, cols, rows, navIndex: 6, interactive });
     return new Response(CLEAR + HIDE_CURSOR + page, { headers: TEXT_HEADERS });
   }
 

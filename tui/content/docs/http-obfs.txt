@@ -1,0 +1,36 @@
+# HTTP Obfuscation (CDN Host Spoofing)
+
+Route VLESS traffic through CDN using HTTP Host header
+tricks. The "ArvanCloud technique" used by Iranian VPN sellers.
+
+## Why HTTP Obfuscation
+
+- Hides traffic behind popular CDN-hosted domains
+- Censors see traffic to allowed websites (e.g. bama.ir)
+- Server IP completely hidden
+- Works even when CDN IPs are partially blocked
+
+## When to Use
+
+- Direct server connections are blocked
+- Cloudflare/ArvanCloud IPs are partially available
+- Need maximum stealth through CDN
+- Combine with cfray scanner for clean IPs
+
+## How It Works
+
+Traffic uses a CDN IP with a spoofed Host header pointing
+to your actual Cloudflare-proxied domain.
+
+  Client --> CDN IP (clean) --> Cloudflare --> Your Server
+    |            |
+    |  HTTP/WS   |  Host: your-domain.com
+    |            |  Looks like visiting bama.ir
+
+## Setup Notes
+
+- Requires a domain on Cloudflare
+- Uses port 80 (HTTP) on the origin server
+- Client must use a "clean" CDN IP (found with cfray)
+- Cloudflare SSL mode: Flexible
+- Essentially WS+CDN with manual clean IP selection

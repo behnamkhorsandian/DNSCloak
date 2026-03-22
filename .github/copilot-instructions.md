@@ -14,20 +14,36 @@ Vany is a multi-protocol censorship bypass platform. All protocols run in Docker
 - [x] `lib/selector.sh` - Domain detection and service recommendation
 
 ### Phase 2A: Docker Infrastructure [v3.0.0]
-- [x] `docker/xray/` - Shared Xray container (Reality+WS+VRAY)
+- [x] `docker/xray/` - Shared Xray container (Reality+WS+VRAY+HTTP-Obfs)
 - [x] `docker/wireguard/` - WireGuard container
 - [x] `docker/dnstt/` - DNSTT server (built from source)
 - [x] `docker/conduit/` - Conduit Psiphon relay
 - [x] `docker/sos/` - SOS relay daemon
+- [x] `docker/hysteria/` - Hysteria v2 (QUIC)
+- [x] `docker/slipstream/` - Slipstream DNS tunnel
+- [x] `docker/noizdns/` - NoizDNS (DPI-resistant DNSTT fork)
+- [x] `docker/tor-bridge/` - Tor Bridge (obfs4)
+- [x] `docker/snowflake/` - Snowflake Proxy
 - [x] `scripts/docker-bootstrap.sh` - Docker install, sysctl, cloud detection, state init
-- [x] `scripts/protocols/install-xray.sh` - Xray container + Reality/WS inbounds
+- [x] `scripts/protocols/install-xray.sh` - Xray container + Reality/WS/HTTP-Obfs inbounds
 - [x] `scripts/protocols/install-wireguard.sh` - WireGuard container + peer management
 - [x] `scripts/protocols/install-dnstt.sh` - DNSTT container
 - [x] `scripts/protocols/install-conduit.sh` - Conduit container
 - [x] `scripts/protocols/install-sos.sh` - SOS relay container
+- [x] `scripts/protocols/install-hysteria.sh` - Hysteria v2 container
+- [x] `scripts/protocols/install-http-obfs.sh` - HTTP Obfuscation (WS+CDN + clean IPs)
+- [x] `scripts/protocols/install-ssh-tunnel.sh` - SSH tunnel (restricted user)
+- [x] `scripts/protocols/install-slipstream.sh` - Slipstream DNS tunnel
+- [x] `scripts/protocols/install-noizdns.sh` - NoizDNS container
+- [x] `scripts/protocols/install-tor-bridge.sh` - Tor Bridge container
+- [x] `scripts/protocols/install-snowflake.sh` - Snowflake Proxy container
 - [x] `scripts/protocols/update-container.sh` - Generic container update
 - [x] `scripts/protocols/remove-container.sh` - Generic container removal
 - [x] `scripts/protocols/status-containers.sh` - Container status (JSON)
+- [x] `scripts/tools/cfray.sh` - Cloudflare clean IP scanner
+- [x] `scripts/tools/findns.sh` - DNS resolver scanner
+- [x] `scripts/tools/tracer.sh` - IP/ISP/ASN tracer
+- [x] `scripts/tools/speedtest.sh` - Bandwidth test
 
 ### Phase 2B: Worker TUI [v3.0.0]
 - [x] `workers/src/tui/theme.ts` - Vany color palette (green #2eb787)
@@ -35,13 +51,16 @@ Vany is a multi-protocol censorship bypass platform. All protocols run in Docker
 - [x] `workers/src/tui/box.ts` - Unicode box drawing
 - [x] `workers/src/tui/table.ts` - Table renderer
 - [x] `workers/src/tui/layout.ts` - Layout helpers (sideBySide, wordWrap, etc.)
-- [x] `workers/src/tui/frame.ts` - Page frame (header, content, nav bar)
+- [x] `workers/src/tui/frame.ts` - Page frame (header, content, 7-tab nav bar)
 - [x] `workers/src/tui/splash.ts` - Logo splash screen
 - [x] `workers/src/tui/x-client.ts` - Thin bash client script
 - [x] `workers/src/tui/index.ts` - TUI route handler (/tui/*)
-- [x] `workers/src/tui/pages/protocols.ts` - Protocol catalog table
-- [x] `workers/src/tui/pages/install.ts` - Install wizard
-- [x] `workers/src/tui/pages/help.ts` - Help page
+- [x] `workers/src/tui/pages/landing.ts` - Static ANSI catalog (curl vany.sh)
+- [x] `workers/src/tui/pages/protocols.ts` - Protocol catalog table (15 protocols)
+- [x] `workers/src/tui/pages/install.ts` - Install wizard (15 protocols)
+- [x] `workers/src/tui/pages/help.ts` - Help page with protocol comparison
+- [x] `workers/src/tui/pages/client.ts` - Client connection guide + config import
+- [x] `workers/src/tui/pages/tools.ts` - Network scanner tools (cfray, findns, tracer, speedtest)
 
 ### Phase 3: Services [LEGACY - being migrated to Docker]
 - [x] `services/reality/install.sh` - VLESS+REALITY ✅ TESTED
@@ -54,8 +73,10 @@ Vany is a multi-protocol censorship bypass platform. All protocols run in Docker
 ### Phase 4: CLI and Workers [COMPLETE]
 - [x] `cli/vany.sh` - Unified management CLI ✅ CREATED
 - [x] `workers/` - Unified Cloudflare Worker ✅ DEPLOYED
-  - TUI routes: /tui/client, /tui/protocols, /tui/install, /tui/help, /tui/splash
-  - Legacy routes: protocol subdomains, DNSTT setup, SOS, stats
+  - TUI routes: /tui/protocols, /tui/status, /tui/users, /tui/install, /tui/help, /tui/connect, /tui/tools, /tui/splash
+  - Protocol routes: 15 protocol subdomains -> install scripts
+  - Tool routes: /tools/cfray, /tools/findns, /tools/tracer, /tools/speedtest
+  - Legacy routes: DNSTT setup, SOS, stats
 - [x] `www/` - Landing page on Cloudflare Pages
 
 ### Phase 4: Documentation [COMPLETE]
@@ -86,36 +107,42 @@ Vany is a multi-protocol censorship bypass platform. All protocols run in Docker
 ### Directory Structure (Repository)
 ```
 docker/
-  xray/             # Shared Xray container (Reality+WS+VRAY)
-    Dockerfile
-    entrypoint.sh
-    docker-compose.yml
+  xray/             # Shared Xray container (Reality+WS+VRAY+HTTP-Obfs)
   wireguard/        # WireGuard container
-    Dockerfile
-    docker-compose.yml
   dnstt/            # DNSTT server (Go build from source)
-    Dockerfile
-    entrypoint.sh
-    docker-compose.yml
   conduit/          # Conduit Psiphon relay
-    docker-compose.yml
   sos/              # SOS relay daemon
-    Dockerfile
-    docker-compose.yml
+  hysteria/         # Hysteria v2 (QUIC)
+  slipstream/       # Slipstream DNS tunnel (Go build)
+  noizdns/          # NoizDNS tunnel (Go build)
+  tor-bridge/       # Tor Bridge (obfs4)
+  snowflake/        # Snowflake Proxy
 scripts/
   docker-bootstrap.sh       # VPS bootstrap: Docker, sysctl, cloud detection, state init
   protocols/
-    install-xray.sh         # Xray container + Reality/WS inbound management
+    install-xray.sh         # Xray container + Reality/WS/HTTP-Obfs inbound management
     install-wireguard.sh    # WireGuard container + peer management
     install-dnstt.sh        # DNSTT container
     install-conduit.sh      # Conduit container
     install-sos.sh          # SOS relay container
+    install-hysteria.sh     # Hysteria v2 container
+    install-http-obfs.sh    # HTTP Obfuscation (reuses WS+CDN)
+    install-ssh-tunnel.sh   # SSH tunnel restricted user
+    install-slipstream.sh   # Slipstream DNS tunnel
+    install-noizdns.sh      # NoizDNS container
+    install-tor-bridge.sh   # Tor Bridge container
+    install-snowflake.sh    # Snowflake Proxy container
     update-container.sh     # Generic pull/rebuild + restart
     remove-container.sh     # Stop + remove + firewall cleanup
     status-containers.sh    # JSON status for all containers
+  tools/
+    cfray.sh                # Cloudflare clean IP scanner
+    findns.sh               # DNS resolver scanner
+    tracer.sh               # IP/ISP/ASN tracer
+    speedtest.sh            # Bandwidth test via Cloudflare
 workers/
   src/
-    index.ts                # Main Worker router
+    index.ts                # Main Worker router (15 protocols + tools)
     tui/
       index.ts              # TUI route handler (/tui/*)
       ansi.ts               # ANSI utilities
@@ -123,13 +150,16 @@ workers/
       table.ts              # Table renderer
       theme.ts              # Color palette
       layout.ts             # Layout helpers
-      frame.ts              # Page frame renderer
+      frame.ts              # Page frame renderer (7-tab nav)
       splash.ts             # Logo splash
       x-client.ts           # Thin bash client script
       pages/
-        protocols.ts        # Protocol catalog table
-        install.ts          # Install wizard
-        help.ts             # Help page
+        landing.ts          # Static ANSI catalog (curl vany.sh)
+        protocols.ts        # Protocol catalog table (15 protocols)
+        install.ts          # Install wizard (15 protocols)
+        help.ts             # Help page with comparisons
+        client.ts           # Client connection guide
+        tools.ts            # Network scanner tools
 lib/
   cloud.sh          # Provider detection, firewall APIs (legacy, ported to docker-bootstrap.sh)
   bootstrap.sh      # VM prep (legacy, superseded by docker-bootstrap.sh)
@@ -155,15 +185,32 @@ docs/               # Documentation
     dnstt/
     conduit/
     sos/
+    hysteria/
+    slipstream/
+    noizdns/
+    tor-bridge/
+    snowflake/
   scripts/          # Protocol management scripts (downloaded by bootstrap)
   xray/
-    config.json     # Merged Xray config (reality + vray + ws)
+    config.json     # Merged Xray config (reality + vray + ws + http-obfs)
   wg/
     wg0.conf
     peers/
   dnstt/
     server.key
     server.pub
+  hysteria/
+    config.yaml
+    server.crt
+    server.key
+  slipstream/
+    server.key
+    domain.conf
+  noizdns/
+    server.key
+    domain.conf
+  tor-bridge/
+    torrc
   sos/
 ```
 

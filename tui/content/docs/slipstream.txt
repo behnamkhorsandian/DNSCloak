@@ -1,0 +1,35 @@
+# Slipstream
+
+Enhanced DNS tunnel using QUIC+TLS over DNS queries.
+Faster alternative to DNSTT with better throughput.
+
+## Why Slipstream
+
+- ~63 KB/s throughput (vs DNSTT's ~42 KB/s)
+- QUIC+TLS layer over DNS for extra resilience
+- Works during total internet blackouts
+- Only needs DNS resolution to function
+
+## When to Use
+
+- Total internet blackout (all protocols blocked)
+- DNSTT is too slow for your needs
+- DNS queries still resolve (almost always true)
+- Emergency backup connection
+
+## How It Works
+
+Encodes data in DNS queries and responses, then adds
+QUIC+TLS layer for reliability and speed gains.
+
+  Client --> DNS Resolver --> Your NS Server
+    |            |               |
+    |  DNS (53)  |  Encoded data |
+    |  +QUIC/TLS |  in queries   |
+
+## Setup Notes
+
+- Requires domain with NS record pointing to your server
+- Uses port 53 (DNS) -- conflicts with DNSTT and NoizDNS
+- Only one DNS tunnel protocol can be active at a time
+- Slow but unblockable: suitable for chat, not streaming

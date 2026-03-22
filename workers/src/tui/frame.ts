@@ -27,8 +27,8 @@ interface FrameOpts {
   interactive?: boolean;
 }
 
-const NAV_PAGES = ["Protocols", "Status", "Users", "Install", "Help"];
-const NAV_KEYS  = ["p",         "s",      "u",     "i",       "h"];
+const NAV_PAGES = ["Protocols", "Status", "Users", "Install", "Help", "Connect", "Tools"];
+const NAV_KEYS  = ["p",         "s",      "u",     "i",       "h",    "c",       "f"];
 
 /**
  * Max width for the box — snapped to even, fits within terminal.
@@ -96,6 +96,8 @@ export function frame(opts: FrameOpts): string {
   if (interactive) {
     let nav = `${MG}  `;
     for (let i = 0; i < NAV_PAGES.length; i++) {
+      // Add section separators
+      if (i === 5) nav += `${DGRAY}|${RST} `; // before Connect
       if (i === navIndex) {
         nav += `${GREEN}${BOLD}[${NAV_KEYS[i]}] ${NAV_PAGES[i]}${RST}  `;
       } else {

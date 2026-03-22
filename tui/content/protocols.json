@@ -1,5 +1,5 @@
 {
-  "order": ["reality", "wg", "ws", "mtp", "dnstt", "conduit", "vray", "sos"],
+  "order": ["reality", "ws", "hysteria", "wg", "vray", "http-obfs", "mtp", "ssh-tunnel", "dnstt", "slipstream", "noizdns", "conduit", "tor-bridge", "snowflake", "sos"],
   "protocols": {
     "reality": {
       "name": "VLESS + REALITY",
@@ -447,6 +447,378 @@
           "help": "",
           "options": "install_sos_automated",
           "function": "install_sos_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "hysteria": {
+      "name": "Hysteria v2",
+      "short": "Hysteria",
+      "description": "QUIC-based high-speed proxy.\nBest on lossy/throttled networks.\nUses UDP.",
+      "description_md": "hysteria.txt",
+      "banner_file": "logo.txt",
+      "banner_color": "green",
+      "tag": "fast",
+      "port": "UDP",
+      "requirements": [
+        "Server with public IP",
+        "UDP port open"
+      ],
+      "clients": {
+        "ios": "Hiddify",
+        "android": "Hiddify",
+        "windows": "Hiddify / Nekoray",
+        "macos": "Hiddify"
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "Hysteria v2 Setup",
+          "default": "",
+          "help": "Hysteria v2 uses QUIC (UDP) with aggressive congestion control. Fastest protocol on lossy networks. Won't work if UDP is fully blocked.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "HYSTERIA_PORT",
+          "prompt": "UDP port for Hysteria",
+          "default": "8443",
+          "help": "Choose a UDP port. Default 8443 works well. Make sure UDP is not blocked on this port by your cloud provider firewall.",
+          "options": ""
+        },
+        {
+          "type": "confirm",
+          "var": "HYSTERIA_USE_DOMAIN",
+          "prompt": "Use a domain for TLS certificate?",
+          "default": "n",
+          "help": "If you have a domain, Hysteria can get a real certificate via ACME. Otherwise it uses a self-signed cert (clients must allow insecure).",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "HYSTERIA_DOMAIN",
+          "prompt": "Enter your domain",
+          "default": "proxy.example.com",
+          "help": "Domain must have an A record pointing to this server. A free TLS cert will be obtained automatically.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "FIRST_USERNAME",
+          "prompt": "Create first username",
+          "default": "user1",
+          "help": "First user for Hysteria v2. Connection config will be generated.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing Hysteria v2",
+          "default": "",
+          "help": "",
+          "options": "install_hysteria_automated",
+          "function": "install_hysteria_automated"
+        }
+      ],
+      "skip_conditions": {
+        "3": "HYSTERIA_USE_DOMAIN != y"
+      }
+    },
+    "http-obfs": {
+      "name": "HTTP Obfuscation",
+      "short": "HTTP Obfs",
+      "description": "CDN host header spoofing.\nHides behind popular domains.\nRequires domain + CDN.",
+      "description_md": "http-obfs.txt",
+      "banner_file": "ws.txt",
+      "banner_color": "orange",
+      "tag": "needs_domain",
+      "port": "80",
+      "requirements": [
+        "Domain name on Cloudflare",
+        "Port 80 open",
+        "Client must have clean CDN IPs"
+      ],
+      "clients": {
+        "ios": "Hiddify",
+        "android": "Hiddify",
+        "windows": "Hiddify",
+        "macos": "Hiddify"
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "HTTP Obfuscation Setup",
+          "default": "",
+          "help": "This sets up VLESS+WS behind Cloudflare CDN with Host header spoofing. The server side is identical to WS+CDN. The difference is on the client: users connect to 'clean' CDN IPs instead of the domain. Use the cfray scanner to find clean IPs.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "HTTP_OBFS_DOMAIN",
+          "prompt": "Enter your Cloudflare domain",
+          "default": "ws.example.com",
+          "help": "Your domain on Cloudflare with proxy enabled (orange cloud). SSL mode must be 'Flexible'. This is the same setup as WS+CDN.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "FIRST_USERNAME",
+          "prompt": "Create first username",
+          "default": "user1",
+          "help": "Connection links will include your domain as the Host header. Client must set a clean CDN IP as the address.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing HTTP Obfuscation",
+          "default": "",
+          "help": "",
+          "options": "install_http_obfs_automated",
+          "function": "install_http_obfs_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "ssh-tunnel": {
+      "name": "SSH Tunnel",
+      "short": "SSH",
+      "description": "Basic SOCKS5 proxy over SSH.\nZero install. Universal.\nEasily detected by DPI.",
+      "description_md": "ssh-tunnel.txt",
+      "banner_file": "logo.txt",
+      "banner_color": "dgray",
+      "tag": "",
+      "port": "22",
+      "requirements": [
+        "SSH access to server"
+      ],
+      "clients": {
+        "note": "Built into every OS: ssh -D 1080 user@server"
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "SSH Tunnel Setup",
+          "default": "",
+          "help": "Creates a SOCKS5 proxy through SSH. No additional software needed on server. Client connects with: ssh -D 1080 user@server. Easily blocked by DPI - use as fallback only.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "SSH_USER",
+          "prompt": "SSH username for tunnel",
+          "default": "vany",
+          "help": "A restricted user will be created for SSH tunnel access. This user can only create tunnels, not get a shell.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Setting up SSH Tunnel",
+          "default": "",
+          "help": "",
+          "options": "install_ssh_tunnel_automated",
+          "function": "install_ssh_tunnel_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "slipstream": {
+      "name": "Slipstream",
+      "short": "Slipstream",
+      "description": "Enhanced DNS tunnel with QUIC.\n~63 KB/s throughput.\nEmergency protocol.",
+      "description_md": "slipstream.txt",
+      "banner_file": "dnstt.txt",
+      "banner_color": "red",
+      "tag": "emergency",
+      "port": "53",
+      "requirements": [
+        "Domain name",
+        "NS record configured",
+        "Port 53 open"
+      ],
+      "clients": {
+        "note": "Requires slipstream client binary."
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "Slipstream DNS Tunnel Setup",
+          "default": "",
+          "help": "Slipstream is an enhanced DNS tunnel with QUIC+TLS. Faster than DNSTT (~63 KB/s vs ~42 KB/s). Uses port 53 - cannot run alongside DNSTT or NoizDNS.",
+          "options": ""
+        },
+        {
+          "type": "confirm",
+          "var": "SLIPSTREAM_CONTINUE",
+          "prompt": "This is a slow emergency protocol. Continue?",
+          "default": "y",
+          "help": "Slipstream is faster than DNSTT but still slow. Suitable for messaging & light browsing, not streaming. Use Reality/WS for daily use.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "SLIPSTREAM_DOMAIN",
+          "prompt": "Enter your domain",
+          "default": "example.com",
+          "help": "Set up NS record: ns1.domain -> server IP, t.domain NS -> ns1.domain. Domain must NOT be behind Cloudflare proxy.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing Slipstream",
+          "default": "",
+          "help": "",
+          "options": "install_slipstream_automated",
+          "function": "install_slipstream_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "noizdns": {
+      "name": "NoizDNS",
+      "short": "NoizDNS",
+      "description": "DPI-resistant DNS tunnel.\nDNSTT fork with noise/padding.\nEmergency protocol.",
+      "description_md": "noizdns.txt",
+      "banner_file": "dnstt.txt",
+      "banner_color": "red",
+      "tag": "emergency",
+      "port": "53",
+      "requirements": [
+        "Domain name",
+        "NS record configured",
+        "Port 53 open"
+      ],
+      "clients": {
+        "note": "Requires noizdns client binary."
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "NoizDNS Tunnel Setup",
+          "default": "",
+          "help": "NoizDNS is a DPI-resistant fork of DNSTT that adds noise and padding to DNS queries. Uses port 53 - cannot run alongside DNSTT or Slipstream.",
+          "options": ""
+        },
+        {
+          "type": "confirm",
+          "var": "NOIZDNS_CONTINUE",
+          "prompt": "This is a slow emergency protocol. Continue?",
+          "default": "y",
+          "help": "NoizDNS throughput is similar to DNSTT (~42 KB/s) but with better DPI resistance. Use for emergency access only.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "NOIZDNS_DOMAIN",
+          "prompt": "Enter your domain",
+          "default": "example.com",
+          "help": "Set up NS record: ns1.domain -> server IP, t.domain NS -> ns1.domain. Domain must NOT be behind Cloudflare proxy.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing NoizDNS",
+          "default": "",
+          "help": "",
+          "options": "install_noizdns_automated",
+          "function": "install_noizdns_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "tor-bridge": {
+      "name": "Tor Bridge (obfs4)",
+      "short": "Tor Bridge",
+      "description": "obfs4 pluggable transport.\nHelp Tor users bypass censorship.\nVolunteer relay.",
+      "description_md": "tor-bridge.txt",
+      "banner_file": "logo.txt",
+      "banner_color": "purple",
+      "tag": "relay",
+      "port": "9001",
+      "requirements": [
+        "Server with public IP",
+        "Port 9001 open"
+      ],
+      "clients": {
+        "note": "Tor users connect via BridgeDB. No manual setup."
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "Tor Bridge Setup",
+          "default": "",
+          "help": "This runs an obfs4 Tor bridge on your server. Censored users can discover it through BridgeDB and connect to the Tor network via your server.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "TOR_OR_PORT",
+          "prompt": "OR port for Tor bridge",
+          "default": "9001",
+          "help": "The port Tor clients connect to. Default 9001 is standard. Make sure this port is open in your firewall.",
+          "options": ""
+        },
+        {
+          "type": "input",
+          "var": "TOR_CONTACT",
+          "prompt": "Contact email (optional)",
+          "default": "",
+          "help": "Optional contact info for BridgeDB. Can be left empty. Used by Tor project to contact you about your bridge.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing Tor Bridge",
+          "default": "",
+          "help": "",
+          "options": "install_tor_bridge_automated",
+          "function": "install_tor_bridge_automated"
+        }
+      ],
+      "skip_conditions": {}
+    },
+    "snowflake": {
+      "name": "Snowflake Proxy",
+      "short": "Snowflake",
+      "description": "WebRTC Tor relay.\nZero config needed.\nMinimal resource usage.",
+      "description_md": "snowflake.txt",
+      "banner_file": "logo.txt",
+      "banner_color": "blue",
+      "tag": "relay",
+      "port": "--",
+      "requirements": [
+        "Docker installed"
+      ],
+      "clients": {
+        "note": "Tor users connect automatically. No manual setup."
+      },
+      "wizard_steps": [
+        {
+          "type": "info",
+          "var": "",
+          "prompt": "Snowflake Proxy Setup",
+          "default": "",
+          "help": "This runs a Snowflake WebRTC relay. Censored Tor users connect through your relay automatically. Zero configuration needed - just start the container.",
+          "options": ""
+        },
+        {
+          "type": "action",
+          "var": "",
+          "prompt": "Installing Snowflake",
+          "default": "",
+          "help": "",
+          "options": "install_snowflake_automated",
+          "function": "install_snowflake_automated"
         }
       ],
       "skip_conditions": {}

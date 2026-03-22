@@ -1,0 +1,17 @@
+services:
+  noizdns:
+    build: .
+    image: vany-noizdns:latest
+    container_name: vany-noizdns
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/vany/noizdns:/etc/noizdns:rw
+    environment:
+      - NOIZDNS_DOMAIN=${NOIZDNS_DOMAIN:-t.example.com}
+      - NOIZDNS_FORWARD=${NOIZDNS_FORWARD:-127.0.0.1:10800}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

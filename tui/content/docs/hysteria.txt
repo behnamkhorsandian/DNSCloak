@@ -1,0 +1,36 @@
+# Hysteria v2
+
+QUIC-based proxy protocol. Designed for high throughput
+on lossy, congested, or throttled networks.
+
+## Why Hysteria v2
+
+- Built on QUIC (UDP), avoids TCP throttling
+- Brutal congestion control maximizes bandwidth
+- Encrypted, masquerades as HTTP/3 traffic
+- Fastest protocol for lossy networks
+
+## When to Use
+
+- ISP throttles TCP connections
+- Need maximum download speed
+- QUIC/UDP is not fully blocked
+- High packet loss environments
+
+## How It Works
+
+Uses QUIC with custom congestion control to push maximum
+bandwidth through throttled links. TLS 1.3 encrypted.
+
+  Client --> Your Server --> Internet
+    |            |
+    |  QUIC/UDP  |  Looks like HTTP/3
+    |  Hysteria  |  to any observer
+
+## Setup Notes
+
+- Uses UDP port (configurable, default random high port)
+- Self-signed or ACME TLS certificate
+- No domain required (but recommended for ACME)
+- May not work where QUIC/UDP is fully blocked
+- Client apps: Hiddify, Nekoray, sing-box

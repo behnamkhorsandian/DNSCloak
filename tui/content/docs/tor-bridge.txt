@@ -1,0 +1,36 @@
+# Tor Bridge (obfs4)
+
+Run an obfs4 pluggable transport bridge for the Tor network.
+Helps users in censored regions connect to Tor.
+
+## Why Tor Bridge
+
+- Provides Tor access to censored users
+- obfs4 scrambles traffic to resist DPI
+- Distributed by BridgeDB to users who need it
+- Volunteer contribution to internet freedom
+
+## When to Use
+
+- You want to help others access Tor
+- Direct Tor connections are blocked in your region
+- As a community relay for Tor users
+- Combined with other protocols on your VPS
+
+## How It Works
+
+Your server runs an obfs4 bridge. Tor users connect through
+your bridge to reach the Tor network. Traffic is scrambled.
+
+  Tor User --> Your Bridge --> Tor Network --> Internet
+    |              |
+    |  obfs4       |  Scrambled traffic
+    |              |  resists DPI
+
+## Setup Notes
+
+- Uses port 9001 (configurable)
+- No domain required
+- Registers with BridgeDB automatically
+- Low bandwidth usage per user
+- Docker container: torproject/tor with obfs4proxy

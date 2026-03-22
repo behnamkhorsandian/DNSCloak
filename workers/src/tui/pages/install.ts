@@ -43,6 +43,19 @@ const INSTALL_INFO: Record<string, ProtocolInfo> = {
     requirements: ["Docker installed", "Cloudflare domain configured", "Port 80 available"],
     command: btoa("source /opt/vany/scripts/install-xray.sh && install_xray && add_ws_inbound"),
   },
+  hysteria: {
+    name: "Hysteria v2",
+    steps: [
+      "Download Hysteria v2 binary",
+      "Generate config with QUIC settings",
+      "Build and start vany-hysteria Docker container",
+      "Open configured UDP port in firewall",
+      "Generate client connection config",
+    ],
+    ports: "UDP (configurable)",
+    requirements: ["Docker installed", "UDP port available"],
+    command: btoa("source /opt/vany/scripts/protocols/install-hysteria.sh && install_hysteria"),
+  },
   wg: {
     name: "WireGuard",
     steps: [
@@ -54,6 +67,54 @@ const INSTALL_INFO: Record<string, ProtocolInfo> = {
     ports: "51820/udp",
     requirements: ["Docker installed", "Kernel WireGuard module", "Port 51820 available"],
     command: btoa("source /opt/vany/scripts/install-wireguard.sh && install_wireguard"),
+  },
+  vray: {
+    name: "VLESS + TLS",
+    steps: [
+      "Obtain TLS certificate via Let's Encrypt",
+      "Create Xray config with TCP+TLS inbound",
+      "Build and start vany-xray Docker container (if not running)",
+      "Open port 443/tcp in firewall",
+    ],
+    ports: "443/tcp",
+    requirements: ["Docker installed", "Domain name", "Port 443 available"],
+    command: btoa("source /opt/vany/scripts/install-xray.sh && install_xray && add_vray_inbound"),
+  },
+  "http-obfs": {
+    name: "HTTP Obfuscation",
+    steps: [
+      "Create Xray config with WebSocket inbound (same as WS+CDN)",
+      "Build and start vany-xray Docker container (if not running)",
+      "Open port 80/tcp in firewall",
+      "Configure Cloudflare domain proxy",
+      "Generate client config with Host header spoofing",
+    ],
+    ports: "80/tcp",
+    requirements: ["Docker installed", "Cloudflare domain", "Port 80 available"],
+    command: btoa("source /opt/vany/scripts/install-xray.sh && install_xray && add_http_obfs_inbound"),
+  },
+  mtp: {
+    name: "MTProto Proxy",
+    steps: [
+      "Generate MTProto secret",
+      "Start vany-mtp Docker container",
+      "Open configured port in firewall",
+      "Generate Telegram proxy link",
+    ],
+    ports: "443/tcp (configurable)",
+    requirements: ["Docker installed", "Port available"],
+    command: btoa("source /opt/vany/scripts/protocols/install-mtp.sh && install_mtp"),
+  },
+  "ssh-tunnel": {
+    name: "SSH Tunnel",
+    steps: [
+      "Create restricted tunnel-only user",
+      "Configure SSH for tunnel access",
+      "Generate client connection command",
+    ],
+    ports: "22/tcp",
+    requirements: ["SSH server running"],
+    command: btoa("source /opt/vany/scripts/protocols/install-ssh-tunnel.sh && install_ssh_tunnel"),
   },
   dnstt: {
     name: "DNS Tunnel",
@@ -68,6 +129,32 @@ const INSTALL_INFO: Record<string, ProtocolInfo> = {
     requirements: ["Docker installed", "Domain with NS record", "Port 53 available"],
     command: btoa("source /opt/vany/scripts/install-dnstt.sh && install_dnstt"),
   },
+  slipstream: {
+    name: "Slipstream",
+    steps: [
+      "Download Slipstream server binary",
+      "Generate config with QUIC+TLS over DNS",
+      "Start vany-slipstream Docker container",
+      "Open port 53 in firewall",
+      "Configure NS record for domain",
+    ],
+    ports: "53/udp",
+    requirements: ["Docker installed", "Domain with NS record", "Port 53 available (no other DNS tunnel)"],
+    command: btoa("source /opt/vany/scripts/protocols/install-slipstream.sh && install_slipstream"),
+  },
+  noizdns: {
+    name: "NoizDNS",
+    steps: [
+      "Build NoizDNS from source",
+      "Generate server keypair with noise config",
+      "Start vany-noizdns Docker container",
+      "Open port 53 in firewall",
+      "Configure NS record for domain",
+    ],
+    ports: "53/udp",
+    requirements: ["Docker installed", "Domain with NS record", "Port 53 available (no other DNS tunnel)"],
+    command: btoa("source /opt/vany/scripts/protocols/install-noizdns.sh && install_noizdns"),
+  },
   conduit: {
     name: "Conduit (Psiphon Relay)",
     steps: [
@@ -78,6 +165,30 @@ const INSTALL_INFO: Record<string, ProtocolInfo> = {
     ports: "automatic",
     requirements: ["Docker installed"],
     command: btoa("source /opt/vany/scripts/install-conduit.sh && install_conduit"),
+  },
+  "tor-bridge": {
+    name: "Tor Bridge (obfs4)",
+    steps: [
+      "Pull Tor Docker image with obfs4proxy",
+      "Generate bridge identity keys",
+      "Start vany-tor-bridge Docker container",
+      "Open OR port in firewall",
+      "Register with BridgeDB",
+    ],
+    ports: "9001/tcp (configurable)",
+    requirements: ["Docker installed", "Port 9001 available"],
+    command: btoa("source /opt/vany/scripts/protocols/install-tor-bridge.sh && install_tor_bridge"),
+  },
+  snowflake: {
+    name: "Snowflake Proxy",
+    steps: [
+      "Pull Snowflake proxy Docker image",
+      "Start vany-snowflake container",
+      "Snowflake broker auto-discovers relay",
+    ],
+    ports: "none (uses STUN/TURN)",
+    requirements: ["Docker installed"],
+    command: btoa("source /opt/vany/scripts/protocols/install-snowflake.sh && install_snowflake"),
   },
   sos: {
     name: "SOS Emergency Chat",
@@ -130,7 +241,7 @@ function installOverview(state: Record<string, unknown>): string {
   lines.push("");
   lines.push(`  ${DIM}* = already installed${RST}`);
   lines.push("");
-  lines.push(`  ${keyHint("1-6", "select")}  ${keyHint("Esc", "back")}`);
+  lines.push(`  ${keyHint("1-" + Object.keys(INSTALL_INFO).length, "select")}  ${keyHint("Esc", "back")}`);
 
   return lines.join("\r\n");
 }

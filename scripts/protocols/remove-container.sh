@@ -18,11 +18,17 @@ CONTAINER_MAP=(
     "reality:vany-xray"
     "ws:vany-xray"
     "vray:vany-xray"
+    "http-obfs:vany-xray"
     "wireguard:vany-wireguard"
     "wg:vany-wireguard"
     "dnstt:vany-dnstt"
     "conduit:vany-conduit"
     "sos:vany-sos"
+    "hysteria:vany-hysteria"
+    "slipstream:vany-slipstream"
+    "noizdns:vany-noizdns"
+    "tor-bridge:vany-tor-bridge"
+    "snowflake:vany-snowflake"
 )
 
 PORT_MAP=(
@@ -31,6 +37,11 @@ PORT_MAP=(
     "dnstt:53/udp"
     "conduit:"
     "sos:8899/tcp"
+    "hysteria:8443/udp"
+    "slipstream:53/udp 53/tcp"
+    "noizdns:53/udp 53/tcp"
+    "tor-bridge:9001/tcp"
+    "snowflake:"
 )
 
 get_container_name() {
@@ -48,7 +59,7 @@ get_ports() {
 
 if [[ -z "$PROTO" ]]; then
     echo "Usage: $0 <protocol>"
-    echo "Protocols: xray, wireguard, dnstt, conduit, sos"
+    echo "Protocols: xray, wireguard, dnstt, conduit, sos, hysteria, http-obfs, ssh-tunnel, slipstream, noizdns, tor-bridge, snowflake"
     exit 1
 fi
 

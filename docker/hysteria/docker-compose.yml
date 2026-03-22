@@ -1,0 +1,14 @@
+services:
+  hysteria:
+    image: tobyxdd/hysteria:v2
+    container_name: vany-hysteria
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/vany/hysteria:/etc/hysteria:rw
+    command: ["server", "-c", "/etc/hysteria/config.yaml"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

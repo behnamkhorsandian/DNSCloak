@@ -49,6 +49,8 @@ jobs:
               - 'services/**'
               - 'lib/**'
               - 'cli/**'
+              - 'scripts/**'
+              - 'docker/**'
 
   # ============================================
   # Deploy Cloudflare Workers

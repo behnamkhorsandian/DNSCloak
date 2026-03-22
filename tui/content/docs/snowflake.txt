@@ -1,0 +1,37 @@
+# Snowflake
+
+WebRTC-based Tor relay. Zero-config volunteer proxy
+that helps censored users reach the Tor network.
+
+## Why Snowflake
+
+- Zero configuration needed
+- Uses WebRTC (hard to block without breaking web)
+- Ephemeral relays, constantly rotating
+- Minimal resource usage on your server
+
+## When to Use
+
+- You want the simplest way to help censored users
+- No domain, no port forwarding needed
+- As an always-on background service
+- Combined with other protocols on your VPS
+
+## How It Works
+
+Your server acts as a WebRTC relay. Censored users connect
+through your relay to reach the Tor network via domain
+fronting.
+
+  Tor User --> WebRTC --> Your Relay --> Tor Bridge --> Tor
+    |            |
+    |  WebRTC    |  Looks like video call
+    |  DTLS      |  traffic to censors
+
+## Setup Notes
+
+- No port forwarding required (uses STUN/TURN)
+- No domain required
+- Minimal configuration (just run the container)
+- Docker container: thetorproject/snowflake-proxy
+- Very low resource footprint

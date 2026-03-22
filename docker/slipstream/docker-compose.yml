@@ -1,0 +1,17 @@
+services:
+  slipstream:
+    build: .
+    image: vany-slipstream:latest
+    container_name: vany-slipstream
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/vany/slipstream:/etc/slipstream:rw
+    environment:
+      - SLIPSTREAM_DOMAIN=${SLIPSTREAM_DOMAIN:-t.example.com}
+      - SLIPSTREAM_FORWARD=${SLIPSTREAM_FORWARD:-127.0.0.1:10800}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

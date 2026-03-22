@@ -89,6 +89,71 @@ const SERVICES: Record<string, ServiceConfig> = {
       psiphon: 'https://psiphon.ca/download.html',
     },
   },
+  hysteria: {
+    name: 'Hysteria v2',
+    description: 'QUIC-based proxy. Fastest on lossy/throttled networks.',
+    clientApps: {
+      ios: 'https://apps.apple.com/app/hiddify-proxy-vpn/id6596777532',
+      android: 'https://play.google.com/store/apps/details?id=app.hiddify.com',
+      windows: 'https://github.com/hiddify/hiddify-next/releases',
+      macos: 'https://github.com/hiddify/hiddify-next/releases',
+    },
+  },
+  'http-obfs': {
+    name: 'HTTP Obfuscation',
+    description: 'CDN host header spoofing. Hides behind popular domains.',
+    clientApps: {
+      ios: 'https://apps.apple.com/app/hiddify-proxy-vpn/id6596777532',
+      android: 'https://play.google.com/store/apps/details?id=app.hiddify.com',
+      windows: 'https://github.com/hiddify/hiddify-next/releases',
+      macos: 'https://github.com/hiddify/hiddify-next/releases',
+    },
+  },
+  'ssh-tunnel': {
+    name: 'SSH Tunnel',
+    description: 'Basic SOCKS5 proxy over SSH. Universal fallback.',
+    clientApps: {
+      note: 'Built-in: ssh -D 1080 user@server',
+    },
+  },
+  slipstream: {
+    name: 'Slipstream',
+    description: 'Enhanced DNS tunnel with QUIC+TLS. ~63 KB/s.',
+    clientApps: {
+      note: 'Requires slipstream client binary.',
+    },
+  },
+  noizdns: {
+    name: 'NoizDNS',
+    description: 'DPI-resistant DNSTT fork with noise and padding.',
+    clientApps: {
+      note: 'Requires noizdns client binary.',
+    },
+  },
+  'tor-bridge': {
+    name: 'Tor Bridge (obfs4)',
+    description: 'obfs4 pluggable transport bridge for the Tor network.',
+    clientApps: {
+      note: 'Tor users connect via BridgeDB. No manual setup.',
+      tor: 'https://www.torproject.org/download/',
+    },
+  },
+  snowflake: {
+    name: 'Snowflake Proxy',
+    description: 'WebRTC Tor relay. Zero config, minimal resources.',
+    clientApps: {
+      note: 'Tor users connect automatically.',
+      tor: 'https://www.torproject.org/download/',
+    },
+  },
+  sos: {
+    name: 'SOS Emergency Chat',
+    description: 'E2E encrypted emergency chat over DNS tunnel.',
+    clientApps: {
+      terminal: 'pip install vany-sos',
+      browser: 'Navigate to relay URL through DNSTT',
+    },
+  },
 };
 
 /**
@@ -243,6 +308,23 @@ export default {
         if (!firstSegment) {
           const landing = await handleTuiRequest(request, env, '/tui/landing', url);
           if (landing) return landing;
+        }
+        // Tools: vany.sh/tools/cfray | bash → serve tool script from GitHub
+        if (firstSegment === 'tools' && segments[1]) {
+          const toolScript = `${GITHUB_RAW}/scripts/tools/${segments[1]}.sh`;
+          try {
+            const resp = await fetch(toolScript);
+            if (resp.ok) {
+              return new Response(resp.body, {
+                headers: {
+                  ...corsHeaders,
+                  'Content-Type': 'text/plain; charset=utf-8',
+                  'Cache-Control': 'no-cache',
+                },
+              });
+            }
+          } catch { /* fall through */ }
+          return new Response('Tool not found', { status: 404 });
         }
         // Known protocol: serve start.sh with that protocol
         if (config) {

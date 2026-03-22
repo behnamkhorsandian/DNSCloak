@@ -30,29 +30,17 @@ const PROTOCOLS: Record<string, ProtocolDef> = {
     shared: "xray",
     description: "VLESS+WebSocket — route through Cloudflare CDN",
   },
+  hysteria: {
+    name: "Hysteria v2",
+    port: "UDP",
+    container: "vany-hysteria",
+    description: "QUIC-based proxy — fastest on lossy networks",
+  },
   wg: {
     name: "WireGuard",
     port: "51820",
     container: "vany-wireguard",
     description: "Fast kernel VPN with native app support",
-  },
-  dnstt: {
-    name: "DNSTT",
-    port: "53",
-    container: "vany-dnstt",
-    description: "DNS tunnel — emergency backup for blackouts",
-  },
-  conduit: {
-    name: "Conduit",
-    port: "auto",
-    container: "vany-conduit",
-    description: "Psiphon volunteer relay node",
-  },
-  sos: {
-    name: "SOS",
-    port: "8899",
-    container: "vany-sos",
-    description: "Emergency encrypted chat over DNSTT",
   },
   vray: {
     name: "VRAY",
@@ -61,11 +49,66 @@ const PROTOCOLS: Record<string, ProtocolDef> = {
     shared: "xray",
     description: "VLESS+TCP+TLS — classic V2Ray, needs domain",
   },
+  "http-obfs": {
+    name: "HTTP Obfs",
+    port: "80",
+    container: "vany-xray",
+    shared: "xray",
+    description: "CDN host header spoofing — hides behind popular domains",
+  },
   mtp: {
     name: "MTProto",
     port: "443",
     container: "vany-mtp",
     description: "Telegram proxy with Fake-TLS",
+  },
+  "ssh-tunnel": {
+    name: "SSH Tunnel",
+    port: "22",
+    container: "--",
+    description: "Basic SOCKS5 proxy over SSH — universal fallback",
+  },
+  dnstt: {
+    name: "DNSTT",
+    port: "53",
+    container: "vany-dnstt",
+    description: "DNS tunnel — emergency backup for blackouts",
+  },
+  slipstream: {
+    name: "Slipstream",
+    port: "53",
+    container: "vany-slipstream",
+    description: "Enhanced DNS tunnel with QUIC+TLS — ~63 KB/s",
+  },
+  noizdns: {
+    name: "NoizDNS",
+    port: "53",
+    container: "vany-noizdns",
+    description: "DPI-resistant DNSTT fork with noise/padding",
+  },
+  conduit: {
+    name: "Conduit",
+    port: "auto",
+    container: "vany-conduit",
+    description: "Psiphon volunteer relay node",
+  },
+  "tor-bridge": {
+    name: "Tor Bridge",
+    port: "9001",
+    container: "vany-tor-bridge",
+    description: "obfs4 pluggable transport for Tor network",
+  },
+  snowflake: {
+    name: "Snowflake",
+    port: "--",
+    container: "vany-snowflake",
+    description: "WebRTC Tor relay — zero config, minimal resources",
+  },
+  sos: {
+    name: "SOS",
+    port: "8899",
+    container: "vany-sos",
+    description: "Emergency encrypted chat over DNSTT",
   },
 };
 

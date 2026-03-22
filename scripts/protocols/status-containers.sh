@@ -8,7 +8,7 @@
 VANY_DIR="/opt/vany"
 STATE_FILE="$VANY_DIR/state.json"
 
-CONTAINERS=("vany-xray" "vany-wireguard" "vany-dnstt" "vany-conduit" "vany-sos")
+CONTAINERS=("vany-xray" "vany-wireguard" "vany-dnstt" "vany-conduit" "vany-sos" "vany-hysteria" "vany-slipstream" "vany-noizdns" "vany-tor-bridge" "vany-snowflake")
 
 get_container_status() {
     local name="$1"
@@ -53,6 +53,13 @@ if [[ -n "$PROTO" ]]; then
         dnstt)                NAME="vany-dnstt" ;;
         conduit)              NAME="vany-conduit" ;;
         sos)                  NAME="vany-sos" ;;
+        hysteria)             NAME="vany-hysteria" ;;
+        http-obfs)            NAME="vany-xray" ;;
+        ssh-tunnel)           NAME="--" ;;
+        slipstream)           NAME="vany-slipstream" ;;
+        noizdns)              NAME="vany-noizdns" ;;
+        tor-bridge)           NAME="vany-tor-bridge" ;;
+        snowflake)            NAME="vany-snowflake" ;;
         *)                    NAME="vany-$PROTO" ;;
     esac
 

@@ -1,0 +1,11 @@
+services:
+  snowflake:
+    image: thetorproject/snowflake-proxy:latest
+    container_name: vany-snowflake
+    restart: unless-stopped
+    network_mode: host
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

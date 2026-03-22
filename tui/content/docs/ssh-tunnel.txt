@@ -1,0 +1,37 @@
+# SSH Tunnel
+
+Basic SOCKS5 proxy through an encrypted SSH connection.
+Works on virtually any server with zero additional software.
+
+## Why SSH Tunnel
+
+- Available on every Linux server by default
+- No additional software to install
+- Encrypted SOCKS5 proxy for all traffic
+- Simple and universally understood
+
+## When to Use
+
+- Quick-and-dirty tunnel with no setup
+- SSH (port 22) is not blocked
+- Temporary access before installing a proper protocol
+- Fallback when nothing else works
+
+## How It Works
+
+Creates an encrypted SSH tunnel that acts as a SOCKS5
+proxy. All traffic routes through the SSH connection.
+
+  Client --> SSH Tunnel --> Your Server --> Internet
+    |            |
+    |  SSH (22)  |  Standard encrypted
+    |  SOCKS5    |  SSH connection
+
+## Setup Notes
+
+- Uses port 22 (standard SSH)
+- Server must have SSH access enabled
+- Client connects with: ssh -D 1080 user@server
+- Configure apps to use SOCKS5 proxy on localhost:1080
+- Easily detected and blocked by DPI
+- Best as temporary/fallback, not primary protocol
