@@ -301,6 +301,26 @@ export default {
         return new Response('Not found', { status: 404 });
       }
 
+      // WS+CDN Quick Connect: /ws/connect → ephemeral VLESS+WS link
+      if (url.pathname === '/ws/connect') {
+        const corsJson = { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' };
+        if (request.method === 'OPTIONS') {
+          return new Response(null, { headers: corsJson });
+        }
+        // Try to get active config from KV
+        const raw = await env.SAFEBOX.get('ws:quickconnect');
+        if (raw) {
+          try {
+            const cfg = JSON.parse(raw);
+            return Response.json(cfg, { headers: corsJson });
+          } catch { /* fall through */ }
+        }
+        return Response.json({
+          link: null,
+          message: 'Service is starting up. Check back soon.',
+        }, { headers: corsJson });
+      }
+
       // Scripts proxy: /scripts/* → GitHub raw (for bootstrap + protocol scripts)
       if (url.pathname.startsWith('/scripts/')) {
         const scriptPath = url.pathname.slice(1); // "scripts/docker-bootstrap.sh"
