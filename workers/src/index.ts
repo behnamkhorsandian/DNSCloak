@@ -194,6 +194,40 @@ async function serveStartScript(protocol?: string): Promise<Response> {
   }
 }
 
+/**
+ * Fetch direct-install.sh from GitHub with VANY_PROTOCOL prepended.
+ * Standalone installer/manager for a single protocol — bypasses the full TUI.
+ */
+async function serveDirectInstaller(protocol: string): Promise<Response> {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  try {
+    const scriptUrl = `${GITHUB_RAW}/scripts/direct-install.sh`;
+    const response = await fetch(scriptUrl);
+
+    if (!response.ok) {
+      return new Response('Installer not found', { status: 404 });
+    }
+
+    let script = await response.text();
+    script = `export VANY_PROTOCOL="${protocol}"\n${script}`;
+
+    return new Response(script, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
+  } catch {
+    return new Response('Error fetching installer', { status: 502 });
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -332,9 +366,24 @@ export default {
           } catch { /* fall through */ }
           return new Response('Tool not found', { status: 404 });
         }
-        // Known protocol: serve start.sh with that protocol
+        // Protocol chooser questionnaire: vany.sh/choose | bash
+        if (firstSegment === 'choose') {
+          try {
+            const resp = await fetch(`${GITHUB_RAW}/scripts/tools/choose.sh`);
+            if (resp.ok) {
+              return new Response(resp.body, {
+                headers: {
+                  ...corsHeaders,
+                  'Content-Type': 'text/plain; charset=utf-8',
+                  'Cache-Control': 'no-cache',
+                },
+              });
+            }
+          } catch { /* fall through */ }
+        }
+        // Known protocol: serve standalone direct installer
         if (config) {
-          return serveStartScript(firstSegment);
+          return serveDirectInstaller(firstSegment);
         }
         // Unknown path: 404 (don't fall back to start.sh)
         return new Response('Not found', { status: 404 });
@@ -435,7 +484,7 @@ export default {
       const ua = (request.headers.get('User-Agent') || '').toLowerCase();
       const isCli = ua.includes('curl') || ua.includes('wget') || ua.includes('fetch');
       if (isCli) {
-        return serveStartScript(subdomain);
+        return serveDirectInstaller(subdomain);
       }
       // Browsers: show info page
       return new Response(getInfoPage(subdomain, config), {

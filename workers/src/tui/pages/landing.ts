@@ -19,7 +19,7 @@ const LOGO = [
 // Star rating helper
 function stars(n: number): string {
   const filled = "■".repeat(n);
-  const empty = "·".repeat(5 - n);
+  const empty = "□".repeat(5 - n);
   return `${GREEN}${filled}${RST}${DGRAY}${empty}${RST}`;
 }
 
@@ -35,76 +35,71 @@ function divider(title: string, W: number): string {
 // Protocol definition for the landing table
 interface LandingProto {
   name: string;
+  slug: string;
   port: string;
   domain: string;
   resilience: number;
   speed: number;
-  note: string;
 }
 
 const SERVER_PROTOCOLS: LandingProto[] = [
-  { name: "VLESS+REALITY",   port: "443",    domain: "No",  resilience: 4, speed: 5, note: "Recommended. TLS camouflage" },
-  { name: "VLESS+WS+CDN",    port: "80",     domain: "Yes", resilience: 5, speed: 4, note: "IP hidden behind Cloudflare" },
-  { name: "Hysteria v2",     port: "UDP",    domain: "No",  resilience: 3, speed: 5, note: "QUIC-based, fastest protocol" },
-  { name: "WireGuard",       port: "51820",  domain: "No",  resilience: 2, speed: 5, note: "Full device VPN tunnel" },
-  { name: "VLESS+TLS",       port: "443",    domain: "Yes", resilience: 4, speed: 5, note: "Classic V2Ray + real certs" },
-  { name: "HTTP Obfuscation",port: "80",     domain: "CDN", resilience: 5, speed: 4, note: "Host header spoofing via CDN" },
-  { name: "MTProto",         port: "443",    domain: "No",  resilience: 3, speed: 4, note: "Telegram only, no extra app" },
-  { name: "SSH Tunnel",      port: "22",     domain: "No",  resilience: 2, speed: 3, note: "Basic, universally available" },
+  { name: "VLESS+REALITY",   slug: "reality",    port: "443",    domain: "No",  resilience: 4, speed: 5 },
+  { name: "VLESS+WS+CDN",    slug: "ws",         port: "80",     domain: "Yes", resilience: 5, speed: 4 },
+  { name: "Hysteria v2",     slug: "hysteria",    port: "UDP",    domain: "No",  resilience: 3, speed: 5 },
+  { name: "WireGuard",       slug: "wg",          port: "51820",  domain: "No",  resilience: 2, speed: 5 },
+  { name: "VLESS+TLS",       slug: "vray",        port: "443",    domain: "Yes", resilience: 4, speed: 5 },
+  { name: "HTTP Obfuscation",slug: "http-obfs",   port: "80",     domain: "CDN", resilience: 5, speed: 4 },
+  { name: "MTProto",         slug: "mtp",         port: "443",    domain: "No",  resilience: 3, speed: 4 },
+  { name: "SSH Tunnel",      slug: "ssh-tunnel",  port: "22",     domain: "No",  resilience: 2, speed: 3 },
 ];
 
 const EMERGENCY_PROTOCOLS: LandingProto[] = [
-  { name: "DNSTT",           port: "53",     domain: "Yes", resilience: 5, speed: 1, note: "~42 KB/s, last resort tunnel" },
-  { name: "Slipstream",      port: "53",     domain: "Yes", resilience: 5, speed: 2, note: "~63 KB/s, QUIC+TLS over DNS" },
-  { name: "NoizDNS",         port: "53",     domain: "Yes", resilience: 5, speed: 2, note: "DPI-resistant DNSTT fork" },
+  { name: "DNSTT",           slug: "dnstt",       port: "53",     domain: "Yes", resilience: 5, speed: 1 },
+  { name: "Slipstream",      slug: "slipstream",  port: "53",     domain: "Yes", resilience: 5, speed: 2 },
+  { name: "NoizDNS",         slug: "noizdns",     port: "53",     domain: "Yes", resilience: 5, speed: 2 },
 ];
 
 const RELAY_PROTOCOLS: LandingProto[] = [
-  { name: "Conduit",         port: "auto",   domain: "No",  resilience: 5, speed: 4, note: "Psiphon volunteer relay" },
-  { name: "Tor Bridge",      port: "9001",   domain: "No",  resilience: 4, speed: 2, note: "obfs4 bridge for Tor network" },
-  { name: "Snowflake",       port: "--",     domain: "No",  resilience: 4, speed: 2, note: "WebRTC Tor relay, zero config" },
-  { name: "SOS Chat",        port: "8899",   domain: "Yes", resilience: 5, speed: 1, note: "E2E encrypted emergency chat" },
+  { name: "Conduit",         slug: "conduit",     port: "auto",   domain: "No",  resilience: 5, speed: 4 },
+  { name: "Tor Bridge",      slug: "tor-bridge",  port: "9001",   domain: "No",  resilience: 4, speed: 2 },
+  { name: "Snowflake",       slug: "snowflake",   port: "--",     domain: "No",  resilience: 4, speed: 2 },
+  { name: "SOS Chat",        slug: "sos",         port: "8899",   domain: "Yes", resilience: 5, speed: 1 },
 ];
 
 interface ToolDef {
   name: string;
+  slug: string;
   purpose: string;
-  runsFrom: string;
 }
 
 const CLIENT_TOOLS: ToolDef[] = [
-  { name: "VPN Connect",   purpose: "Connect to any VPN protocol",     runsFrom: "Client menu (paste config link)" },
-  { name: "cfray",         purpose: "Find clean Cloudflare IPs",       runsFrom: "Tools menu (run from Iran)" },
-  { name: "findns",        purpose: "Find working DNS resolvers",      runsFrom: "Tools menu (run from Iran)" },
-  { name: "IP Tracer",     purpose: "Trace route, show ASNs and ISPs", runsFrom: "Tools menu" },
-  { name: "Speed Test",    purpose: "Test VPN connection throughput",   runsFrom: "Tools menu" },
-  { name: "Config Import", purpose: "Paste VLESS/WG/Hysteria config",  runsFrom: "Client menu" },
+  { name: "IP Tracer",     slug: "tools/tracer",    purpose: "Trace IP, ISP, ASN, detect VPN" },
+  { name: "CFRay Scanner", slug: "tools/cfray",     purpose: "Find clean Cloudflare IPs" },
+  { name: "FindNS",        slug: "tools/findns",    purpose: "Discover working DNS resolvers" },
+  { name: "Speed Test",    slug: "tools/speedtest",  purpose: "Test bandwidth via Cloudflare" },
 ];
 
 function renderProtoTable(protocols: LandingProto[], W: number): string[] {
   const lines: string[] = [];
   // Column widths
-  const cName = 18, cPort = 7, cDom = 8, cRes = 11, cSpd = 11, cNote = W - cName - cPort - cDom - cRes - cSpd - 15;
+  const cName = 18, cRes = 11, cSpd = 11, cCmd = W - cName - cRes - cSpd - 11;
 
   // Header
   const hdr = `  ${ORANGE}${BOLD}${"Protocol".padEnd(cName)}${RST}`
-    + `${DGRAY}│${RST} ${ORANGE}${BOLD}${"Port".padEnd(cPort)}${RST}`
-    + `${DGRAY}│${RST} ${ORANGE}${BOLD}${"Domain".padEnd(cDom)}${RST}`
     + `${DGRAY}│${RST} ${ORANGE}${BOLD}${"Resist.".padEnd(cRes)}${RST}`
     + `${DGRAY}│${RST} ${ORANGE}${BOLD}${"Speed".padEnd(cSpd)}${RST}`
-    + `${DGRAY}│${RST} ${ORANGE}${BOLD}Notes${RST}`;
+    + `${DGRAY}│${RST} ${ORANGE}${BOLD}Install Command${RST}`;
   lines.push(hdr);
 
-  const sep = `  ${DGRAY}${repeat("─", cName)}┼${repeat("─", cPort + 2)}┼${repeat("─", cDom + 2)}┼${repeat("─", cRes + 2)}┼${repeat("─", cSpd + 2)}┼${repeat("─", Math.max(cNote, 10))}${RST}`;
+  const sep = `  ${DGRAY}${repeat("─", cName)}┼${repeat("─", cRes + 1)}┼${repeat("─", cSpd + 1)}┼${repeat("─", Math.max(cCmd, 10))}${RST}`;
   lines.push(sep);
 
   for (const p of protocols) {
+    const cmd = `curl vany.sh/${p.slug} | sudo bash`;
     const row = `  ${LGREEN}${p.name.padEnd(cName)}${RST}`
-      + `${DGRAY}│${RST} ${DIM}${p.port.padEnd(cPort)}${RST}`
-      + `${DGRAY}│${RST} ${DIM}${p.domain.padEnd(cDom)}${RST}`
       + `${DGRAY}│${RST} ${stars(p.resilience)}${repeat(" ", cRes - 5)}`
       + `${DGRAY}│${RST} ${stars(p.speed)}${repeat(" ", cSpd - 5)}`
-      + `${DGRAY}│${RST} ${TEXT}${p.note}${RST}`;
+      + `${DGRAY}│${RST} ${DIM}${cmd}${RST}`;
     lines.push(row);
   }
   return lines;
@@ -156,20 +151,18 @@ export function pageLanding(): string {
   lines.push(divider("CLIENT TOOLS", W));
   lines.push("");
   const tName = 16, tPurp = 36;
-  lines.push(`  ${ORANGE}${BOLD}${"Tool".padEnd(tName)}${RST}${DGRAY}│${RST} ${ORANGE}${BOLD}${"Purpose".padEnd(tPurp)}${RST}${DGRAY}│${RST} ${ORANGE}${BOLD}Runs From${RST}`);
-  lines.push(`  ${DGRAY}${repeat("─", tName)}┼${repeat("─", tPurp + 2)}┼${repeat("─", 34)}${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}${"Tool".padEnd(tName)}${RST}${DGRAY}│${RST} ${ORANGE}${BOLD}${"Purpose".padEnd(tPurp)}${RST}${DGRAY}│${RST} ${ORANGE}${BOLD}Command${RST}`);
+  lines.push(`  ${DGRAY}${repeat("─", tName)}┼${repeat("─", tPurp + 1)}┼${repeat("─", 34)}${RST}`);
   for (const t of CLIENT_TOOLS) {
-    lines.push(`  ${LGREEN}${t.name.padEnd(tName)}${RST}${DGRAY}│${RST} ${TEXT}${t.purpose.padEnd(tPurp)}${RST}${DGRAY}│${RST} ${DIM}${t.runsFrom}${RST}`);
+    const cmd = `curl vany.sh/${t.slug} | bash`;
+    lines.push(`  ${LGREEN}${t.name.padEnd(tName)}${RST}${DGRAY}│${RST} ${TEXT}${t.purpose.padEnd(tPurp)}${RST}${DGRAY}│${RST} ${DIM}${cmd}${RST}`);
   }
   lines.push("");
 
-  // Quick install
-  lines.push(divider("QUICK INSTALL", W));
+  // Help choosing
+  lines.push(divider("NEED HELP CHOOSING?", W));
   lines.push("");
-  lines.push(`    ${LGREEN}curl vany.sh/reality | sudo bash${RST}   ${DIM}Install REALITY on your VPS${RST}`);
-  lines.push(`    ${LGREEN}curl vany.sh/ws | sudo bash${RST}        ${DIM}Install WS+CDN on your VPS${RST}`);
-  lines.push(`    ${LGREEN}curl vany.sh/hysteria | sudo bash${RST}  ${DIM}Install Hysteria v2 on your VPS${RST}`);
-  lines.push(`    ${LGREEN}curl vany.sh/wg | sudo bash${RST}        ${DIM}Install WireGuard on your VPS${RST}`);
+  lines.push(`    ${LGREEN}curl vany.sh/choose | bash${RST}   ${DIM}Interactive questionnaire to pick the right protocol${RST}`);
   lines.push("");
 
   // Rating legend

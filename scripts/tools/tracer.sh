@@ -81,6 +81,9 @@ INFO=$(get_ip_info)
 parse_field() {
     echo "$INFO" | grep -o "\"$1\": *\"[^\"]*\"" | cut -d'"' -f4
 }
+parse_num() {
+    echo "$INFO" | grep -o "\"$1\": *[0-9.e+-]*" | awk -F': *' '{print $2}'
+}
 parse_bool() {
     echo "$INFO" | grep -o "\"$1\": *[a-z]*" | awk -F: '{gsub(/[ ]/,"",$2); print $2}'
 }
@@ -93,8 +96,8 @@ COUNTRY=$(parse_field "country")
 COUNTRY_CODE=$(parse_field "countryCode")
 REGION=$(parse_field "regionName")
 CITY=$(parse_field "city")
-LAT=$(parse_field "lat")
-LON=$(parse_field "lon")
+LAT=$(parse_num "lat")
+LON=$(parse_num "lon")
 TZ=$(parse_field "timezone")
 HOSTNAME=$(parse_field "reverse")
 IS_PROXY=$(parse_bool "proxy")
@@ -140,6 +143,22 @@ fi
 echo ""
 echo -e "  ${O}${B}DNS Resolver${R}"
 echo -e "  ${D}────────────────────────────────────────${R}"
+
+# Auto-install dig if missing
+if ! command -v dig &>/dev/null && ! command -v nslookup &>/dev/null; then
+    echo -e "  ${D}Installing DNS tools...${R}"
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get install -y -qq dnsutils 2>/dev/null || apt-get install -y -qq dnsutils 2>/dev/null || true
+    elif command -v yum &>/dev/null; then
+        sudo yum install -y -q bind-utils 2>/dev/null || yum install -y -q bind-utils 2>/dev/null || true
+    elif command -v apk &>/dev/null; then
+        sudo apk add --quiet bind-tools 2>/dev/null || apk add --quiet bind-tools 2>/dev/null || true
+    elif command -v brew &>/dev/null; then
+        brew install --quiet bind 2>/dev/null || true
+    elif command -v pacman &>/dev/null; then
+        sudo pacman -S --noconfirm bind-tools 2>/dev/null || pacman -S --noconfirm bind-tools 2>/dev/null || true
+    fi
+fi
 
 if command -v dig &>/dev/null; then
     DNS_IP=$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null | head -1) || DNS_IP=""
