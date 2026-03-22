@@ -2,6 +2,12 @@ name = "vany"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+# KV Namespaces
+[[kv_namespaces]]
+binding = "SAFEBOX"
+id = "4f5c4f3d5e784fe99fefec2ce5007ce8"
+preview_id = "d75c9bd6ffc0437685ae7710c01453f0"
+
 # Routes - TUI serving and protocol info pages
 routes = [
   { pattern = "start.vany.sh", custom_domain = true },

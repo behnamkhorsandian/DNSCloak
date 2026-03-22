@@ -14,10 +14,13 @@
 
 import { handleTuiRequest } from './tui/index.js';
 import { pageLandingBash } from './tui/pages/landing.js';
+import { handleBoxCreate, handleBoxFetch, handleBoxPage } from './safebox.js';
 
 const GITHUB_RAW = 'https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main';
 
-interface Env {}
+interface Env {
+  SAFEBOX: KVNamespace;
+}
 
 // Service configurations
 interface ServiceConfig {
@@ -148,11 +151,11 @@ const SERVICES: Record<string, ServiceConfig> = {
     },
   },
   sos: {
-    name: 'SOS Emergency Chat',
-    description: 'E2E encrypted emergency chat over DNS tunnel.',
+    name: 'SafeBox',
+    description: 'Encrypted dead-drop with emoji access. 24h TTL.',
     clientApps: {
-      terminal: 'pip install vany-sos',
-      browser: 'Navigate to relay URL through DNSTT',
+      browser: 'https://vany.sh/box',
+      cli: 'curl vany.sh/box',
     },
   },
 };
@@ -276,6 +279,26 @@ export default {
       if (url.pathname.startsWith('/tui/') || url.pathname === '/tui') {
         const tuiResponse = await handleTuiRequest(request, env, url.pathname, url);
         if (tuiResponse) return tuiResponse;
+      }
+
+      // SafeBox routes: /box, /box/:id
+      if (url.pathname === '/box' || url.pathname.startsWith('/box/')) {
+        if (request.method === 'OPTIONS') {
+          return new Response(null, { headers: corsHeaders });
+        }
+        const boxSegments = url.pathname.slice(1).split('/').filter(Boolean); // ["box", ...rest]
+        if (boxSegments.length === 1 && request.method === 'POST') {
+          return handleBoxCreate(request, env.SAFEBOX);
+        }
+        if (boxSegments.length === 1 && request.method === 'GET') {
+          const ua = (request.headers.get('User-Agent') || '').toLowerCase();
+          const isCli = ua.includes('curl') || ua.includes('wget') || ua.includes('fetch');
+          return handleBoxPage(isCli);
+        }
+        if (boxSegments.length === 2 && request.method === 'GET') {
+          return handleBoxFetch(boxSegments[1], env.SAFEBOX);
+        }
+        return new Response('Not found', { status: 404 });
       }
 
       // Scripts proxy: /scripts/* → GitHub raw (for bootstrap + protocol scripts)

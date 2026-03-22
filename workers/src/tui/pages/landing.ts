@@ -64,7 +64,7 @@ const RELAY_PROTOCOLS: LandingProto[] = [
   { name: "Conduit",         slug: "conduit",     desc: "Psiphon relay, auto-config",     port: "auto",   domain: "No",  resilience: 5, speed: 4 },
   { name: "Tor Bridge",      slug: "tor-bridge",  desc: "obfs4 bridge for Tor network",   port: "9001",   domain: "No",  resilience: 4, speed: 2 },
   { name: "Snowflake",       slug: "snowflake",   desc: "WebRTC Tor relay, zero conf",    port: "--",     domain: "No",  resilience: 4, speed: 2 },
-  { name: "SOS Chat",        slug: "sos",         desc: "E2E encrypted chat over DNS",    port: "8899",   domain: "Yes", resilience: 5, speed: 1 },
+  { name: "SafeBox",         slug: "box",         desc: "Encrypted dead-drop, 24h TTL",   port: "443",    domain: "No",  resilience: 5, speed: 5 },
 ];
 
 interface ToolDef {
