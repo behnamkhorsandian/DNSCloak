@@ -102,6 +102,21 @@ Vany is a multi-protocol censorship bypass platform. All protocols run in Docker
 - [x] Website status popup with live service indicators
 - [x] Service account for CI/CD (`github-vm-manager@noteefy-85339.iam.gserviceaccount.com`)
 
+### Phase 6: Cloak Desktop Client [v4.0.0]
+- [x] `cloak/cloak.sh` - Main CLI router (20+ subcommands, tmux launcher, bg update check)
+- [x] `cloak/install.sh` - Post-extraction installer (copies to ~/.cloak, symlinks to PATH)
+- [x] `cloak/etc/tmux.conf` - Themed tmux config (green #2eb787, custom keybindings)
+- [x] `cloak/scripts/box.sh` - SafeBox encrypted dead-drop CLI (standalone)
+- [x] `cloak/scripts/faucet.sh` - Network Faucet relay (standalone)
+- [x] `cloak/scripts/mirrors.sh` - Fallback access methods (--test, --rescue modes)
+- [x] `cloak/scripts/self-update.sh` - Self-updater from GitHub Releases with DoH fallback
+- [x] `cloak/windows/cloak.bat` - Windows WSL bridge launcher
+- [x] `cloak/windows/cloak-wsl.sh` - WSL entry point
+- [x] `build/cloak-build.sh` - Build script (stages files, downloads static tmux, makeself)
+- [x] `.github/workflows/cloak-build.yml` - CI/CD on `cloak-v*` tags (5 platforms)
+- [x] `tui/main.sh` - Cloak mode adaptation (CLOAK_MODE=1 env, skip root, local files)
+- [x] `docs/cloak.md` - Full documentation
+
 ## Architecture
 
 ### Directory Structure (Repository)
@@ -170,6 +185,21 @@ src/
   sos/              # Python TUI client for emergency chat
 cli/
   vany.sh           # Unified CLI
+cloak/
+  cloak.sh          # Offline desktop client CLI router
+  install.sh        # Post-extraction installer
+  etc/
+    tmux.conf       # Themed tmux config
+  scripts/
+    box.sh          # SafeBox standalone CLI
+    faucet.sh       # Faucet relay standalone
+    mirrors.sh      # Fallback access methods
+    self-update.sh  # Self-updater from GitHub Releases
+  windows/
+    cloak.bat       # Windows WSL bridge
+    cloak-wsl.sh    # WSL entry point
+build/
+  cloak-build.sh    # Makeself archive builder (5 platforms)
 www/                # Landing page (Cloudflare Pages)
 docs/               # Documentation
 ```
@@ -280,6 +310,7 @@ docs/               # Documentation
 - `v1.0.0` - Stable release
 - `v1.0.0-alpha` - Pre-release testing
 - `v1.0.0-lit` - Deploy to production (triggers CI/CD)
+- `cloak-v1.0.0` - Cloak desktop client release (triggers cloak-build.yml)
 
 ### Branch Strategy
 - `main` - Stable, tested code
@@ -565,4 +596,6 @@ Tested on GCP Spot VM (`n2d-highcpu-8`, Ubuntu 22.04) with RPi client running si
 - **Docker E2E testing order matters**: Test non-destructive protocols (SSH tunnel, Xray Reality) first before protocols that modify host networking (WireGuard). Keep a snapshot/backup before testing networking-heavy protocols.
 - **Legacy services/ vs Docker scripts/**: Legacy `services/` install scripts were fully tested and working. The Docker migration (`scripts/protocols/`) requires fresh E2E testing — don't assume Docker equivalents work identically.
 - **SafeBox alphanumeric IDs**: Converted from emoji-based box IDs to 8-char alphanumeric [A-Z0-9] IDs for better terminal compatibility. Server-side decrypt via `?pass=` query parameter enables `curl vany.sh/box/ID?pass=mypassword` to return plaintext directly. Web popover uses a minimal single-view layout (ID + password top row, textarea, dynamic Generate/Save/Open button). CLI is interactive (prompts create/open, asks for password and message).
+- **Cloak packaging**: Use makeself self-extracting shell archives for Unix, ZIP with WSL bridge for Windows. Bundled static tmux on Linux only — macOS users use system tmux via brew. The `CLOAK_MODE=1` env var tells the TUI to skip root checks, use local files, and show the Cloak version instead of downloading from GitHub.
+- **Worker script extraction**: Worker-embedded bash scripts use `\$` escaping inside TypeScript template literals. When extracting to standalone .sh files, all `\$` must become `$` and template interpolations removed.
 

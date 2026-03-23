@@ -1,0 +1,111 @@
+name: Build Cloak
+
+on:
+  push:
+    tags:
+      - 'cloak-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 1.0.0)'
+        required: false
+        default: 'dev'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - linux-amd64
+          - linux-arm64
+          - darwin-amd64
+          - darwin-arm64
+          - windows-amd64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install makeself
+        run: sudo apt-get install -y makeself zip
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VER="${{ github.ref_name }}"
+            VER="${VER#cloak-v}"
+            echo "version=$VER" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${{ inputs.version }}" && "${{ inputs.version }}" != "dev" ]]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev-$(echo ${{ github.sha }} | head -c 7)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build archive
+        run: |
+          chmod +x build/cloak-build.sh
+          bash build/cloak-build.sh ${{ matrix.platform }} ${{ steps.version.outputs.version }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloak-${{ matrix.platform }}
+          path: dist/cloak-${{ matrix.platform }}.*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          cp artifacts/cloak-*/* release/ 2>/dev/null || true
+          ls -la release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Cloak — Vany Offline Suite
+
+            ### Installation
+            ```bash
+            # Download for your platform and run:
+            chmod +x cloak-linux-amd64.sh
+            ./cloak-linux-amd64.sh
+
+            # Then use:
+            cloak          # Launch TUI
+            cloak help     # All commands
+            cloak tmux     # Launch in tmux session
+            ```
+
+            ### Windows
+            Extract the ZIP and run `cloak.bat` (requires WSL).
+
+            ### Platforms
+            | File | Platform |
+            |------|----------|
+            | `cloak-linux-amd64.sh` | Linux x86_64 |
+            | `cloak-linux-arm64.sh` | Linux ARM64 |
+            | `cloak-darwin-amd64.sh` | macOS Intel |
+            | `cloak-darwin-arm64.sh` | macOS Apple Silicon |
+            | `cloak-windows-amd64.zip` | Windows (WSL) |

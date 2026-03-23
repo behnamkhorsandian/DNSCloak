@@ -1,5 +1,5 @@
 # Vanysh
-[![Build SOS Binaries](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/sos-build.yml/badge.svg)](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/sos-build.yml)
+[![Build Cloak](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/cloak-build.yml/badge.svg)](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/cloak-build.yml)
 [![Deploy](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/deploy.yml/badge.svg)](https://github.com/behnamkhorsandian/Vanysh/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Website](https://img.shields.io/website?down_color=red&down_message=offline&up_color=green&up_message=online&url=https%3A%2F%2Fvany.sh)](https://www.vany.sh)
@@ -15,6 +15,20 @@ curl vany.sh                        # Browse protocol catalog (static ANSI page)
 curl vany.sh | sudo bash            # Server TUI: install & manage protocols
 curl vany.sh/tools/cfray | bash     # Client tools: scanners & diagnostics
 ```
+
+### Offline: Cloak Desktop Client
+
+Download the **[latest Cloak release](https://github.com/behnamkhorsandian/Vanysh/releases)** — a self-extracting archive that bundles the entire Vany suite for offline use.
+
+```bash
+chmod +x cloak-linux-amd64.sh && ./cloak-linux-amd64.sh
+cloak                               # Launch TUI
+cloak tmux                           # Launch in themed tmux session
+cloak box                            # Encrypted dead-drop
+cloak mirrors --rescue               # Find a way to reach vany.sh
+```
+
+Available for Linux (amd64/arm64), macOS (Intel/Apple Silicon), and Windows (WSL). See [docs/cloak.md](docs/cloak.md) for details.
 
 ## Protocol Catalog
 
@@ -139,6 +153,7 @@ Port 22 (TCP)                  -> SSH Tunnel (SOCKS5)
 
 ## Documentation
 
+- **[Cloak Desktop Client](docs/cloak.md)** — Offline suite, install & usage
 - [Self-Hosting Guide](docs/self-hosting.md)
 - [Firewall Setup](docs/firewall.md)
 - [DNS Setup](docs/dns.md)

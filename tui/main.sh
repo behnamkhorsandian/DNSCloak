@@ -115,6 +115,22 @@ done
 #-------------------------------------------------------------------------------
 
 _preflight() {
+    # Cloak mode: skip root check and online-only preflight
+    if [[ "${CLOAK_MODE:-}" == "1" ]]; then
+        # Use Cloak version instead of VANY_VERSION
+        [[ -n "${CLOAK_VERSION:-}" ]] && VANY_VERSION="$CLOAK_VERSION"
+
+        # Check /dev/tty
+        if [[ ! -e /dev/tty ]]; then
+            printf '\033[31mError:\033[0m No terminal available (/dev/tty missing).\n'
+            exit 1
+        fi
+
+        # Non-root Cloak can still do server ops if running with sudo
+        # but we don't require it
+        return 0
+    fi
+
     # Check root
     if [[ $EUID -ne 0 ]]; then
         printf '\033[31mError:\033[0m This installer must be run as root.\n'
@@ -429,11 +445,25 @@ _run_navigation() {
                 # Run the interactive protocol chooser
                 printf '\033[?25h'  # show cursor
                 clear_screen
-                local choose_script="/tmp/vany-choose.sh"
-                if curl -sfL "$GITHUB_RAW/scripts/tools/choose.sh" -o "$choose_script" 2>/dev/null; then
+                local choose_script=""
+                # In Cloak mode, use local file
+                if [[ "${CLOAK_MODE:-}" == "1" ]]; then
+                    local candidates=(
+                        "${CLOAK_HOME:-}/scripts/tools/choose.sh"
+                        "${SCRIPT_DIR:-}/../scripts/tools/choose.sh"
+                    )
+                    for c in "${candidates[@]}"; do
+                        [[ -f "$c" ]] && { choose_script="$c"; break; }
+                    done
+                fi
+                if [[ -z "$choose_script" ]]; then
+                    choose_script="/tmp/vany-choose.sh"
+                    curl -sfL "$GITHUB_RAW/scripts/tools/choose.sh" -o "$choose_script" 2>/dev/null || true
+                fi
+                if [[ -f "$choose_script" ]]; then
                     bash "$choose_script" </dev/tty
                 else
-                    echo "  Failed to download protocol chooser"
+                    echo "  Failed to load protocol chooser"
                 fi
                 echo ""
                 echo -e "  ${C_DIM}Press any key to return to TUI...${C_RST}"
@@ -456,8 +486,13 @@ _run_navigation() {
 
 _show_exit_banner() {
     printf '\n'
-    printf '  %b*%b Vany v%s\n' "$C_GREEN" "$C_RST" "$VANY_VERSION"
-    printf '  %bThe beacon remains lit.%b\n' "$C_DGRAY" "$C_RST"
+    if [[ "${CLOAK_MODE:-}" == "1" ]]; then
+        printf '  %b*%b Cloak v%s\n' "$C_GREEN" "$C_RST" "$VANY_VERSION"
+        printf '  %bOffline and unreachable.%b\n' "$C_DGRAY" "$C_RST"
+    else
+        printf '  %b*%b Vany v%s\n' "$C_GREEN" "$C_RST" "$VANY_VERSION"
+        printf '  %bThe beacon remains lit.%b\n' "$C_DGRAY" "$C_RST"
+    fi
     printf '\n'
 }
 
