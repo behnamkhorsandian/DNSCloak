@@ -424,8 +424,10 @@ exit 1
             const msg = JSON.parse(typeof event.data === 'string' ? event.data : '');
             if (msg.type === 'register') {
               (server as WebSocket).send(JSON.stringify({ type: 'welcome', node: msg.node }));
+            } else if (msg.type === 'ping') {
+              (server as WebSocket).send(JSON.stringify({ type: 'pong' }));
             } else if (msg.type === 'ack') {
-              // Relay acknowledgement from node — no-op for now
+              // Relay acknowledgement from node
             }
           } catch { /* ignore malformed */ }
         });
@@ -684,21 +686,23 @@ YELLOW="\\033[38;5;185m"
 BLUE="\\033[38;5;68m"
 
 RELAY_URL="wss://vany.sh/faucet/relay"
-NODE_ID=$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' \\n')
+NODE_ID=\$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' \\n')
 RELAYED=0
 BYTES=0
-START_TIME=$(date +%s)
+START_TIME=\$(date +%s)
+WSPID=""
 
 cleanup() {
   echo ""
-  ELAPSED=$(($(date +%s) - START_TIME))
-  MINS=$((ELAPSED / 60))
-  SECS=$((ELAPSED % 60))
-  echo -e "\${DIM}Session ended. Relayed \${RELAYED} packets in \${MINS}m\${SECS}s.\${RST}"
+  [[ -n "\$WSPID" ]] && kill "\$WSPID" 2>/dev/null || true
+  ELAPSED=\$((\$(date +%s) - START_TIME))
+  MINS=\$((ELAPSED / 60))
+  SECS=\$((ELAPSED % 60))
+  echo -e "  \${DIM}Session ended. Relayed \${RELAYED} packets in \${MINS}m\${SECS}s.\${RST}"
   exit 0
 }
 
-trap cleanup INT TERM
+trap cleanup INT TERM EXIT
 
 clear
 echo ""
@@ -708,7 +712,10 @@ echo ""
 echo -e "  \${DIM}Node ID:    \${RST}\${LGREEN}node-\${NODE_ID}\${RST}"
 echo -e "  \${DIM}Relay URL:  \${RST}\${BLUE}\${RELAY_URL}\${RST}"
 echo ""
-echo -e "  \${DIM}You are relaying opaque encrypted SafeBox traffic.\${RST}"
+echo -e "  \${DIM}This is NOT a VPN. Your own traffic is unchanged.\${RST}"
+echo -e "  \${DIM}You are donating bandwidth so SafeBox messages\${RST}"
+echo -e "  \${DIM}can reach people in censored regions.\${RST}"
+echo ""
 echo -e "  \${DIM}Content is end-to-end encrypted \u2014 never visible to relays.\${RST}"
 echo -e "  \${DIM}Your IP is not exposed to SafeBox users.\${RST}"
 echo ""
@@ -737,17 +744,29 @@ fi
 echo -e "  \${GREEN}Connected.\${RST} Relay active."
 echo ""
 
-# Send registration and relay traffic
-echo "{\\"type\\":\\"register\\",\\"node\\":\\"\${NODE_ID}\\"}" | websocat -n1 "\${RELAY_URL}" 2>/dev/null &
+# Create a FIFO to feed commands into websocat
+FIFO=\$(mktemp -u /tmp/vany-faucet-XXXXXX)
+mkfifo "\$FIFO"
+
+# Keep the FIFO open for writing (fd 3) so websocat doesn't get EOF
+exec 3>"\$FIFO"
+
+# Start websocat in background, reading from FIFO
+websocat "\${RELAY_URL}" < "\$FIFO" 2>/dev/null &
 WSPID=\$!
 
-# Keep connection alive and show heartbeat
+# Send registration
+echo '{"type":"register","node":"'"\${NODE_ID}"'"}' >&3
+
+# Keep connection alive with heartbeat pings
 while kill -0 \$WSPID 2>/dev/null; do
-  ELAPSED=$(($(date +%s) - START_TIME))
-  MINS=$((ELAPSED / 60))
-  SECS=$((ELAPSED % 60))
+  ELAPSED=\$((\$(date +%s) - START_TIME))
+  MINS=\$((ELAPSED / 60))
+  SECS=\$((ELAPSED % 60))
   printf "\\r  \${GREEN}*\${RST} \${DIM}Relaying... \${MINS}m\${SECS}s elapsed\${RST}    "
-  sleep 5
+  # Send heartbeat every 30s to keep WS alive
+  echo '{"type":"ping"}' >&3 2>/dev/null || break
+  sleep 30
 done
 
 cleanup

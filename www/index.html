@@ -2353,7 +2353,7 @@
       <div class="fc-popup-body">
         <div class="fc-banner">
           <span class="material-symbols-outlined">hub</span>
-          <span><strong>Become a relay node.</strong> Your browser helps route encrypted SafeBox traffic through a safe network.</span>
+          <span><strong>Become a relay node.</strong> Your browser forwards encrypted SafeBox packets for others. This is not a VPN &mdash; your own traffic is unchanged.</span>
         </div>
         
         <div class="fc-status-panel">
@@ -2391,6 +2391,10 @@
         </div>
         
         <div class="fc-info">
+          <div class="fc-info-item">
+            <span class="material-symbols-outlined fc-info-icon">info</span>
+            <span class="fc-info-text"><strong>Not a VPN.</strong> This does not change your IP or tunnel your traffic. You are <em>donating</em> bandwidth so SafeBox messages can reach people in censored regions.</span>
+          </div>
           <div class="fc-info-item">
             <span class="material-symbols-outlined fc-info-icon">lock</span>
             <span class="fc-info-text"><strong>End-to-end encrypted.</strong> You relay opaque ciphertext &mdash; SafeBox content is never visible to relay nodes.</span>
