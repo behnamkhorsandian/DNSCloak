@@ -14,10 +14,10 @@ export const VANY_CLIENT_SCRIPT = `#!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
-BASE="https://vany.sh"
 VANY_DIR="/opt/vany"
 STATE_FILE="\$VANY_DIR/state.json"
 USERS_FILE="\$VANY_DIR/users.json"
+BASE_FILE="\$VANY_DIR/.base_url"
 CURRENT="protocols"
 STREAM_PID=""
 
@@ -41,11 +41,128 @@ if [[ "\$(id -u)" -ne 0 ]]; then
     exit 1
 fi
 
+# -- Resilient reach: multi-layer fallback to find a working base URL ------
+# Tries: direct -> DNS-over-HTTPS resolve -> CF Pages -> GitHub raw
+# Stores the working URL for future sessions in /opt/vany/.base_url
+
+# Known Cloudflare anycast IPs (from https://www.cloudflare.com/ips/)
+CF_IPS=("104.16.0.1" "104.17.0.1" "172.67.0.1")
+DOH_PROVIDERS=("https://1.1.1.1/dns-query" "https://8.8.8.8/resolve" "https://9.9.9.9:5053/dns-query")
+FALLBACK_URLS=(
+    "https://vany.sh"
+    "https://vany-agg.pages.dev"
+)
+GITHUB_RAW_URL="https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main"
+
+# Resolve vany.sh via DNS-over-HTTPS, returns IP or empty string
+doh_resolve() {
+    local doh_url="\$1"
+    local ip=""
+    ip=\$(curl -sf -m 5 -H "accept: application/dns-json" "\${doh_url}?name=vany.sh&type=A" 2>/dev/null \\
+        | grep -oE '"data":"[0-9.]+"' | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' || true)
+    echo "\$ip"
+}
+
+# Test if a base URL is reachable (returns 0 on success)
+test_base() {
+    local url="\$1"
+    curl -sf -m 5 -o /dev/null "\${url}/health" 2>/dev/null
+}
+
+# Find a working base URL with multi-layer fallback
+find_base() {
+    mkdir -p "\$VANY_DIR"
+
+    # Try cached base URL first
+    if [[ -f "\$BASE_FILE" ]]; then
+        local cached
+        cached=\$(cat "\$BASE_FILE" 2>/dev/null || true)
+        if [[ -n "\$cached" ]] && test_base "\$cached"; then
+            echo "\$cached"
+            return 0
+        fi
+    fi
+
+    echo -e "\${C_DIM}  Connecting...\${C_RST}" >&2
+
+    # Layer 1: Direct HTTPS to vany.sh
+    if test_base "https://vany.sh"; then
+        echo "https://vany.sh" > "\$BASE_FILE"
+        echo "https://vany.sh"
+        return 0
+    fi
+
+    echo -e "\${C_DIM}  Direct blocked. Trying DNS-over-HTTPS...\${C_RST}" >&2
+
+    # Layer 2: Resolve via DoH, then use --resolve to bypass DNS poisoning
+    for doh in "\${DOH_PROVIDERS[@]}"; do
+        local resolved_ip
+        resolved_ip=\$(doh_resolve "\$doh")
+        if [[ -n "\$resolved_ip" ]]; then
+            if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\${resolved_ip}" "https://vany.sh/health" 2>/dev/null; then
+                # Store the resolved IP so all future curls use it
+                echo "\$resolved_ip" > "\$VANY_DIR/.resolved_ip"
+                echo "https://vany.sh" > "\$BASE_FILE"
+                echo "https://vany.sh"
+                return 0
+            fi
+        fi
+    done
+
+    echo -e "\${C_DIM}  DoH failed. Trying Cloudflare IPs...\${C_RST}" >&2
+
+    # Layer 3: Use known CF anycast IPs with --resolve (bypasses DNS entirely)
+    for cfip in "\${CF_IPS[@]}"; do
+        if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\${cfip}" "https://vany.sh/health" 2>/dev/null; then
+            echo "\$cfip" > "\$VANY_DIR/.resolved_ip"
+            echo "https://vany.sh" > "\$BASE_FILE"
+            echo "https://vany.sh"
+            return 0
+        fi
+    done
+
+    echo -e "\${C_DIM}  Direct IPs failed. Trying alternate domains...\${C_RST}" >&2
+
+    # Layer 4: Alternate domains (*.pages.dev is hard to block)
+    for alt in "\${FALLBACK_URLS[@]}"; do
+        if test_base "\$alt"; then
+            echo "\$alt" > "\$BASE_FILE"
+            echo "\$alt"
+            return 0
+        fi
+    done
+
+    echo -e "\${C_RED}  All access methods failed.\${C_RST}" >&2
+    echo -e "\${C_ORANGE}  Try: Install 1.1.1.1 (WARP) app, then run this again.\${C_RST}" >&2
+    echo -e "\${C_ORANGE}  Or:  curl -sL \${GITHUB_RAW_URL}/start.sh | sudo bash\${C_RST}" >&2
+    return 1
+}
+
+# Wrapper for curl that auto-applies --resolve if we have a resolved IP
+vany_curl() {
+    local resolve_flag=""
+    if [[ -f "\$VANY_DIR/.resolved_ip" ]]; then
+        local rip
+        rip=\$(cat "\$VANY_DIR/.resolved_ip" 2>/dev/null || true)
+        if [[ -n "\$rip" ]]; then
+            resolve_flag="--resolve vany.sh:443:\${rip}"
+        fi
+    fi
+    if [[ -n "\$resolve_flag" ]]; then
+        curl \$resolve_flag "\$@"
+    else
+        curl "\$@"
+    fi
+}
+
+# -- Discover working base URL ---------------------------------------------
+BASE=\$(find_base) || exit 1
+
 # -- Bootstrap if needed ---------------------------------------------------
 if ! command -v docker &>/dev/null; then
     echo -e "\${C_GREEN}First run detected. Installing Docker...\${C_RST}"
     BOOTSTRAP_URL="\${BASE}/scripts/docker-bootstrap.sh"
-    curl -sf "\$BOOTSTRAP_URL" | bash
+    vany_curl -sf "\$BOOTSTRAP_URL" | bash
 fi
 
 # -- Initialize state if missing ------------------------------------------
@@ -129,7 +246,7 @@ start_stream() {
     get_size
     local state_b64
     state_b64=\$(encode_state)
-    curl -sN "\${BASE}/tui/\${endpoint}?cols=\${cols}&rows=\${rows}&stream=1&interactive=1&state=\${state_b64}" 2>/dev/null &
+    vany_curl -sN "\${BASE}/tui/\${endpoint}?cols=\${cols}&rows=\${rows}&stream=1&interactive=1&state=\${state_b64}" 2>/dev/null &
     STREAM_PID=\$!
 }
 
@@ -256,7 +373,7 @@ run_install() {
 
     local script_url="\${BASE}/scripts/protocols/\${script_name}"
     local script
-    script=\$(curl -sf "\$script_url" 2>/dev/null || true)
+    script=\$(vany_curl -sf "\$script_url" 2>/dev/null || true)
     if [[ -z "\$script" ]]; then
         oute "  \${C_RED}Failed to download install script.\${C_RST}"
         out ""
@@ -412,7 +529,7 @@ handle_key() {
 
 # Show splash briefly
 get_size
-curl -sf "\${BASE}/tui/splash?cols=\${cols}&rows=\${rows}" 2>/dev/null
+vany_curl -sf "\${BASE}/tui/splash?cols=\${cols}&rows=\${rows}" 2>/dev/null
 sleep 1
 
 # Start on protocols page

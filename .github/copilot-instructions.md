@@ -485,18 +485,35 @@ Architecture for Phase 2:
 - **Website**: Status popup on `vany.sh` (bottom-left button)
 - **Services Monitored**: Conduit, Xray (Reality/WS/VRAY), DNSTT, WireGuard, SOS
 
-### What's Working
-- **Reality** (`services/reality/install.sh`) - Fully tested, works on GCP
-- **WS+CDN** (`services/ws/install.sh`) - Fully tested, works with Cloudflare SSL "Flexible"
+### E2E Protocol Test Results (Docker v3.0.0)
+Tested on GCP Spot VM (`n2d-highcpu-8`, Ubuntu 22.04) with RPi client running sing-box.
+
+| Protocol | Status | Notes |
+|----------|--------|-------|
+| SSH Tunnel | ✅ Passed | Restricted user, no container needed |
+| Xray Reality | ⚠️ Issues | Install runs but client connection had problems |
+| WireGuard | ⛔ Skipped | **Breaks iptables** — corrupts routing rules on the host, can lock you out of SSH. Do NOT install alongside other protocols without a recovery plan. |
+| Hysteria v2 | ⬜ Not tested | |
+| WS+CDN | ⬜ Not tested | Previously worked in legacy (services/) with Cloudflare SSL "Flexible" |
+| HTTP-Obfs | ⬜ Not tested | |
+| DNSTT | ⬜ Not tested | Previously worked in legacy — builds from source via Go 1.21 |
+| Slipstream | ⬜ Not tested | |
+| NoizDNS | ⬜ Not tested | |
+| SOS Relay | ⬜ Not tested | Previously worked in legacy — TUI + Web client, E2E encryption |
+| Conduit | ⬜ Not tested | Server-only (Psiphon relay) |
+| Tor Bridge | ⬜ Not tested | Server-only (obfs4) |
+| Snowflake | ⬜ Not tested | Server-only (Snowflake proxy) |
+
+### Known Issues
+- **WireGuard corrupts iptables**: The WireGuard container's PostUp/PostDown rules break the host's routing table. This can make other containers unreachable and lock you out of SSH. Always install WireGuard LAST, or use a dedicated VM for it.
+- **DNS port 53 conflict**: dnstt, slipstream, and noizdns all need port 53. Only one can run at a time.
+
+### What Was Previously Working (Legacy services/)
+- **Reality** (`services/reality/install.sh`) - Fully tested on GCP
+- **WS+CDN** (`services/ws/install.sh`) - Fully tested with Cloudflare SSL "Flexible"
 - **DNSTT** (`services/dnstt/install.sh`) - Fully tested, builds from source via Go 1.21
 - **Conduit** (`services/conduit/install.sh`) - Psiphon relay, Docker-based
-- **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT ✅ TESTED
-  - TUI client with Textual framework
-  - **Web client** (`src/sos/www/`) - Browser-based SPA served via relay
-  - Standalone binaries (via GitHub Actions CI/CD)
-  - Default relay: `relay.vany.sh:8899`
-  - E2E encryption (NaCl + Argon2id)
-- **WireGuard** (`services/wg/install.sh`) - Created, config exists but not running
+- **SOS** (`services/sos/install.sh`) - Emergency chat over DNSTT, TUI + Web client
 - **CLI** (`cli/vany.sh`) - Unified management CLI
 
 ### Cloudflare Setup
@@ -533,11 +550,19 @@ Architecture for Phase 2:
 ### Services TODO
 - [ ] `services/mtp/install.sh` - Refactor existing MTProto  
 - [ ] `services/vray/install.sh` - VLESS+TCP+TLS with Let's Encrypt
-- [ ] Start WireGuard service (config exists)
+- [ ] Complete Docker E2E testing for remaining protocols (Hysteria, WS+CDN, HTTP-Obfs, DNSTT, Slipstream, NoizDNS, SOS, Conduit, Tor Bridge, Snowflake)
+- [ ] Fix Xray Reality client connection issue in Docker setup
+- [ ] Investigate WireGuard iptables corruption — consider network_mode or isolated VM
 
 ### Known Issues Fixed
 - `user_exists()` now supports optional protocol parameter: `user_exists "name" "ws"`
 - `user_get()` now supports optional key parameter: `user_get "name" "ws" "uuid"`
 - WS installer uses correct function names from lib files
 - Watchdog handles Cloudflare bot protection on health endpoint gracefully
+
+## Learnings
+- **WireGuard iptables corruption**: WireGuard's PostUp/PostDown iptables rules can break the host's routing table, making other Docker containers unreachable and potentially locking out SSH. Always test WireGuard on a dedicated VM or install it last with a recovery plan.
+- **Docker E2E testing order matters**: Test non-destructive protocols (SSH tunnel, Xray Reality) first before protocols that modify host networking (WireGuard). Keep a snapshot/backup before testing networking-heavy protocols.
+- **Legacy services/ vs Docker scripts/**: Legacy `services/` install scripts were fully tested and working. The Docker migration (`scripts/protocols/`) requires fresh E2E testing — don't assume Docker equivalents work identically.
+- **SafeBox alphanumeric IDs**: Converted from emoji-based box IDs to 6-char alphanumeric [A-Z0-9] IDs for better terminal compatibility. Server-side decrypt via `?pass=` query parameter enables `curl vany.sh/box/ID?pass=mypassword` to return plaintext directly.
 

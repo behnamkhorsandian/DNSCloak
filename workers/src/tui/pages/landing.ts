@@ -180,6 +180,18 @@ export function pageLanding(): string {
   lines.push(`  ${DIM}Ratings: ${GREEN}■${RST}${DIM} = capability level out of 5    Resist. = censorship resilience    Speed = throughput${RST}`);
   lines.push("");
 
+  // Unstoppable access
+  lines.push(divider("CAN'T CONNECT?", W));
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}Rescue bootstrap${RST}  ${DIM}Tries all access methods automatically:${RST}`);
+  lines.push(`    ${LGREEN}curl -m5 vany.sh/bootstrap | sudo bash${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}Manual fallbacks${RST}  ${DIM}(try in order if above fails):${RST}`);
+  lines.push(`    ${LGREEN}1.${RST} ${DIM}curl --doh-url https://1.1.1.1/dns-query vany.sh | sudo bash${RST}   ${TEXT}(DNS-over-HTTPS)${RST}`);
+  lines.push(`    ${LGREEN}2.${RST} ${DIM}curl vany-agg.pages.dev | sudo bash${RST}                           ${TEXT}(shared CF domain)${RST}`);
+  lines.push(`    ${LGREEN}3.${RST} ${DIM}Install 1.1.1.1 app (WARP), enable, then curl vany.sh${RST}         ${TEXT}(free CF VPN)${RST}`);
+  lines.push("");
+
   // Footer
   const gh = "github.com/behnamkhorsandian/Vanysh";
   const web = "https://vany.sh";

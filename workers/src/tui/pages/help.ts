@@ -130,6 +130,27 @@ export function pageHelp(): string {
   lines.push(`  ${BOLD}${ORANGE}LINKS${RST}`);
   lines.push(`    ${BLUE}https://github.com/behnamkhorsandian/Vanysh${RST}`);
   lines.push(`    ${BLUE}https://vany.sh${RST}`);
+  lines.push("");
+
+  // Access methods for restricted networks
+  lines.push(helpDivider("UNSTOPPABLE ACCESS"));
+  lines.push("");
+  lines.push(`    ${TEXT}If you can't reach vany.sh, try these methods in order:${RST}`);
+  lines.push("");
+  lines.push(`    ${LGREEN}1.${RST} ${TEXT}Direct${RST}           ${DIM}curl vany.sh | sudo bash${RST}`);
+  lines.push(`    ${LGREEN}2.${RST} ${TEXT}DoH bypass${RST}       ${DIM}curl --doh-url https://1.1.1.1/dns-query vany.sh | sudo bash${RST}`);
+  lines.push(`    ${LGREEN}3.${RST} ${TEXT}CF Pages${RST}         ${DIM}curl vany-agg.pages.dev | sudo bash${RST}`);
+  lines.push(`    ${LGREEN}4.${RST} ${TEXT}GitHub${RST}           ${DIM}curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh | sudo bash${RST}`);
+  lines.push(`    ${LGREEN}5.${RST} ${TEXT}WARP (1.1.1.1)${RST}   ${DIM}Install free 1.1.1.1 app, enable, then curl vany.sh${RST}`);
+  lines.push("");
+  lines.push(`    ${ORANGE}Rescue one-liner${RST} ${DIM}(share via SMS/Telegram):${RST}`);
+  lines.push(`    ${LGREEN}curl -m5 vany.sh/bootstrap | sudo bash${RST}`);
+  lines.push("");
+  lines.push(`    ${ORANGE}Auto-rescue bootstrap${RST} ${DIM}(tries all methods automatically):${RST}`);
+  lines.push(`    ${LGREEN}curl -m5 vany.sh||curl -m5 --doh-url https://1.1.1.1/dns-query vany.sh||curl vany-agg.pages.dev${RST}`);
+  lines.push("");
+  lines.push(`    ${DIM}The smart client already tries all these methods automatically.${RST}`);
+  lines.push(`    ${DIM}ECH (Encrypted Client Hello) hides the domain from DPI when enabled on CF.${RST}`);
 
   return lines.join("\r\n");
 }
