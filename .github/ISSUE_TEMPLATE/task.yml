@@ -1,0 +1,38 @@
+name: Task
+description: A development task for Copilot or contributors
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the task to be done. Include enough context for
+        an automated agent or contributor to understand and implement it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: What needs to be done?
+      placeholder: A clear description of the work required.
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Relevant Files
+      description: Which files or directories are involved?
+      placeholder: |
+        - scripts/protocols/install-xray.sh
+        - docker/xray/Dockerfile
+        - workers/src/tui/pages/install.ts
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Done When
+      description: How do we verify this task is complete?
+      placeholder: |
+        - [ ] Changes implemented
+        - [ ] Tests pass
+        - [ ] No regressions

@@ -1,0 +1,38 @@
+name: Feature Request
+description: Request a new feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the feature you'd like. Be specific about what it should do,
+        where it fits in the codebase, and any constraints.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What should this feature do?
+      placeholder: A clear description of the feature and its expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where does this fit in the project? Which files, modules, or protocols are involved?
+      placeholder: |
+        - Affected area: workers/src/tui/pages/
+        - Related protocol: Xray Reality
+        - Depends on: install-xray.sh
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How do we know this is done?
+      placeholder: |
+        - [ ] Feature works as described
+        - [ ] Existing tests pass
+        - [ ] No regressions in related protocols

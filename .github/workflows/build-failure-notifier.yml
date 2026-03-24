@@ -1,0 +1,82 @@
+# Build Failure Notifier
+#
+# Automatically creates a GitHub issue when any workflow run fails.
+# Assigns the issue to the repository owner for triage.
+#
+# Triggers: When any workflow run completes with a failure.
+#
+name: Build Failure Notifier
+
+on:
+  workflow_run:
+    workflows:
+      - CI/CD
+      - Deploy
+      - Build Cloak
+      - Build SOS Binaries
+      - Spot VM Watchdog
+    types:
+      - completed
+
+permissions:
+  issues: write
+
+jobs:
+  notify:
+    name: Create Failure Issue
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Create issue for failed build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const title = `CI failure: ${run.name} #${run.run_number} on \`${run.head_branch}\``;
+            const body = [
+              `### Build Failure`,
+              ``,
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| **Workflow** | ${run.name} |`,
+              `| **Run** | [#${run.run_number}](${run.html_url}) |`,
+              `| **Branch** | \`${run.head_branch}\` |`,
+              `| **Commit** | [\`${run.head_sha.substring(0, 7)}\`](${context.payload.repository.html_url}/commit/${run.head_sha}) |`,
+              `| **Triggered by** | @${run.actor.login} |`,
+              `| **Event** | \`${run.event}\` |`,
+              ``,
+              `[View full logs](${run.html_url})`,
+            ].join('\n');
+
+            // Check for an existing open issue with the same workflow name to avoid duplicates
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure',
+              per_page: 100,
+            });
+
+            const prefix = `CI failure: ${run.name}`;
+            const branchTag = `on \`${run.head_branch}\``;
+            const duplicate = existing.data.find(i => i.title.startsWith(prefix) && i.title.includes(branchTag));
+            if (duplicate) {
+              // Add a comment to the existing issue instead of creating a new one
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: duplicate.number,
+                body: `Another failure in **${run.name}** run [#${run.run_number}](${run.html_url}) on \`${run.head_branch}\`.\nCommit: \`${run.head_sha.substring(0, 7)}\``,
+              });
+              console.log(`Commented on existing issue #${duplicate.number}`);
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['ci-failure'],
+              assignees: ['behnamkhorsandian'],
+            });
