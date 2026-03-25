@@ -288,17 +288,27 @@ export default {
         const mirrors = {
           primary: 'https://vany.sh',
           alternatives: [
+            { name: 'GitHub Raw', url: 'https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh', usage: 'curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh | sudo bash', note: 'Fastly CDN — completely different network than Cloudflare' },
             { name: 'Cloudflare Pages', url: 'https://vany-agg.pages.dev', usage: 'curl -sL https://vany-agg.pages.dev | sudo bash', note: '*.pages.dev shared domain — very hard to block' },
-            { name: 'GitHub Raw', url: 'https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh', usage: 'curl -sL <url> | sudo bash' },
           ],
-          rescue: 'curl -m5 vany.sh||curl -m5 --doh-url https://1.1.1.1/dns-query vany.sh||curl vany-agg.pages.dev',
+          rescue: 'curl -m5 vany.sh||curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh||curl vany-agg.pages.dev',
           access_methods: [
             { name: 'Direct', cmd: 'curl vany.sh | sudo bash', note: 'Works unless domain is blocked' },
+            { name: 'GitHub Raw', cmd: 'curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh | sudo bash', note: 'Fastly CDN — NOT Cloudflare, often works when CF is fully blocked' },
+            { name: 'Direct IP', cmd: 'curl --resolve vany.sh:443:104.16.0.1 https://vany.sh | sudo bash', note: 'Skip DNS — connect to known Cloudflare IPs directly' },
             { name: 'DoH bypass', cmd: 'curl --doh-url https://1.1.1.1/dns-query vany.sh | sudo bash', note: 'Bypasses DNS poisoning (curl 7.62+)' },
-            { name: 'CF Pages', cmd: 'curl vany-agg.pages.dev | sudo bash', note: 'Shared *.pages.dev domain, hard to block' },
+            { name: 'CF Pages', cmd: 'curl -sL vany-agg.pages.dev | sudo bash', note: 'Shared *.pages.dev domain, hard to block' },
             { name: 'WARP (1.1.1.1)', cmd: 'Install 1.1.1.1 app, enable, then curl vany.sh | sudo bash', note: 'Free Cloudflare VPN, bypasses all blocks' },
-            { name: 'GitHub fallback', cmd: 'curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh | sudo bash', note: 'Different CDN, different IPs' },
+            { name: 'Offline', cmd: 'sudo bash start.sh', note: 'Ask someone to send you start.sh directly' },
           ],
+          windows: {
+            note: 'Windows CMD cannot pipe to bash. Use WSL or download the script file.',
+            methods: [
+              { name: 'WSL', cmd: 'wsl --install && wsl', note: 'Install WSL, then use Linux commands inside' },
+              { name: 'Direct IP (CMD)', cmd: 'curl.exe --resolve vany.sh:443:104.16.0.1 https://vany.sh', note: 'Skip DNS in Windows CMD' },
+              { name: 'GitHub download', cmd: 'curl.exe -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh -o start.sh', note: 'Download via Fastly CDN, then copy to VPS' },
+            ],
+          },
           warp: {
             note: 'Cloudflare WARP (1.1.1.1) is a free VPN that routes through Cloudflare. Once enabled, all blocked Cloudflare sites become accessible.',
             ios: 'https://apps.apple.com/app/1-1-1-1-faster-internet/id1423538627',
@@ -307,8 +317,8 @@ export default {
             macos: 'https://1.1.1.1/',
             linux: 'https://pkg.cloudflareclient.com/',
           },
-          bootstrap: 'The smart client auto-tries: direct → DoH → CF IPs → Pages. If all fail, install WARP.',
-          offline: 'Ask someone to send you the start.sh file directly — it works offline after first download',
+          bootstrap: 'The rescue bootstrap auto-tries: direct → GitHub (Fastly) → CF IPs → DoH → Pages. If all fail, install WARP or get the script offline.',
+          offline: 'Ask someone to send you the start.sh file directly — it works offline after first download. Run: sudo bash start.sh',
         };
         return Response.json(mirrors, { headers: corsHeaders });
       }
@@ -318,6 +328,7 @@ export default {
         const script = `#!/bin/bash
 # Vany Rescue Bootstrap — tries every access method automatically
 set -euo pipefail
+GITHUB_RAW="https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh"
 DOH_URLS=("https://1.1.1.1/dns-query" "https://8.8.8.8/resolve" "https://9.9.9.9:5053/dns-query")
 CF_IPS=("104.16.0.1" "104.17.0.1" "172.67.0.1")
 echo "Vany — finding a working connection..."
@@ -327,49 +338,51 @@ if curl -sf -m 5 -o /dev/null https://vany.sh/health 2>/dev/null; then
     echo "Direct connection OK"
     exec bash <(curl -sSf https://vany.sh 2>/dev/null)
 fi
-echo "Direct blocked. Trying DoH..."
+echo "Direct blocked. Trying GitHub (Fastly CDN)..."
 
-# Method 2: DoH resolve + --resolve flag
+# Method 2: GitHub raw (Fastly CDN — NOT Cloudflare, often works when CF is blocked)
+if curl -sf -m 5 -o /dev/null "\$GITHUB_RAW" 2>/dev/null; then
+    echo "GitHub OK (Fastly CDN)"
+    exec bash <(curl -sSf "\$GITHUB_RAW" 2>/dev/null)
+fi
+echo "GitHub blocked. Trying direct IPs..."
+
+# Method 3: Known CF anycast IPs (skip DNS entirely)
+for cfip in "\${CF_IPS[@]}"; do
+    if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\$cfip" https://vany.sh/health 2>/dev/null; then
+        echo "CF IP \$cfip works"
+        exec bash <(curl -sSf --resolve "vany.sh:443:\$cfip" https://vany.sh 2>/dev/null)
+    fi
+done
+echo "CF IPs blocked. Trying DoH..."
+
+# Method 4: DoH resolve + --resolve flag
 for doh in "\${DOH_URLS[@]}"; do
-    ip=$(curl -sf -m 5 -H "accept: application/dns-json" "\${doh}?name=vany.sh&type=A" 2>/dev/null \\
+    ip=\$(curl -sf -m 5 -H "accept: application/dns-json" "\${doh}?name=vany.sh&type=A" 2>/dev/null \\
         | grep -oE '"data":"[0-9.]+"' | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' || true)
-    if [[ -n "$ip" ]]; then
-        if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:$ip" https://vany.sh/health 2>/dev/null; then
-            echo "DoH resolved to $ip"
-            exec bash <(curl -sSf --resolve "vany.sh:443:$ip" https://vany.sh 2>/dev/null)
+    if [[ -n "\$ip" ]]; then
+        if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\$ip" https://vany.sh/health 2>/dev/null; then
+            echo "DoH resolved to \$ip"
+            exec bash <(curl -sSf --resolve "vany.sh:443:\$ip" https://vany.sh 2>/dev/null)
         fi
     fi
 done
-echo "DoH failed. Trying Cloudflare IPs..."
+echo "DoH failed. Trying alternate domain..."
 
-# Method 3: Known CF anycast IPs
-for cfip in "\${CF_IPS[@]}"; do
-    if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:$cfip" https://vany.sh/health 2>/dev/null; then
-        echo "CF IP $cfip works"
-        exec bash <(curl -sSf --resolve "vany.sh:443:$cfip" https://vany.sh 2>/dev/null)
-    fi
-done
-echo "CF IPs blocked. Trying alternate domain..."
-
-# Method 4: Cloudflare Pages (*.pages.dev — shared domain, hard to block)
+# Method 5: Cloudflare Pages (*.pages.dev — shared domain, hard to block)
 if curl -sf -m 5 -o /dev/null https://vany-agg.pages.dev/ 2>/dev/null; then
     echo "Pages mirror OK"
     exec bash <(curl -sSf https://vany-agg.pages.dev/ 2>/dev/null)
-fi
-echo "Pages blocked. Trying GitHub..."
-
-# Method 5: GitHub raw
-if curl -sf -m 5 -o /dev/null https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh 2>/dev/null; then
-    echo "GitHub OK"
-    exec bash <(curl -sSf https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh 2>/dev/null)
 fi
 
 echo ""
 echo "All methods failed. Your network blocks everything."
 echo ""
-echo "Last resort: Install Cloudflare WARP (1.1.1.1 app):"
-echo "  https://1.1.1.1/"
-echo "Then run: curl vany.sh | sudo bash"
+echo "Last resort options:"
+echo "  1. Install Cloudflare WARP (1.1.1.1 app): https://1.1.1.1/"
+echo "     Then run: curl vany.sh | sudo bash"
+echo "  2. Ask someone to send you the start.sh file directly"
+echo "     Then run: sudo bash start.sh"
 exit 1
 `;
         return new Response(script, {

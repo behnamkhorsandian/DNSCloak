@@ -191,32 +191,55 @@ export function pageLanding(): string {
   lines.push("");
   lines.push("");
 
-  // DNS-over-HTTPS access
-  lines.push(divider("DNS BLOCKED? USE 1.1.1.1", W));
+  // Censorship bypass access
+  lines.push(divider("CENSORED? FULL BLACKOUT?", W));
   lines.push("");
-  lines.push(`  ${DIM}If your ISP blocks DNS resolution of ${RST}${BLUE}vany.sh${RST}${DIM}, use Cloudflare DoH to bypass it.${RST}`);
-  lines.push(`  ${DIM}This works for ${RST}${TEXT}every${RST}${DIM} command above — just add the DoH flag:${RST}`);
+  lines.push(`  ${DIM}If ${RST}${RED}DNS is blocked${RST}${DIM}, ${RST}${RED}Cloudflare is blocked${RST}${DIM}, or ${RST}${RED}everything is filtered${RST}${DIM} — try these in order:${RST}`);
   lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}1. GitHub Raw${RST}  ${DIM}(uses Fastly CDN — different network than Cloudflare)${RST}`);
+  lines.push(`    ${LGREEN}curl -sL git.io/vany | sudo bash${RST}`);
+  lines.push(`    ${DIM}or full URL:${RST}`);
+  lines.push(`    ${LGREEN}curl -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh | sudo bash${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}2. Direct IP${RST}  ${DIM}(skip DNS — connect to Cloudflare IPs directly)${RST}`);
+  lines.push(`    ${LGREEN}curl --resolve vany.sh:443:104.16.0.1 https://vany.sh | sudo bash${RST}`);
+  lines.push(`    ${DIM}Other IPs to try: ${RST}${TEXT}104.17.0.1${RST}${DIM}, ${RST}${TEXT}172.67.0.1${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}3. DNS-over-HTTPS${RST}  ${DIM}(bypass DNS poisoning)${RST}`);
   lines.push(`    ${LGREEN}curl --doh-url https://1.1.1.1/dns-query vany.sh | sudo bash${RST}`);
-  lines.push(`    ${LGREEN}curl --doh-url https://1.1.1.1/dns-query vany.sh/faucet | bash${RST}`);
-  lines.push(`    ${LGREEN}curl --doh-url https://1.1.1.1/dns-query vany.sh/box | bash${RST}`);
+  lines.push(`    ${DIM}Alt DoH: ${RST}${TEXT}https://8.8.8.8/resolve${RST}${DIM}  ${RST}${TEXT}https://9.9.9.9:5053/dns-query${RST}`);
   lines.push("");
-  lines.push(`  ${DIM}Or install the ${RST}${LGREEN}1.1.1.1 WARP${RST}${DIM} app (free) to bypass DNS censorship system-wide.${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}4. CF Pages${RST}  ${DIM}(shared *.pages.dev domain — very hard to block)${RST}`);
+  lines.push(`    ${LGREEN}curl -sL vany-agg.pages.dev | sudo bash${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}5. WARP VPN${RST}  ${DIM}(Cloudflare 1.1.1.1 free VPN — bypasses all blocks)${RST}`);
+  lines.push(`    ${DIM}Install the ${RST}${LGREEN}1.1.1.1${RST}${DIM} app, enable, then run: ${RST}${LGREEN}curl vany.sh | sudo bash${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}6. Offline sharing${RST}  ${DIM}(zero internet needed)${RST}`);
+  lines.push(`    ${DIM}Ask someone with access to send you ${RST}${TEXT}start.sh${RST}${DIM} — then: ${RST}${LGREEN}sudo bash start.sh${RST}`);
+  lines.push("");
+  lines.push(`  ${ORANGE}${BOLD}Rescue bootstrap${RST}  ${DIM}Auto-tries every method above:${RST}`);
+  lines.push(`    ${LGREEN}curl -m5 vany.sh/bootstrap | sudo bash${RST}`);
   lines.push("");
   lines.push("");
 
-  // Unstoppable access
-  lines.push(divider("NOTHING WORKS?", W));
+  // Windows-specific instructions
+  lines.push(divider("WINDOWS / CMD / POWERSHELL", W));
   lines.push("");
-  lines.push(`  ${ORANGE}${BOLD}Rescue bootstrap${RST}  ${DIM}Tries all access methods automatically:${RST}`);
+  lines.push(`  ${DIM}On Windows, you need ${RST}${TEXT}WSL${RST}${DIM} (Windows Subsystem for Linux) or ${RST}${TEXT}Git Bash${RST}${DIM}.${RST}`);
+  lines.push(`  ${DIM}Windows CMD curl cannot pipe to bash. Use PowerShell instead:${RST}`);
   lines.push("");
-  lines.push(`    ${LGREEN}curl -m5 vany.sh/bootstrap | sudo bash${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}Option A: WSL${RST}  ${DIM}(recommended — full Linux inside Windows)${RST}`);
+  lines.push(`    ${LGREEN}wsl --install${RST}                     ${DIM}Install WSL (run in Admin PowerShell, reboot)${RST}`);
+  lines.push(`    ${LGREEN}wsl${RST}                                ${DIM}Enter Linux shell${RST}`);
+  lines.push(`    ${LGREEN}curl -sL vany.sh | sudo bash${RST}      ${DIM}Then use any command from above${RST}`);
   lines.push("");
-  lines.push(`  ${ORANGE}${BOLD}Manual fallbacks${RST}  ${DIM}(try in order if bootstrap fails):${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}Option B: PowerShell direct IP${RST}  ${DIM}(if DNS is blocked)${RST}`);
+  lines.push(`    ${LGREEN}curl.exe --resolve vany.sh:443:104.16.0.1 https://vany.sh${RST}`);
   lines.push("");
-  lines.push(`    ${LGREEN}1.${RST} ${DIM}curl --doh-url https://1.1.1.1/dns-query vany.sh | sudo bash${RST}   ${TEXT}(DNS-over-HTTPS)${RST}`);
-  lines.push(`    ${LGREEN}2.${RST} ${DIM}curl vany-agg.pages.dev | sudo bash${RST}                           ${TEXT}(shared CF domain)${RST}`);
-  lines.push(`    ${LGREEN}3.${RST} ${DIM}Install 1.1.1.1 app (WARP), enable, then curl vany.sh${RST}         ${TEXT}(free CF VPN)${RST}`);
+  lines.push(`  ${ORANGE}${BOLD}Option C: GitHub download${RST}  ${DIM}(uses Fastly, not Cloudflare)${RST}`);
+  lines.push(`    ${LGREEN}curl.exe -sL https://raw.githubusercontent.com/behnamkhorsandian/Vanysh/main/start.sh -o start.sh${RST}`);
+  lines.push(`    ${DIM}Then copy to a Linux VPS or WSL and run: ${RST}${LGREEN}sudo bash start.sh${RST}`);
   lines.push("");
   lines.push("");
 

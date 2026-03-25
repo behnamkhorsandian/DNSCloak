@@ -92,24 +92,17 @@ find_base() {
         return 0
     fi
 
-    echo -e "\${C_DIM}  Direct blocked. Trying DNS-over-HTTPS...\${C_RST}" >&2
+    echo -e "\${C_DIM}  Direct blocked. Trying GitHub (Fastly CDN)...\${C_RST}" >&2
 
-    # Layer 2: Resolve via DoH, then use --resolve to bypass DNS poisoning
-    for doh in "\${DOH_PROVIDERS[@]}"; do
-        local resolved_ip
-        resolved_ip=\$(doh_resolve "\$doh")
-        if [[ -n "\$resolved_ip" ]]; then
-            if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\${resolved_ip}" "https://vany.sh/health" 2>/dev/null; then
-                # Store the resolved IP so all future curls use it
-                echo "\$resolved_ip" > "\$VANY_DIR/.resolved_ip"
-                echo "https://vany.sh" > "\$BASE_FILE"
-                echo "https://vany.sh"
-                return 0
-            fi
-        fi
-    done
+    # Layer 2: GitHub Raw (Fastly CDN — completely different network than Cloudflare)
+    # This often works when Cloudflare is fully blocked (e.g. Iran digital blackout)
+    if curl -sf -m 5 -o /dev/null "\${GITHUB_RAW_URL}/start.sh" 2>/dev/null; then
+        echo "\${GITHUB_RAW_URL}" > "\$BASE_FILE"
+        echo "\${GITHUB_RAW_URL}"
+        return 0
+    fi
 
-    echo -e "\${C_DIM}  DoH failed. Trying Cloudflare IPs...\${C_RST}" >&2
+    echo -e "\${C_DIM}  GitHub blocked. Trying direct Cloudflare IPs...\${C_RST}" >&2
 
     # Layer 3: Use known CF anycast IPs with --resolve (bypasses DNS entirely)
     for cfip in "\${CF_IPS[@]}"; do
@@ -121,9 +114,25 @@ find_base() {
         fi
     done
 
-    echo -e "\${C_DIM}  Direct IPs failed. Trying alternate domains...\${C_RST}" >&2
+    echo -e "\${C_DIM}  Direct IPs failed. Trying DNS-over-HTTPS...\${C_RST}" >&2
 
-    # Layer 4: Alternate domains (*.pages.dev is hard to block)
+    # Layer 4: Resolve via DoH, then use --resolve to bypass DNS poisoning
+    for doh in "\${DOH_PROVIDERS[@]}"; do
+        local resolved_ip
+        resolved_ip=\$(doh_resolve "\$doh")
+        if [[ -n "\$resolved_ip" ]]; then
+            if curl -sf -m 5 -o /dev/null --resolve "vany.sh:443:\${resolved_ip}" "https://vany.sh/health" 2>/dev/null; then
+                echo "\$resolved_ip" > "\$VANY_DIR/.resolved_ip"
+                echo "https://vany.sh" > "\$BASE_FILE"
+                echo "https://vany.sh"
+                return 0
+            fi
+        fi
+    done
+
+    echo -e "\${C_DIM}  DoH failed. Trying alternate domains...\${C_RST}" >&2
+
+    # Layer 5: Alternate domains (*.pages.dev is hard to block)
     for alt in "\${FALLBACK_URLS[@]}"; do
         if test_base "\$alt"; then
             echo "\$alt" > "\$BASE_FILE"

@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { pageLanding } from '../tui/pages/landing.js';
 
 // =============================================================================
 // ROUTING TESTS
@@ -101,6 +102,51 @@ describe('Landing Pages', () => {
     // Only domain names
     const htmlContent = '<p>Install with: curl vany.sh/reality | sudo bash</p>';
     expect(htmlContent).not.toMatch(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
+  });
+});
+
+// =============================================================================
+// CENSORSHIP BYPASS FALLBACK TESTS
+// =============================================================================
+
+describe('Censorship Bypass Fallbacks', () => {
+  it('should include GitHub Raw as a non-Cloudflare fallback', () => {
+    // GitHub uses Fastly CDN, not Cloudflare. Critical for users in countries
+    // where Cloudflare is fully blocked (e.g. Iran digital blackout)
+    const landing = pageLanding();
+    expect(landing).toContain('raw.githubusercontent.com');
+    expect(landing).toContain('Fastly');
+  });
+
+  it('should include direct IP access with --resolve flag', () => {
+    const landing = pageLanding();
+    expect(landing).toContain('--resolve');
+    expect(landing).toContain('104.16.0.1');
+  });
+
+  it('should include Windows/CMD/PowerShell instructions', () => {
+    const landing = pageLanding();
+    expect(landing).toContain('WINDOWS');
+    expect(landing).toContain('WSL');
+    expect(landing).toContain('PowerShell');
+    expect(landing).toContain('curl.exe');
+  });
+
+  it('should include offline sharing as last resort', () => {
+    const landing = pageLanding();
+    expect(landing).toContain('Offline');
+    expect(landing).toContain('start.sh');
+  });
+
+  it('should list GitHub Raw before DoH in fallback order', () => {
+    // GitHub (Fastly CDN) should be tried before DoH/CF since in a full
+    // Cloudflare blackout, DoH to 1.1.1.1 is also blocked
+    const landing = pageLanding();
+    const githubIdx = landing.indexOf('GitHub Raw');
+    const dohIdx = landing.indexOf('DNS-over-HTTPS');
+    expect(githubIdx).toBeGreaterThan(-1);
+    expect(dohIdx).toBeGreaterThan(-1);
+    expect(githubIdx).toBeLessThan(dohIdx);
   });
 });
 
